@@ -76,3 +76,30 @@ jobs:
 
       - name: SemVer compatibility
         run: cargo semver-checks check-release --workspace --all-features
+
+  contract-lock-snapshot:
+    name: Contract lockfile and format snapshot (temporary)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: stable
+          components: rustfmt
+      - name: Resolve lockfile and emit exact formatted snapshot
+        run: |
+          cargo generate-lockfile
+          cargo fmt --all
+          echo "SNAPSHOT_LOCK=$(base64 -w0 Cargo.lock)"
+          echo "SNAPSHOT_TYPES=$(base64 -w0 crates/cryptopolicy/src/types.rs)"
+          echo "SNAPSHOT_POLICY=$(base64 -w0 crates/cryptopolicy/src/policy.rs)"
+          echo "SNAPSHOT_LIB=$(base64 -w0 crates/cryptopolicy/src/lib.rs)"
+          echo "SNAPSHOT_TESTS=$(base64 -w0 crates/cryptopolicy/tests/contracts.rs)"
+          echo "SNAPSHOT_EXAMPLE=$(base64 -w0 crates/cryptopolicy/examples/contract_smoke.rs)"
