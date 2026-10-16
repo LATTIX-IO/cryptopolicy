@@ -128,5 +128,31 @@ class ContractFixturesTests(unittest.TestCase):
             sc.compare_runtime_results(self.good, result)
 
 
+    def test_threat_to_invariant_must_match(self):
+        self.bad(lambda d: d["cases"][0].update({"invariant_id": "SEC-002"}))
+
+    def test_new_positive_control_requires_reviewed_revision(self):
+        def change(d):
+            new_case = copy.deepcopy(d["cases"][-1])
+            new_case["id"] = "CASE-034"
+            d["cases"].append(new_case)
+        self.bad(change)
+
+    def test_rule_permutation_crosswalk_cannot_be_removed(self):
+        self.bad(lambda d: d["cases"][26]["input_semantics"].pop("permutation_of"))
+
+    def test_baseline_expected_deny_cannot_be_changed_to_indeterminate(self):
+        self.bad(lambda d: d["cases"][1]["expected"].update({"status": "Indeterminate",
+                                                              "reason_codes": ["MissingRequiredAttribute"]}))
+
+    def test_require_runtime_results_refuses_spec_only_pass(self):
+        self.assertEqual(sc.main(["--require-results"]), 1)
+
+    def test_comparator_catches_leaked_sensitive_result_field(self):
+        result = self.results()
+        result["results"][25]["private_key_material"] = "REDACT_THIS"
+        with self.assertRaises(sc.ContractError):
+            sc.compare_runtime_results(self.good, result)
+
 if __name__ == "__main__":
     unittest.main()

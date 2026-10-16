@@ -95,6 +95,7 @@ def validate_contract(data: dict) -> dict:
     ensure(BASELINE_INVARIANTS <= inv_ids, "Baseline security invariant was removed")
 
     threat_ids = set()
+    threat_invariants = {}
     for threat in threats:
         ensure(isinstance(threat, dict), "Threat must be object")
         ident = threat.get("id")
@@ -102,6 +103,7 @@ def validate_contract(data: dict) -> dict:
         ensure(ident not in threat_ids, f"Duplicate threat {ident}")
         threat_ids.add(ident)
         ensure(threat.get("invariant") in inv_ids, f"{ident}: no controlling invariant")
+        threat_invariants[ident] = threat["invariant"]
         ensure(threat.get("severity") in {"critical", "high", "medium"}, f"{ident}: severity")
         ensure(isinstance(threat.get("boundary"), str) and
                bool(re.fullmatch(r"TB-\d{2}", threat["boundary"])),
@@ -123,6 +125,8 @@ def validate_contract(data: dict) -> dict:
         case_ids.add(ident)
         ensure(case.get("invariant_id") in inv_ids, f"{ident}: unknown invariant")
         ensure(case.get("threat_id") in threat_ids, f"{ident}: unknown threat")
+        ensure(case["invariant_id"] == threat_invariants[case["threat_id"]],
+               f"{ident}: threat-invariant crosswalk mismatch")
         ensure(case.get("kind") in {"negative", "positive-control"}, f"{ident}: case kind")
         ensure(case.get("surface") in VALID_SURFACES, f"{ident}: test surface")
         ensure(case.get("runtime_status") == "pending",
@@ -162,6 +166,7 @@ def validate_contract(data: dict) -> dict:
             ensure(expected.get("status") != "Permit" and expected["enforcement"] == "block",
                    f"{ident}: negative fixture cannot authorize")
         else:
+            ensure(ident == "CASE-033", f"{ident}: new positive controls require an explicit reviewed contract revision")
             ensure(expected.get("status") == "Permit" and expected["enforcement"] == "allow",
                    f"{ident}: positive control must demonstrate explicit authorization")
         expected_by_id[ident] = expected
@@ -171,6 +176,18 @@ def validate_contract(data: dict) -> dict:
            "An established invariant lacks negative regression coverage")
     ensure(BASELINE_THREATS <= negative_threat_coverage,
            "An established threat lacks negative regression coverage")
+    named = {case["id"]: case for case in cases}
+    ensure(named["CASE-027"]["input_semantics"].get("permutation_of") == "CASE-003",
+           "Baseline rule-order metamorphic link removed")
+    anchors = {
+        "CASE-001": {"kind": "Error", "error_code": "InvalidPolicy", "enforcement": "block"},
+        "CASE-002": {"kind": "Decision", "status": "Deny", "reason_codes": ["DefaultDenied"], "enforcement": "block"},
+        "CASE-003": {"kind": "Decision", "status": "Deny", "reason_codes": ["ExplicitDeny"], "enforcement": "block"},
+        "CASE-006": {"kind": "Decision", "status": "Indeterminate", "reason_codes": ["MissingRequiredAttribute"], "enforcement": "block"},
+        "CASE-033": {"kind": "Decision", "status": "Permit", "reason_codes": ["RequirementSatisfied"], "enforcement": "allow"},
+    }
+    for ident, outcome in anchors.items():
+        ensure(expected_by_id.get(ident) == outcome, f"{ident}: immutable baseline semantic anchor changed")
     for case in cases:
         original = case["input_semantics"].get("permutation_of")
         if original is not None:
