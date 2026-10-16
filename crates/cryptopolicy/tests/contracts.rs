@@ -1,3 +1,5 @@
+#![allow(clippy::unwrap_used)] // Test fixtures use fallible construction deliberately.
+
 use cryptopolicy::*;
 
 fn sample() -> PolicyDocument {
@@ -211,6 +213,23 @@ fn parse_versioned_golden_example() {
     let document = PolicyDocument::parse_json(include_bytes!("fixtures/policy-v1.json")).unwrap();
     assert_eq!(document.default_effect, DefaultEffect::Deny);
     assert_eq!(document.canonical_digest().unwrap().as_str().len(), 64);
+}
+
+#[test]
+fn golden_canonical_wire_encoding_and_sha256_are_stable() {
+    let parsed = PolicyDocument::parse_json(include_bytes!("fixtures/policy-v1.json")).unwrap();
+    let expected = concat!(
+        "{\"schema_version\":\"1\",\"policy_id\":\"org:bootstrap\",",
+        "\"version\":\"1.0.0\",\"issuer\":{\"subject\":\"example-org\",",
+        "\"assurance_ref\":null},\"created_at\":{\"unix_millis\":0},",
+        "\"effective_at\":null,\"expires_at\":null,\"default_effect\":\"deny\",",
+        "\"rules\":[],\"metadata\":[]}"
+    );
+    assert_eq!(parsed.canonical_json().unwrap(), expected.as_bytes());
+    assert_eq!(
+        parsed.canonical_digest().unwrap().as_str(),
+        "8a5e04fa8462ff436d721debef9d659194c4fa6e121887bc4a3690a0ef628823",
+    );
 }
 
 #[test]
