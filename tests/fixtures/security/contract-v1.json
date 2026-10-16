@@ -1,0 +1,1108 @@
+{
+  "contract_schema": "cryptopolicy.security-contract.v1",
+  "contract_version": "1.0.0",
+  "implementation_status": "normative-specification-only",
+  "runtime_conformance_verified": false,
+  "decision_enforcement": "Permit-only authorization; Deny/Indeterminate/Error block",
+  "reason_vocabulary": [
+    "DefaultDenied",
+    "ExplicitDeny",
+    "MissingRequiredAttribute",
+    "SecurityCategoryInsufficient",
+    "UnsupportedProfile",
+    "ProfileNotApproved",
+    "RequirementSatisfied"
+  ],
+  "error_vocabulary": [
+    "InvalidPolicy",
+    "UnsupportedSchema",
+    "PolicyConflict",
+    "ImportCycle",
+    "InvalidException",
+    "ResourceLimitExceeded",
+    "AdapterUnsupportedProfile",
+    "AdapterInvalidInput"
+  ],
+  "invariants": [
+    {
+      "id": "SEC-001",
+      "requirement": "Every policy declares an explicit default effect; builders choose Deny.",
+      "implementation_issue": "FOSS-429",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-002",
+      "requirement": "A matching non-waived Deny dominates Allow; unmatched requests never implicitly Permit.",
+      "implementation_issue": "FOSS-435",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-003",
+      "requirement": "Indeterminate, validation errors and evaluation errors are non-authorizing at enforcement boundaries.",
+      "implementation_issue": "FOSS-435",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-004",
+      "requirement": "Unknown mandatory facts cannot satisfy requirements or produce Permit.",
+      "implementation_issue": "FOSS-435",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-005",
+      "requirement": "Composition is monotonic for mandatory baseline requirements; overlays cannot silently weaken policy.",
+      "implementation_issue": "FOSS-437",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-006",
+      "requirement": "Waivers are explicit, attributable, authorized, precisely scoped, time-bounded and limited to explicitly waivable controls.",
+      "implementation_issue": "FOSS-443",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-007",
+      "requirement": "Temporal semantics require injected evaluation time with deterministic boundary handling.",
+      "implementation_issue": "FOSS-439",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-008",
+      "requirement": "Algorithm, operation, parameters and exact profile identity must be checked; no approximate alias or security-category downgrade.",
+      "implementation_issue": "FOSS-445",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-009",
+      "requirement": "Draft, experimental, deprecated and unknown profiles never inherit standardized or approved status by inference.",
+      "implementation_issue": "FOSS-445",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-010",
+      "requirement": "Observed, configured, negotiated, inferred and absent evidence remain distinct; partial coverage never proves compliance.",
+      "implementation_issue": "FOSS-447",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-011",
+      "requirement": "Provider capability, origin, exportability and protection assurance must be trustworthy and complete for required decisions.",
+      "implementation_issue": "FOSS-449",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-012",
+      "requirement": "Untrusted format identifiers and data require bounded parsing and explicit unsupported results, never fallback to a similar profile.",
+      "implementation_issue": "FOSS-452",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-013",
+      "requirement": "Import cycles, unresolved imports and conflicting exact mandatory requirements fail before Permit.",
+      "implementation_issue": "FOSS-437",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-014",
+      "requirement": "Policy, selector, import, exception, batch, adapter and diagnostic resources are bounded.",
+      "implementation_issue": "FOSS-433",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-015",
+      "requirement": "Diagnostics and observability disclose stable codes and safe identifiers, not credentials, private key material or raw sensitive context.",
+      "implementation_issue": "FOSS-45",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-016",
+      "requirement": "Canonical decisions, reasons and policy/registry identities are reproducible from the same explicit inputs.",
+      "implementation_issue": "FOSS-435",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-017",
+      "requirement": "Downstream enforcement must authorize exclusively on a valid Permit; other results block protected operations.",
+      "implementation_issue": "FOSS-440",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-018",
+      "requirement": "Hybrid and composite transition policy references a named exact construction, never a generic hybrid flag.",
+      "implementation_issue": "FOSS-458",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-019",
+      "requirement": "Unknown security-critical schema fields and unsupported versions are rejected rather than ignored.",
+      "implementation_issue": "FOSS-429",
+      "maturity": "pending-runtime"
+    },
+    {
+      "id": "SEC-020",
+      "requirement": "Policy issuer claims and exception approval metadata are not proof of authenticity; caller trust must be established.",
+      "implementation_issue": "FOSS-429",
+      "maturity": "pending-runtime"
+    }
+  ],
+  "threats": [
+    {
+      "id": "THR-001",
+      "name": "Unauthorized default or rule-order bypass",
+      "actor": "malicious policy author",
+      "boundary": "TB-01",
+      "invariant": "SEC-001",
+      "severity": "critical",
+      "abuse": "Unset default, allow-before-deny, or nonmatching rules become authorization"
+    },
+    {
+      "id": "THR-002",
+      "name": "Missing policy facts or enforcement bypass",
+      "actor": "incomplete or malicious request source",
+      "boundary": "TB-02",
+      "invariant": "SEC-003",
+      "severity": "critical",
+      "abuse": "Uncertainty or errors mapped to Permit by consumer"
+    },
+    {
+      "id": "THR-003",
+      "name": "Missing required attributes",
+      "actor": "requesting workload",
+      "boundary": "TB-02",
+      "invariant": "SEC-004",
+      "severity": "critical",
+      "abuse": "Missing HSM assurance or key attributes deemed compliant"
+    },
+    {
+      "id": "THR-004",
+      "name": "Baseline override or conflict",
+      "actor": "malicious overlay author",
+      "boundary": "TB-03",
+      "invariant": "SEC-005",
+      "severity": "critical",
+      "abuse": "Environment/application overlays silently remove mandatory constraints"
+    },
+    {
+      "id": "THR-005",
+      "name": "Exception/waiver scope inflation",
+      "actor": "waiver maintainer or compromised approval channel",
+      "boundary": "TB-04",
+      "invariant": "SEC-006",
+      "severity": "critical",
+      "abuse": "Broad or expired exceptions authorize outside intended scope"
+    },
+    {
+      "id": "THR-006",
+      "name": "Temporal context tampering",
+      "actor": "untrusted clock or caller",
+      "boundary": "TB-02",
+      "invariant": "SEC-007",
+      "severity": "high",
+      "abuse": "Implicit wall-clock or ambiguous deadline permits deprecated configuration"
+    },
+    {
+      "id": "THR-007",
+      "name": "Algorithm/profile downgrade",
+      "actor": "attacker controlling identifiers or aliases",
+      "boundary": "TB-05",
+      "invariant": "SEC-008",
+      "severity": "critical",
+      "abuse": "Algorithm family or alias accepted with weaker parameters"
+    },
+    {
+      "id": "THR-008",
+      "name": "Draft profile masquerades as standard",
+      "actor": "untrusted registry maintainer",
+      "boundary": "TB-05",
+      "invariant": "SEC-009",
+      "severity": "high",
+      "abuse": "Experimental identifier silently classified as approved"
+    },
+    {
+      "id": "THR-009",
+      "name": "Evidence laundering",
+      "actor": "collector or inventory importer",
+      "boundary": "TB-06",
+      "invariant": "SEC-010",
+      "severity": "critical",
+      "abuse": "Installed library/configured protocol passed as observed use"
+    },
+    {
+      "id": "THR-010",
+      "name": "Provider assurance substitution",
+      "actor": "key provider integration",
+      "boundary": "TB-07",
+      "invariant": "SEC-011",
+      "severity": "critical",
+      "abuse": "Self-asserted protection, origin or exportability satisfies mandatory rule"
+    },
+    {
+      "id": "THR-011",
+      "name": "Format parser confusion",
+      "actor": "malicious X.509/JOSE/COSE input",
+      "boundary": "TB-08",
+      "invariant": "SEC-012",
+      "severity": "critical",
+      "abuse": "Invalid critical identifiers normalized to known safe profile"
+    },
+    {
+      "id": "THR-012",
+      "name": "Import cycle or inconsistent policies",
+      "actor": "policy graph author",
+      "boundary": "TB-03",
+      "invariant": "SEC-013",
+      "severity": "high",
+      "abuse": "Unbounded imports or contradictory hard requirements mask conflict"
+    },
+    {
+      "id": "THR-013",
+      "name": "Resource exhaustion",
+      "actor": "untrusted policy or evidence submitter",
+      "boundary": "TB-01",
+      "invariant": "SEC-014",
+      "severity": "high",
+      "abuse": "Huge inputs, import depth or diagnostics exhaust CPU/memory"
+    },
+    {
+      "id": "THR-014",
+      "name": "Sensitive diagnostic leakage",
+      "actor": "observability or caller integration",
+      "boundary": "TB-09",
+      "invariant": "SEC-015",
+      "severity": "high",
+      "abuse": "Secrets or sensitive context exposed through errors/traces"
+    },
+    {
+      "id": "THR-015",
+      "name": "Nondeterminism or audit evasion",
+      "actor": "registry/profile author",
+      "boundary": "TB-05",
+      "invariant": "SEC-016",
+      "severity": "high",
+      "abuse": "Reordered rules/profile metadata yield different results"
+    },
+    {
+      "id": "THR-016",
+      "name": "Non-permit converted to allow",
+      "actor": "enforcement consumer",
+      "boundary": "TB-10",
+      "invariant": "SEC-017",
+      "severity": "critical",
+      "abuse": "Application treats Indeterminate/Error as success"
+    },
+    {
+      "id": "THR-017",
+      "name": "Ambiguous hybrid construction",
+      "actor": "policy author or registry importer",
+      "boundary": "TB-05",
+      "invariant": "SEC-018",
+      "severity": "high",
+      "abuse": "Boolean hybrid tag accepted without named standardized construction"
+    },
+    {
+      "id": "THR-018",
+      "name": "Unknown critical schema input",
+      "actor": "malicious policy author",
+      "boundary": "TB-01",
+      "invariant": "SEC-019",
+      "severity": "critical",
+      "abuse": "Unknown mandatory rule field is ignored"
+    },
+    {
+      "id": "THR-019",
+      "name": "Policy origin spoofing",
+      "actor": "untrusted policy issuer",
+      "boundary": "TB-01",
+      "invariant": "SEC-020",
+      "severity": "critical",
+      "abuse": "Issuer string or unsigned waiver accepted as trusted authority"
+    },
+    {
+      "id": "THR-020",
+      "name": "Policy priority bypass",
+      "actor": "malicious policy author",
+      "boundary": "TB-01",
+      "invariant": "SEC-002",
+      "severity": "critical",
+      "abuse": "Rule order erases matching Deny"
+    }
+  ],
+  "cases": [
+    {
+      "id": "CASE-001",
+      "threat_id": "THR-001",
+      "invariant_id": "SEC-001",
+      "kind": "negative",
+      "scenario": "Missing explicit default effect",
+      "surface": "validation",
+      "input_semantics": {
+        "default_effect": null,
+        "rules": []
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "InvalidPolicy",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-429",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-002",
+      "threat_id": "THR-001",
+      "invariant_id": "SEC-001",
+      "kind": "negative",
+      "scenario": "Policy builder starts without an explicit allow",
+      "surface": "evaluation",
+      "input_semantics": {
+        "default_effect": "Deny",
+        "rules": [],
+        "requested_operation": "encrypt"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Deny",
+        "reason_codes": [
+          "DefaultDenied"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-429",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-003",
+      "threat_id": "THR-020",
+      "invariant_id": "SEC-002",
+      "kind": "negative",
+      "scenario": "Allow rule cannot erase matching explicit Deny",
+      "surface": "evaluation",
+      "input_semantics": {
+        "default_effect": "Deny",
+        "rules": [
+          "allow AES-256-GCM",
+          "deny AES-256-GCM"
+        ],
+        "operation": "encrypt"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Deny",
+        "reason_codes": [
+          "ExplicitDeny"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-435",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-004",
+      "threat_id": "THR-002",
+      "invariant_id": "SEC-003",
+      "kind": "negative",
+      "scenario": "Unknown match of a potentially applicable Deny blocks known allow",
+      "surface": "evaluation",
+      "input_semantics": {
+        "rules": [
+          "allow known operation",
+          "deny when unknown classification matches"
+        ],
+        "missing": [
+          "classification"
+        ]
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Indeterminate",
+        "reason_codes": [
+          "MissingRequiredAttribute"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-435",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-005",
+      "threat_id": "THR-002",
+      "invariant_id": "SEC-003",
+      "kind": "negative",
+      "scenario": "Invalid policy is not a successful decision",
+      "surface": "validation",
+      "input_semantics": {
+        "rules": [
+          "invalid effect type"
+        ],
+        "default_effect": "Deny"
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "InvalidPolicy",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-435",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-006",
+      "threat_id": "THR-003",
+      "invariant_id": "SEC-004",
+      "kind": "negative",
+      "scenario": "Missing mandatory hardware protection assurance",
+      "surface": "evaluation",
+      "input_semantics": {
+        "rules": [
+          "allow encrypt if HSM-backed"
+        ],
+        "facts": {
+          "algorithm": "AES-256-GCM",
+          "hsm_assurance": null
+        }
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Indeterminate",
+        "reason_codes": [
+          "MissingRequiredAttribute"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-435",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-007",
+      "threat_id": "THR-004",
+      "invariant_id": "SEC-005",
+      "kind": "negative",
+      "scenario": "Overlay cannot delete mandatory baseline constraint",
+      "surface": "composition",
+      "input_semantics": {
+        "baseline": "require non-exportable",
+        "overlay": "remove non-exportable requirement"
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "PolicyConflict",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-437",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-008",
+      "threat_id": "THR-005",
+      "invariant_id": "SEC-006",
+      "kind": "negative",
+      "scenario": "Expired exception cannot waive a matching deny",
+      "surface": "evaluation",
+      "input_semantics": {
+        "rule": "deny legacy RSA",
+        "exception": {
+          "expires": "2026-01-01T00:00:00Z"
+        },
+        "evaluation_time": "2026-10-16T00:00:00Z"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Deny",
+        "reason_codes": [
+          "ExplicitDeny"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-443",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-009",
+      "threat_id": "THR-005",
+      "invariant_id": "SEC-006",
+      "kind": "negative",
+      "scenario": "Broader exception cannot apply to other tenant",
+      "surface": "evaluation",
+      "input_semantics": {
+        "rule": "deny legacy RSA",
+        "exception": {
+          "tenant": "tenant-a"
+        },
+        "context": {
+          "tenant": "tenant-b"
+        }
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Deny",
+        "reason_codes": [
+          "ExplicitDeny"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-443",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-010",
+      "threat_id": "THR-005",
+      "invariant_id": "SEC-006",
+      "kind": "negative",
+      "scenario": "Untrusted exception authorization metadata is invalid",
+      "surface": "validation",
+      "input_semantics": {
+        "exception": {
+          "approver": "unverified-string",
+          "approval_evidence": null
+        }
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "InvalidException",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-443",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-011",
+      "threat_id": "THR-006",
+      "invariant_id": "SEC-007",
+      "kind": "negative",
+      "scenario": "Invalid temporal range is rejected",
+      "surface": "validation",
+      "input_semantics": {
+        "rule": {
+          "effective_from": "2027-01-01T00:00:00Z",
+          "expires": "2026-01-01T00:00:00Z"
+        }
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "InvalidPolicy",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-439",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-012",
+      "threat_id": "THR-006",
+      "invariant_id": "SEC-007",
+      "kind": "negative",
+      "scenario": "Prohibited-after boundary denies at documented cutoff",
+      "surface": "evaluation",
+      "input_semantics": {
+        "rule": {
+          "profile": "RSA-legacy",
+          "prohibited_at": "2026-10-16T00:00:00Z"
+        },
+        "evaluation_time": "2026-10-16T00:00:00Z"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Deny",
+        "reason_codes": [
+          "ExplicitDeny"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-439",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-013",
+      "threat_id": "THR-007",
+      "invariant_id": "SEC-008",
+      "kind": "negative",
+      "scenario": "Insufficient key size cannot satisfy exact profile",
+      "surface": "evaluation",
+      "input_semantics": {
+        "required": "RSA-3072",
+        "observed": "RSA-1024",
+        "operation": "sign"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Deny",
+        "reason_codes": [
+          "SecurityCategoryInsufficient"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-445",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-014",
+      "threat_id": "THR-007",
+      "invariant_id": "SEC-008",
+      "kind": "negative",
+      "scenario": "Unknown security-critical algorithm alias is unsupported",
+      "surface": "evaluation",
+      "input_semantics": {
+        "requested": "AES-256-GCM-vendor-unknown",
+        "registry_status": "Unknown"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Indeterminate",
+        "reason_codes": [
+          "UnsupportedProfile"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-445",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-015",
+      "threat_id": "THR-008",
+      "invariant_id": "SEC-009",
+      "kind": "negative",
+      "scenario": "Experimental profile is not approved by stable default",
+      "surface": "evaluation",
+      "input_semantics": {
+        "profile": "draft-composite",
+        "registry_status": "Experimental",
+        "experimental_opt_in": false
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Deny",
+        "reason_codes": [
+          "ProfileNotApproved"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-445",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-016",
+      "threat_id": "THR-009",
+      "invariant_id": "SEC-010",
+      "kind": "negative",
+      "scenario": "Cryptographic dependency presence is not execution evidence",
+      "surface": "evaluation",
+      "input_semantics": {
+        "source": "dependency",
+        "dependency": "openssl",
+        "algorithm_executed": null
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Indeterminate",
+        "reason_codes": [
+          "MissingRequiredAttribute"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-447",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-017",
+      "threat_id": "THR-009",
+      "invariant_id": "SEC-010",
+      "kind": "negative",
+      "scenario": "Incomplete inventory coverage must not satisfy assurance",
+      "surface": "evaluation",
+      "input_semantics": {
+        "source": "cryptomap",
+        "coverage": "Partial",
+        "observations": []
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Indeterminate",
+        "reason_codes": [
+          "MissingRequiredAttribute"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-447",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-018",
+      "threat_id": "THR-009",
+      "invariant_id": "SEC-010",
+      "kind": "negative",
+      "scenario": "Configured TLS is not negotiated TLS",
+      "surface": "evaluation",
+      "input_semantics": {
+        "configured": "TLS_AES_256_GCM_SHA384",
+        "negotiated": null,
+        "requirement": "observed session"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Indeterminate",
+        "reason_codes": [
+          "MissingRequiredAttribute"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-447",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-019",
+      "threat_id": "THR-010",
+      "invariant_id": "SEC-011",
+      "kind": "negative",
+      "scenario": "Provider self-asserted protection lacks attestation",
+      "surface": "evaluation",
+      "input_semantics": {
+        "provider_claim": "HSM",
+        "attestation": null,
+        "requirement": "verified hardware-backed"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Indeterminate",
+        "reason_codes": [
+          "MissingRequiredAttribute"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-449",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-020",
+      "threat_id": "THR-011",
+      "invariant_id": "SEC-012",
+      "kind": "negative",
+      "scenario": "Unknown critical X.509 identifier is unsupported",
+      "surface": "adapter",
+      "input_semantics": {
+        "format": "X.509",
+        "oid": "unknown-critical",
+        "critical": true
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "AdapterUnsupportedProfile",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-452",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-021",
+      "threat_id": "THR-011",
+      "invariant_id": "SEC-012",
+      "kind": "negative",
+      "scenario": "Malformed JOSE critical field rejected",
+      "surface": "adapter",
+      "input_semantics": {
+        "format": "JOSE",
+        "critical": [
+          "unrecognized-critical"
+        ],
+        "signature_verified": false
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "AdapterInvalidInput",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-452",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-022",
+      "threat_id": "THR-012",
+      "invariant_id": "SEC-013",
+      "kind": "negative",
+      "scenario": "Cyclic policy imports rejected",
+      "surface": "composition",
+      "input_semantics": {
+        "imports": [
+          "a -> b",
+          "b -> a"
+        ]
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "ImportCycle",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-437",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-023",
+      "threat_id": "THR-012",
+      "invariant_id": "SEC-013",
+      "kind": "negative",
+      "scenario": "Conflicting exact mandatory requirements fail",
+      "surface": "composition",
+      "input_semantics": {
+        "requirements": [
+          "exact profile A",
+          "exact profile B"
+        ]
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "PolicyConflict",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-437",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-024",
+      "threat_id": "THR-013",
+      "invariant_id": "SEC-014",
+      "kind": "negative",
+      "scenario": "Oversized policy input yields bounded error",
+      "surface": "validation",
+      "input_semantics": {
+        "bytes": "configured_limit + 1"
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "ResourceLimitExceeded",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-433",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-025",
+      "threat_id": "THR-013",
+      "invariant_id": "SEC-014",
+      "kind": "negative",
+      "scenario": "Excessively deep imports yields bounded error",
+      "surface": "composition",
+      "input_semantics": {
+        "import_depth": "configured_limit + 1"
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "ResourceLimitExceeded",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-433",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-026",
+      "threat_id": "THR-014",
+      "invariant_id": "SEC-015",
+      "kind": "negative",
+      "scenario": "Sensitive context must never appear in diagnostics",
+      "surface": "evaluation",
+      "input_semantics": {
+        "operation": "not-allowed",
+        "private_key_material": "REDACT_THIS",
+        "subject_token": "REDACT_THIS"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Deny",
+        "reason_codes": [
+          "DefaultDenied"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-45",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-027",
+      "threat_id": "THR-015",
+      "invariant_id": "SEC-016",
+      "kind": "negative",
+      "scenario": "Reordered rule set yields same Deny and reasons",
+      "surface": "evaluation",
+      "input_semantics": {
+        "rules": [
+          "deny AES-256-GCM",
+          "allow AES-256-GCM"
+        ],
+        "permutation_of": "CASE-003"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Deny",
+        "reason_codes": [
+          "ExplicitDeny"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-435",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-028",
+      "threat_id": "THR-016",
+      "invariant_id": "SEC-017",
+      "kind": "negative",
+      "scenario": "Indeterminate must block downstream protected action",
+      "surface": "enforcement",
+      "input_semantics": {
+        "decision": "Indeterminate",
+        "caller_attempts_to_continue": true
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Indeterminate",
+        "reason_codes": [
+          "MissingRequiredAttribute"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-440",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-029",
+      "threat_id": "THR-017",
+      "invariant_id": "SEC-018",
+      "kind": "negative",
+      "scenario": "Generic hybrid flag without named profile rejected",
+      "surface": "validation",
+      "input_semantics": {
+        "profile": {
+          "hybrid": true,
+          "construction": null
+        }
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "InvalidPolicy",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-458",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-030",
+      "threat_id": "THR-018",
+      "invariant_id": "SEC-019",
+      "kind": "negative",
+      "scenario": "Unknown security-critical policy field rejected",
+      "surface": "validation",
+      "input_semantics": {
+        "schema_version": "1",
+        "critical_unknown_field": "override_deny_silently"
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "UnsupportedSchema",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-429",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-031",
+      "threat_id": "THR-019",
+      "invariant_id": "SEC-020",
+      "kind": "negative",
+      "scenario": "Issuer string is not authentication evidence",
+      "surface": "validation",
+      "input_semantics": {
+        "issuer": "trusted-org",
+        "caller_trust_validation": false
+      },
+      "expected": {
+        "kind": "Error",
+        "error_code": "InvalidPolicy",
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-429",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-032",
+      "threat_id": "THR-020",
+      "invariant_id": "SEC-002",
+      "kind": "negative",
+      "scenario": "Reversed file rule order cannot erase Deny",
+      "surface": "evaluation",
+      "input_semantics": {
+        "rules": [
+          "deny exact profile X",
+          "allow exact profile X"
+        ],
+        "input_order": "reversed"
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Deny",
+        "reason_codes": [
+          "ExplicitDeny"
+        ],
+        "enforcement": "block"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-435",
+      "rationale": "The identified misuse case must not authorize a protected operation."
+    },
+    {
+      "id": "CASE-033",
+      "threat_id": "THR-003",
+      "invariant_id": "SEC-004",
+      "kind": "positive-control",
+      "scenario": "Positive control: explicit allowed profile with complete verified evidence",
+      "surface": "evaluation",
+      "input_semantics": {
+        "rules": [
+          "allow AES-256-GCM iff verified-HSM"
+        ],
+        "facts": {
+          "algorithm": "AES-256-GCM",
+          "operation": "encrypt",
+          "hsm_assurance": "verified"
+        }
+      },
+      "expected": {
+        "kind": "Decision",
+        "status": "Permit",
+        "reason_codes": [
+          "RequirementSatisfied"
+        ],
+        "enforcement": "allow"
+      },
+      "runtime_status": "pending",
+      "implementation_issue": "FOSS-435",
+      "rationale": "Demonstrates that complete, explicitly permitted requests should authorize once evaluator exists."
+    }
+  ]
+}

@@ -13,6 +13,17 @@ This project is in early development.
 Public APIs should be considered unstable until the relevant crates reach
 their first stable release.
 
+## Security contract (pre-implementation)
+
+The [threat model](THREAT_MODEL.md) specifies fail-closed decision rules, trust
+boundaries and 33 versioned golden test cases. The specification linter is
+executable, but **no policy evaluator exists yet** and CI does not claim runtime
+policy-conformance coverage. Future schema/evaluator increments must bind their
+real outputs to these fixtures without auto-regenerating golden expectations.
+
+Run `python3 scripts/security_contract.py --lint` and
+`python3 -m unittest discover -s tests -p 'test_security_contract.py' -v`.
+
 ## Crates
 
 - cryptopolicy

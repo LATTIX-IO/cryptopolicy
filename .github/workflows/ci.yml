@@ -31,6 +31,11 @@ jobs:
           /tmp/cryptopolicy-release-guard/bin/python scripts/release_guard.py
           /tmp/cryptopolicy-release-guard/bin/python -m unittest discover -s tests -p 'test_release_guard.py' -v
 
+      - name: Audit normative cryptographic policy security contract
+        run: |
+          python3 scripts/security_contract.py --lint
+          python3 -m unittest discover -s tests -p 'test_security_contract.py' -v
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable
         with:
