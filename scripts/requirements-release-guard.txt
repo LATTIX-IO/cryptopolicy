@@ -1,0 +1,2 @@
+# BaseLoader preserves GitHub Actions YAML 'on' mapping keys as strings.
+PyYAML==6.0.2

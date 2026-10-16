@@ -32,17 +32,23 @@ Run:
 
 ## Publishing
 
-All crates are bootstrapped with publish = false.
+All five workspace packages are **unpublished bootstrap crates** with `publish = false`.
+The default `main` workflow can propose a release PR but **cannot publish**.
+Only `.github/workflows/release-publish.yml` contains the publication command.
 
-Before enabling publication for a crate:
+Publication is disabled unless a maintainer deliberately completes the protected
+release setup: a `workflow_dispatch` on `main`, exact `PUBLISH` confirmation,
+repository variable `CRYPTOPOLICY_RELEASES_ENABLED=true`, and the
+`crates-io-publish` GitHub environment. That environment **must** be
+configured with required reviewers and main-branch deployment restrictions
+before enabling the repository variable. There is no release scheduled by this PR.
 
-1. Re-check the exact package name on crates.io.
-2. Complete the public API and crate documentation.
-3. Add tests for supported behavior.
-4. Add crate-specific keywords/categories where appropriate.
-5. Review dependency licenses and security posture.
-6. Remove publish = false only for that crate.
-7. Publish deliberately.
+CI checks all crate manifests and workflow triggers with
+`scripts/release_guard.py` and adversarial regression tests. Before any
+published package, a separately reviewed change must authorize that crate,
+validate crates.io ownership and the public API, and update the bootstrap guard.
+
+See [release controls and operator procedure](docs/RELEASING.md).
 
 ## License
 

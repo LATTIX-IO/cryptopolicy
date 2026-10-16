@@ -13,3 +13,5 @@ The project follows Semantic Versioning once its public API reaches a stable con
 ### Fixed
 
 ### Security
+
+- FOSS-424: Explicitly disable publication for all bootstrap crates; separate release proposals from a guarded manual publishing workflow; add manifest/workflow regression checks.

@@ -9,9 +9,8 @@ homepage.workspace = true
 description = "pqc-cose library for the cryptopolicy project."
 readme = "README.md"
 
-# Prevent accidental publication of placeholder packages.
-# Remove this only when the crate has a real public API, documentation,
-# tests, metadata, and its crates.io name has been re-validated.
-publish = ["crates-io"]
+# FOSS-424: bootstrap crates cannot be published. A separate, reviewed release
+# increment must validate the public API, registry ownership, and package contents.
+publish = false
 [lints]
 workspace = true
