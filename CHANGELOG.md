@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-429: strict Rust/JSON schema types, explicit fallback, context fact provenance, validated identifiers, canonical SHA-256 and negative parsing tests.
+
 ### Changed
 
 ### Fixed

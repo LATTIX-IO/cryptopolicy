@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "policy_id": "org:bootstrap",
+  "version": "1.0.0",
+  "issuer": {
+    "subject": "example-org",
+    "assurance_ref": null
+  },
+  "created_at": {
+    "unix_millis": 0
+  },
+  "effective_at": null,
+  "expires_at": null,
+  "default_effect": "deny",
+  "rules": [],
+  "metadata": []
+}
