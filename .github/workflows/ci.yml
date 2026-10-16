@@ -62,6 +62,12 @@ jobs:
           RUSTDOCFLAGS: -D warnings
         run: cargo doc --workspace --all-features --no-deps --locked
 
+      - name: Verify declared Rust 1.85 MSRV
+        run: |
+          rustup toolchain install 1.85.0 --profile minimal
+          cargo +1.85.0 check --workspace --all-targets --all-features --locked
+          cargo +1.85.0 test --workspace --all-features --locked
+
       - name: Install supply-chain tools
         run: |
           cargo install --locked cargo-audit
