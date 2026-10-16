@@ -29,5 +29,5 @@ class ReleaseGuardTests(unittest.TestCase):
     def test_environment(self): self.mutate('release-publish.yml','environment: crates-io-publish','environment: other')
     def test_enablement(self): self.mutate('release-publish.yml',"vars.CRYPTOPOLICY_RELEASES_ENABLED == 'true'","vars.CRYPTOPOLICY_RELEASES_ENABLED == 'false'")
     def test_auto_publish(self): self.mutate('release-plz.yml','command: release-pr','command: release')
-    def test_credential_leak(self): self.mutate('release-plz.yml','command: release-pr','command: release-pr\n          # CARGO_REGISTRY_TOKEN')
+    def test_credential_leak(self): self.mutate('release-plz.yml','GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}','GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}\n          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}')
 if __name__=='__main__': unittest.main()
