@@ -43,8 +43,14 @@ fn sample() -> PolicyDocument {
             },
         ],
         metadata: vec![
-            MetadataEntry { key: PolicyId::parse("z").unwrap(), value: "last".into() },
-            MetadataEntry { key: PolicyId::parse("a").unwrap(), value: "first".into() },
+            MetadataEntry {
+                key: PolicyId::parse("z").unwrap(),
+                value: "last".into(),
+            },
+            MetadataEntry {
+                key: PolicyId::parse("a").unwrap(),
+                value: "first".into(),
+            },
         ],
     }
 }
@@ -67,8 +73,14 @@ fn order_of_rules_metadata_and_conjunctive_requirements_does_not_change_digest()
     shuffled.rules.reverse();
     shuffled.metadata.reverse();
     shuffled.rules[1].requirements.reverse();
-    assert_eq!(before.canonical_json().unwrap(), shuffled.canonical_json().unwrap());
-    assert_eq!(before.canonical_digest().unwrap(), shuffled.canonical_digest().unwrap());
+    assert_eq!(
+        before.canonical_json().unwrap(),
+        shuffled.canonical_json().unwrap()
+    );
+    assert_eq!(
+        before.canonical_digest().unwrap(),
+        shuffled.canonical_digest().unwrap()
+    );
 }
 
 #[test]
@@ -76,7 +88,10 @@ fn semantic_change_changes_policy_digest() {
     let before = sample();
     let mut after = before.clone();
     after.default_effect = DefaultEffect::Allow;
-    assert_ne!(before.canonical_digest().unwrap(), after.canonical_digest().unwrap());
+    assert_ne!(
+        before.canonical_digest().unwrap(),
+        after.canonical_digest().unwrap()
+    );
 }
 
 #[test]
@@ -101,7 +116,10 @@ fn reject_unknown_schema_and_unknown_enum_variant() {
     let encoded = String::from_utf8(sample().canonical_json().unwrap()).unwrap();
     let version = encoded.replace("\"schema_version\":\"1\"", "\"schema_version\":\"2\"");
     assert!(PolicyDocument::parse_json(version.as_bytes()).is_err());
-    let bogus = encoded.replace("\"default_effect\":\"deny\"", "\"default_effect\":\"magic\"");
+    let bogus = encoded.replace(
+        "\"default_effect\":\"deny\"",
+        "\"default_effect\":\"magic\"",
+    );
     assert!(PolicyDocument::parse_json(bogus.as_bytes()).is_err());
 }
 
@@ -123,7 +141,10 @@ fn reject_bad_time_range_duplicate_rule_and_ambiguous_selectors() {
     assert!(invalid_time.validate().is_err());
     let mut duplicate = sample();
     duplicate.rules[0].rule_id = duplicate.rules[1].rule_id.clone();
-    assert_eq!(duplicate.validate(), Err(ContractError::DuplicateIdentifier));
+    assert_eq!(
+        duplicate.validate(),
+        Err(ContractError::DuplicateIdentifier)
+    );
     let mut ambiguous = sample();
     ambiguous.rules[0].selector.match_all = true;
     assert!(ambiguous.validate().is_err());
@@ -132,7 +153,9 @@ fn reject_bad_time_range_duplicate_rule_and_ambiguous_selectors() {
 #[test]
 fn reject_invalid_category_and_oversized_json() {
     let mut invalid = sample();
-    invalid.rules[0].requirements.push(Requirement::MinSecurityCategory(6));
+    invalid.rules[0]
+        .requirements
+        .push(Requirement::MinSecurityCategory(6));
     assert!(invalid.validate().is_err());
     let attack = vec![b'a'; MAX_CONTRACT_BYTES + 1];
     assert_eq!(
@@ -177,7 +200,10 @@ fn preserve_fact_origin_without_equating_capability_to_usage() {
 #[test]
 fn context_duplicate_evidence_id_rejected() {
     let raw = br#"{"schema_version":"1","request_id":"req","operation":"sign","evaluation_time":{"unix_millis":1},"facts":[{"fact_id":"same","origin":"observed","algorithm_id":null,"profile_id":null,"evidence_ref":null,"verified":true},{"fact_id":"same","origin":"inferred","algorithm_id":null,"profile_id":null,"evidence_ref":null,"verified":false}]}"#;
-    assert_eq!(CryptoContext::parse_json(raw), Err(ContractError::DuplicateIdentifier));
+    assert_eq!(
+        CryptoContext::parse_json(raw),
+        Err(ContractError::DuplicateIdentifier)
+    );
 }
 
 #[test]

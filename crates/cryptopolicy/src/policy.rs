@@ -241,7 +241,10 @@ impl PolicyDocument {
                 })
                 .collect::<Result<Vec<(String, Requirement)>, ContractError>>()?;
             requirements.sort_by(|a, b| a.0.cmp(&b.0));
-            rule.requirements = requirements.into_iter().map(|(_, requirement)| requirement).collect();
+            rule.requirements = requirements
+                .into_iter()
+                .map(|(_, requirement)| requirement)
+                .collect();
         }
         let encoded = serde_json::to_vec(&document)
             .map_err(|err| ContractError::InvalidJson(err.to_string()))?;
@@ -254,7 +257,10 @@ impl PolicyDocument {
     /// SHA-256 fingerprint of normalized bytes; never proof of policy authority.
     pub fn canonical_digest(&self) -> Result<PolicyDigest, ContractError> {
         let hash = Sha256::digest(self.canonical_json()?);
-        let hex = hash.iter().map(|byte| format!("{byte:02x}")).collect::<String>();
+        let hex = hash
+            .iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>();
         PolicyDigest::try_from(hex)
     }
 }

@@ -36,7 +36,9 @@ fn validate_identifier(value: &str) -> Result<(), ContractError> {
     if bytes.is_empty()
         || bytes.len() > 128
         || !bytes[0].is_ascii_alphanumeric()
-        || !bytes.iter().all(|c| c.is_ascii_alphanumeric() || b"-._:/".contains(c))
+        || !bytes
+            .iter()
+            .all(|c| c.is_ascii_alphanumeric() || b"-._:/".contains(c))
     {
         return Err(ContractError::InvalidIdentifier);
     }
@@ -258,7 +260,11 @@ impl PolicyDigest {
 impl TryFrom<String> for PolicyDigest {
     type Error = ContractError;
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if value.len() != 64 || !value.bytes().all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c)) {
+        if value.len() != 64
+            || !value
+                .bytes()
+                .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
+        {
             return Err(ContractError::InvalidIdentifier);
         }
         Ok(Self(value))
