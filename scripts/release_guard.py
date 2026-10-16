@@ -30,6 +30,9 @@ def check_workflows(root):
     paths=list((root/'.github/workflows').glob('*.yml'))+list((root/'.github/workflows').glob('*.yaml'))
     flows={p.name:workflow(p.read_text()) for p in paths}
     require('release-publish.yml' in flows,'manual workflow missing')
+    for filename,flow in flows.items():
+        if filename!='release-publish.yml':
+            require('CARGO_REGISTRY_TOKEN' not in str(flow),filename+': registry token in nonpublisher workflow')
     publish_jobs=[]
     for filename,flow in flows.items():
         on=flow.get('on')
@@ -37,7 +40,7 @@ def check_workflows(root):
         events=set(on) if not isinstance(on,str) else {on}
         for name,job in flow.get('jobs',{}).items():
             steps=job.get('steps',[])
-            release=any(('release-plz/action@' in str(s.get('uses','')) and (s.get('with') or {}).get('command')=='release') or re.search(r'\bcargo\s+publish\b|\brelease-plz\s+release\b',str(s.get('run',''))) for s in steps)
+            release=any(('release-plz/action@' in str(s.get('uses','')) and (s.get('with') or {}).get('command')=='release') or re.search(r'\bcargo\s+(?:\+[^\s]+\s+)?publish\b|\brelease-plz\s+release\b',str(s.get('run',''))) for s in steps)
             if release: publish_jobs.append((filename,name,job))
             if filename!='release-publish.yml':
                 require(not release,filename+': automatic publisher')
@@ -50,9 +53,14 @@ def check_workflows(root):
     require(confirm.get('required')=='true' and confirm.get('type')=='string','confirmation input missing')
     job=publish_jobs[0][2]
     require(job.get('environment')=='crates-io-publish','release environment missing')
-    cond=''.join(job.get('if','').split())
-    for token in ["github.event_name=='workflow_dispatch'","github.repository=='LATTIX-IO/cryptopolicy'","github.ref=='refs/heads/main'","inputs.confirm=='PUBLISH'","vars.CRYPTOPOLICY_RELEASES_ENABLED=='true'"]:
-        require(token in cond,'missing condition: '+token)
+    cond=''.join(str(job.get('if','')).split())
+    approved_condition=("${{ github.event_name == 'workflow_dispatch' && "
+                        "github.repository == 'LATTIX-IO/cryptopolicy' && "
+                        "github.ref == 'refs/heads/main' && "
+                        "inputs.confirm == 'PUBLISH' && "
+                        "vars.CRYPTOPOLICY_RELEASES_ENABLED == 'true' }}")
+    require(cond==''.join(approved_condition.split()),
+            'publish job condition must equal fully approved authorization predicate')
     require('CARGO_REGISTRY_TOKEN' in str(job['steps'][-1].get('env',{})),'registry credential missing from publisher')
 def verify(root=ROOT):
     names=check_workspace(root)

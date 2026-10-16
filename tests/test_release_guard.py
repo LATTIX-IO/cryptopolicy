@@ -30,4 +30,15 @@ class ReleaseGuardTests(unittest.TestCase):
     def test_enablement(self): self.mutate('release-publish.yml',"vars.CRYPTOPOLICY_RELEASES_ENABLED == 'true'","vars.CRYPTOPOLICY_RELEASES_ENABLED == 'false'")
     def test_auto_publish(self): self.mutate('release-plz.yml','command: release-pr','command: release')
     def test_credential_leak(self): self.mutate('release-plz.yml','GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}','GITHUB_TOKEN: ${{ secrets.RELEASE_PLZ_TOKEN }}\n          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}')
+    def test_toolchain_override_publish_rejected(self):
+        self.mutate('release-plz.yml','command: release-pr',
+                    'command: release-pr\n      - run: cargo +stable publish')
+    def test_workflow_level_registry_token_rejected(self):
+        self.mutate('release-plz.yml','permissions:\n  contents: read',
+                    'env:\n  CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}\npermissions:\n  contents: read')
+    def test_weak_publish_condition_rejected(self):
+        self.mutate('release-publish.yml',
+                    "vars.CRYPTOPOLICY_RELEASES_ENABLED == 'true'",
+                    "vars.CRYPTOPOLICY_RELEASES_ENABLED == 'true' || true")
+
 if __name__=='__main__': unittest.main()
