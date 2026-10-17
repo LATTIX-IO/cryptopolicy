@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-449: strict versioned key-request/provider-capability preflight DTOs, pinned pqc-kit profile recognition, explicit required/forbidden key capabilities, separate source and HSM assurance verifier, age/expiry handling, fail-closed deterministic results, standalone fixtures and adversarial Rust tests. Compatibility is not policy authorization.
+
 - FOSS-447: strict AssessmentContext v1, provenance-preserving per-observation sources and typed parameters, external evidence-verifier boundary, partial coverage/conflict reporting, deterministic single-fact core decision aggregation and adversarial golden tests; no cryptomap dependency or implicit authorization upgrade.
 
 - FOSS-445: immutable SHA-256-pinned v1 pqc-kit catalog of classical and FIPS 203/204/205 PQC profiles, with exact aliases, typed parameters, lifecycle status, standards provenance and adversarial regressions; no evaluator authorization change.

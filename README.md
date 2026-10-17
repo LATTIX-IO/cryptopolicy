@@ -124,6 +124,20 @@ cargo test -p cryptopolicy --test assessment --locked. See
 semantics. FOSS-315/335-339 own real Cryptomap projection; FOSS-459 owns
 the full normative security-conformance corpus.
 
+## Versioned Keymesh-style key capability preflight (FOSS-449)
+
+The pure KeyRequest and ProviderCapabilitySnapshot APIs check exact FOSS-445
+profile/operation/parameter identities, independently verified provider and
+HSM assurance claims, time bounds, key origin, protection and exportability.
+Unsupported or downgraded capabilities Deny; stale, unknown and unverified
+metadata remain Indeterminate. Compatibility is NOT key-use evidence or a
+cryptopolicy PolicyDecision.
+
+Use cargo run -p cryptopolicy --example assess_key_capabilities and
+cargo test -p cryptopolicy --test capability --locked. See
+[the key capability contract](docs/KEY_CAPABILITY.md). No Keymesh crate is
+required and no publishing is enabled.
+
 ## Crates
 
 - cryptopolicy
