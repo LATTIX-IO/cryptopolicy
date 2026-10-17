@@ -1,0 +1,47 @@
+{
+  "schema_version": "1",
+  "request_id": "keyreq:one",
+  "provider_id": "provider:alpha",
+  "key_ref": null,
+  "algorithm_id": "AES-256-GCM",
+  "operation": "encrypt",
+  "parameter": {
+    "kind": "key_bits",
+    "value": 256
+  },
+  "evaluation_time": {
+    "unix_millis": 150
+  },
+  "max_evidence_age_ms": 50,
+  "catalog_version": "1.0.0",
+  "catalog_digest": "91cca1ed7fe8a0391045801108089bb38bee0b34fdff40e2c7e0fac4e87fb685",
+  "required": [
+    {
+      "kind": "key_origin",
+      "value": "provider_generated"
+    },
+    {
+      "kind": "non_exportable"
+    },
+    {
+      "kind": "protection_at_least",
+      "value": "hardware_security_module"
+    },
+    {
+      "kind": "independent_assurance"
+    }
+  ],
+  "forbidden": [
+    {
+      "kind": "exportable"
+    },
+    {
+      "kind": "key_origin",
+      "value": "imported"
+    },
+    {
+      "kind": "protection",
+      "value": "software"
+    }
+  ]
+}
