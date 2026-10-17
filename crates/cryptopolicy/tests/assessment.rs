@@ -166,16 +166,31 @@ fn serialized_report_preserves_operation_parameters_and_sorted_coverage_gap_ids(
     c.uninspected_sources.push(rid("collector:backup"));
     let a = report(&c);
     assert_eq!(a.operation, CryptoOperation::Encrypt);
-    assert_eq!(a.findings[0].algorithm_id, Some(AlgorithmId::parse("AES-256-GCM").unwrap()));
-    assert_eq!(a.findings[0].parameter, Some(ObservedParameter {
-        kind: ObservedParameterKind::KeyBits,
-        value: ObservedParameterValue::Bits(256),
-    }));
-    assert_eq!(a.findings[0].observed_at, EvaluationTime { unix_millis: 140 });
-    assert_eq!(a.uninspected_sources, vec![rid("collector:backup"), rid("collector:uninspected")]);
+    assert_eq!(
+        a.findings[0].algorithm_id,
+        Some(AlgorithmId::parse("AES-256-GCM").unwrap())
+    );
+    assert_eq!(
+        a.findings[0].parameter,
+        Some(ObservedParameter {
+            kind: ObservedParameterKind::KeyBits,
+            value: ObservedParameterValue::Bits(256),
+        })
+    );
+    assert_eq!(
+        a.findings[0].observed_at,
+        EvaluationTime { unix_millis: 140 }
+    );
+    assert_eq!(
+        a.uninspected_sources,
+        vec![rid("collector:backup"), rid("collector:uninspected")]
+    );
     c.uninspected_sources.reverse();
     let b = report(&c);
-    assert_eq!(serde_json::to_vec(&a).unwrap(), serde_json::to_vec(&b).unwrap());
+    assert_eq!(
+        serde_json::to_vec(&a).unwrap(),
+        serde_json::to_vec(&b).unwrap()
+    );
 }
 
 #[test]
@@ -279,15 +294,20 @@ fn differing_sensitivity_blocks_permit_even_when_each_core_fact_permits() {
     let mut c = input("conflict");
     c.observations[1].properties.as_mut().unwrap().provider_id =
         Some(ProviderId::parse("provider:alpha").unwrap());
-    c.observations[1].properties.as_mut().unwrap().data_sensitivity =
-        Some(DataSensitivity::Restricted);
+    c.observations[1]
+        .properties
+        .as_mut()
+        .unwrap()
+        .data_sensitivity = Some(DataSensitivity::Restricted);
     let r = report(&c);
     assert_eq!(r.outcome, DecisionOutcome::Indeterminate);
     assert_eq!(r.conflicts.len(), 1);
     assert_eq!(r.conflicts[0].field, ConflictField::DataSensitivity);
-    assert!(r.findings.iter().all(|f| {
-        f.core_decision.as_ref().unwrap().outcome == DecisionOutcome::Permit
-    }));
+    assert!(
+        r.findings
+            .iter()
+            .all(|f| { f.core_decision.as_ref().unwrap().outcome == DecisionOutcome::Permit })
+    );
 }
 
 #[test]
