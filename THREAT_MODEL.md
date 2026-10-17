@@ -137,3 +137,14 @@ FOSS-424 disables bootstrapped package publishing and separates release PRs from
 ## 10. Developer test command
 
 From the repository root, use `python3 scripts/security_contract.py --lint` followed by `python3 -m unittest discover -s tests -p 'test_security_contract.py' -v`. For future runtime verification, supply `--results path/to/evaluator-results.json`; results must include exactly one output for each fixture and match the checked-in expected result. Never enable a fake-pass fallback if runtime output is missing.
+
+## FOSS-437 baseline and import security boundary
+
+The offline FOSS-437 EffectivePolicy graph compiles references pinned by policy ID,
+exact version and canonical content digest. Unresolved imports, import cycles,
+conflicting policy versions and resource-exhaustion limits reject the entire
+compile. Every imported policy is mandatory; a Permit requires Permit in all
+layers so a permissive overlay cannot override a baseline Deny. The digest is
+not provenance authentication, and the FOSS-435 single-fact and untrusted
+issuer/evidence limitations still apply. Complete runtime correspondence to
+the 33 golden threat-contract cases remains a separate FOSS-459 requirement.

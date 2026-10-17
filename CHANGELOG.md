@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-437: atomic offline PolicySet/EffectivePolicy resolver, pinned baseline and overlay imports, strict conjunctive decisions, domain-separated binary canonical digest and graph adversarial tests.
+
 - FOSS-435: pure deterministic single-context policy evaluator with deny-first tri-state decisions, bounded outputs, explicit-time handling, provisional strict algorithm recognition and adversarial/golden tests; source authenticity and registry approval remain external.
 
 - FOSS-434: finite typed selector and requirement contracts, deterministic static validation/diagnostics, missing-fact dispositions, negative parser and conflict tests; no runtime evaluator.
