@@ -17,7 +17,7 @@ All predicate fields are exact typed comparisons composed by logical AND. Existi
 | source_origin | requested/configured/negotiated/observed/inferred/provider_capability | Origin preserved without aliasing configured to observed |
 | source_quality | unverified/attributed/externally_verified | Declared quality; authentication and trust are external |
 
-The optional `CryptoFact.properties` carries the corresponding typed claims. The optional `CryptoContext.environment` identifies a caller environment. Each new field uses `#[serde(default, skip_serializing_if = "Option::is_none")]`; existing v1 fixtures and canonical policy digests therefore remain unchanged when the fields are absent. Unknown/unsupported nested fields or enum variants are rejected.
+The optional `CryptoFact.properties` carries the corresponding typed claims. The optional `CryptoContext.environment` identifies a caller environment. Each new field uses `#[serde(default, skip_serializing_if = "Option::is_none")]`; existing v1 fixtures and canonical policy digests therefore remain unchanged when the fields are absent. Unknown/unsupported nested fields or enum variants are rejected. Requirement decoding uses a strict two-field envelope: a recognized variant cannot ignore an unknown sibling key, duplicate key, unexpected unit payload or missing value.
 
 No arbitrary scripting, regex, code execution or implicit selector aliases exist. The `advanced` object may not be empty; `match_all=true` may not be combined with any other predicate. An explicit `match_all` with a Require effect is permitted only when mandatory requirements are provided. Allow rules must identify an exact algorithm or named profile using a selector or mandatory requirement; a blanket Allow is statically rejected.
 
