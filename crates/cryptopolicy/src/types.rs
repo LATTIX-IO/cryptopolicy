@@ -97,8 +97,10 @@ identifier!(AlgorithmId, "Exact algorithm identity.");
 identifier!(ProfileId, "Exact algorithm or protocol profile identity.");
 identifier!(EvidenceId, "Opaque external evidence identity.");
 identifier!(RequestId, "Opaque evaluation request identity.");
-identifier!(ProviderId, "Exact external cryptographic provider identity.");
-
+identifier!(
+    ProviderId,
+    "Exact external cryptographic provider identity."
+);
 
 /// Explicit sensitivity classification, ordered from least to most restrictive.
 ///

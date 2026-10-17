@@ -315,10 +315,7 @@ struct ExactRequirements {
     min_category: Option<u8>,
 }
 
-fn validate_rule(
-    rule: &crate::PolicyRule,
-    diagnostics: &mut Vec<ValidationDiagnostic>,
-) {
+fn validate_rule(rule: &crate::PolicyRule, diagnostics: &mut Vec<ValidationDiagnostic>) {
     use DiagnosticSeverity::{Error, Warning};
     use ValidationCode::*;
 
@@ -330,17 +327,31 @@ fn validate_rule(
     } else if !selector.match_all && fields.is_empty() {
         add(diagnostics, Some(id), EmptySelector, Error);
     }
-    if selector.advanced.as_ref().is_some_and(|extra| extra.is_empty()) {
+    if selector
+        .advanced
+        .as_ref()
+        .is_some_and(|extra| extra.is_empty())
+    {
         add(diagnostics, Some(id), EmptyAdvancedSelector, Error);
     }
-    if selector.environment.as_deref().is_some_and(|env| !valid_environment(env)) {
+    if selector
+        .environment
+        .as_deref()
+        .is_some_and(|env| !valid_environment(env))
+    {
         add(diagnostics, Some(id), InvalidEnvironment, Error);
     }
     if let Some(extra) = &selector.advanced {
-        if extra.security_category.is_some_and(|value| !valid_category(value)) {
+        if extra
+            .security_category
+            .is_some_and(|value| !valid_category(value))
+        {
             add(diagnostics, Some(id), InvalidSecurityCategory, Error);
         }
-        if extra.key_size_bits.is_some_and(|value| !valid_key_bits(value)) {
+        if extra
+            .key_size_bits
+            .is_some_and(|value| !valid_key_bits(value))
+        {
             add(diagnostics, Some(id), InvalidKeySize, Error);
         }
     }
@@ -357,9 +368,12 @@ fn validate_rule(
     if rule.effect == RuleEffect::Allow
         && selector.algorithm_id.is_none()
         && selector.profile_id.is_none()
-        && !rule.requirements.iter().any(|req| matches!(
-            req, Requirement::Algorithm(_) | Requirement::Profile(_) | Requirement::NamedHybrid(_)
-        ))
+        && !rule.requirements.iter().any(|req| {
+            matches!(
+                req,
+                Requirement::Algorithm(_) | Requirement::Profile(_) | Requirement::NamedHybrid(_)
+            )
+        })
     {
         add(diagnostics, Some(id), UnconstrainedAllow, Error);
     }
@@ -368,37 +382,79 @@ fn validate_rule(
     for requirement in &rule.requirements {
         match requirement {
             Requirement::Algorithm(value) => conflict(
-                &mut required.algorithm, value, ConflictingAlgorithm, id, diagnostics,
+                &mut required.algorithm,
+                value,
+                ConflictingAlgorithm,
+                id,
+                diagnostics,
             ),
             Requirement::Profile(value) | Requirement::NamedHybrid(value) => conflict(
-                &mut required.profile, value, ConflictingProfile, id, diagnostics,
+                &mut required.profile,
+                value,
+                ConflictingProfile,
+                id,
+                diagnostics,
             ),
             Requirement::Provider(value) => conflict(
-                &mut required.provider, value, ConflictingProvider, id, diagnostics,
+                &mut required.provider,
+                value,
+                ConflictingProvider,
+                id,
+                diagnostics,
             ),
             Requirement::Sensitivity(value) => conflict(
-                &mut required.sensitivity, value, ConflictingSensitivity, id, diagnostics,
+                &mut required.sensitivity,
+                value,
+                ConflictingSensitivity,
+                id,
+                diagnostics,
             ),
             Requirement::KeyProtection(value) => conflict(
-                &mut required.protection, value, ConflictingKeyProtection, id, diagnostics,
+                &mut required.protection,
+                value,
+                ConflictingKeyProtection,
+                id,
+                diagnostics,
             ),
             Requirement::KeyExportable(value) => conflict(
-                &mut required.exportable, value, ConflictingExportability, id, diagnostics,
+                &mut required.exportable,
+                value,
+                ConflictingExportability,
+                id,
+                diagnostics,
             ),
             Requirement::NonExportable => conflict(
-                &mut required.exportable, &false, ConflictingExportability, id, diagnostics,
+                &mut required.exportable,
+                &false,
+                ConflictingExportability,
+                id,
+                diagnostics,
             ),
             Requirement::SourceOrigin(value) => conflict(
-                &mut required.origin, value, ConflictingSourceOrigin, id, diagnostics,
+                &mut required.origin,
+                value,
+                ConflictingSourceOrigin,
+                id,
+                diagnostics,
             ),
             Requirement::SourceQuality(value) => conflict(
-                &mut required.quality, value, ConflictingSourceQuality, id, diagnostics,
+                &mut required.quality,
+                value,
+                ConflictingSourceQuality,
+                id,
+                diagnostics,
             ),
             Requirement::KeySizeBits(value) => {
                 if !valid_key_bits(*value) {
                     add(diagnostics, Some(id), InvalidKeySize, Error);
                 }
-                conflict(&mut required.key_bits, value, InvalidKeySize, id, diagnostics);
+                conflict(
+                    &mut required.key_bits,
+                    value,
+                    InvalidKeySize,
+                    id,
+                    diagnostics,
+                );
             }
             Requirement::MinimumKeyBits(value) => {
                 if !valid_key_bits(*value) {
@@ -415,37 +471,76 @@ fn validate_rule(
         }
     }
 
-    if required.key_bits.zip(required.min_key_bits).is_some_and(|(exact, min)| exact < min) {
+    if required
+        .key_bits
+        .zip(required.min_key_bits)
+        .is_some_and(|(exact, min)| exact < min)
+    {
         add(diagnostics, Some(id), InvalidKeySize, Error);
     }
-    if selector.algorithm_id.as_ref().zip(required.algorithm.as_ref())
+    if selector
+        .algorithm_id
+        .as_ref()
+        .zip(required.algorithm.as_ref())
         .is_some_and(|(a, b)| a != b)
-        || selector.profile_id.as_ref().zip(required.profile.as_ref())
+        || selector
+            .profile_id
+            .as_ref()
+            .zip(required.profile.as_ref())
             .is_some_and(|(a, b)| a != b)
     {
-        add(diagnostics, Some(id), ContradictorySelectorRequirement, Error);
+        add(
+            diagnostics,
+            Some(id),
+            ContradictorySelectorRequirement,
+            Error,
+        );
     }
     if let Some(extra) = &selector.advanced {
-        if extra.provider_id.as_ref().zip(required.provider.as_ref())
+        if extra
+            .provider_id
+            .as_ref()
+            .zip(required.provider.as_ref())
             .is_some_and(|(a, b)| a != b)
-            || extra.data_sensitivity.zip(required.sensitivity)
+            || extra
+                .data_sensitivity
+                .zip(required.sensitivity)
                 .is_some_and(|(a, b)| a != b)
-            || extra.key_protection.zip(required.protection)
+            || extra
+                .key_protection
+                .zip(required.protection)
                 .is_some_and(|(a, b)| a != b)
-            || extra.key_exportable.zip(required.exportable)
+            || extra
+                .key_exportable
+                .zip(required.exportable)
                 .is_some_and(|(a, b)| a != b)
-            || extra.source_origin.zip(required.origin)
+            || extra
+                .source_origin
+                .zip(required.origin)
                 .is_some_and(|(a, b)| a != b)
-            || extra.source_quality.zip(required.quality)
+            || extra
+                .source_quality
+                .zip(required.quality)
                 .is_some_and(|(a, b)| a != b)
-            || extra.key_size_bits.zip(required.key_bits)
+            || extra
+                .key_size_bits
+                .zip(required.key_bits)
                 .is_some_and(|(a, b)| a != b)
-            || extra.key_size_bits.zip(required.min_key_bits)
+            || extra
+                .key_size_bits
+                .zip(required.min_key_bits)
                 .is_some_and(|(a, b)| a < b)
-            || extra.security_category.zip(required.min_category)
+            || extra
+                .security_category
+                .zip(required.min_category)
                 .is_some_and(|(a, b)| a < b)
         {
-            add(diagnostics, Some(id), ContradictorySelectorRequirement, Error);
+            add(
+                diagnostics,
+                Some(id),
+                ContradictorySelectorRequirement,
+                Error,
+            );
         }
     }
 }
@@ -469,7 +564,9 @@ impl PolicyDocument {
         let mut diagnostics = Vec::new();
         if self.default_effect == DefaultEffect::Allow {
             add(
-                &mut diagnostics, None, ValidationCode::ExplicitAllowDefault,
+                &mut diagnostics,
+                None,
+                ValidationCode::ExplicitAllowDefault,
                 DiagnosticSeverity::Warning,
             );
         }
@@ -477,12 +574,15 @@ impl PolicyDocument {
         let mut seen = BTreeSet::new();
         for rule in &self.rules {
             limits.check_count(
-                rule.requirements.len(), limits.max_requirements_per_rule,
+                rule.requirements.len(),
+                limits.max_requirements_per_rule,
                 "requirements per rule",
             )?;
             if !seen.insert(&rule.rule_id) {
                 add(
-                    &mut diagnostics, Some(&rule.rule_id), ValidationCode::DuplicateRule,
+                    &mut diagnostics,
+                    Some(&rule.rule_id),
+                    ValidationCode::DuplicateRule,
                     DiagnosticSeverity::Error,
                 );
             }
@@ -495,7 +595,9 @@ impl PolicyDocument {
         for entry in &self.metadata {
             if !keys.insert(&entry.key) {
                 add(
-                    &mut diagnostics, None, ValidationCode::DuplicateMetadata,
+                    &mut diagnostics,
+                    None,
+                    ValidationCode::DuplicateMetadata,
                     DiagnosticSeverity::Error,
                 );
             }
@@ -504,7 +606,8 @@ impl PolicyDocument {
             }
         }
         diagnostics.sort_by(|a, b| {
-            a.rule_id.cmp(&b.rule_id)
+            a.rule_id
+                .cmp(&b.rule_id)
                 .then_with(|| a.code.cmp(&b.code))
                 .then_with(|| a.severity.cmp(&b.severity))
         });
@@ -517,15 +620,20 @@ impl PolicyDocument {
 }
 
 /// Reject malformed context properties without pretending to attest evidence.
-pub fn validate_context_properties(
-    context: &crate::CryptoContext,
-) -> Result<(), ContractError> {
-    if context.environment.as_deref().is_some_and(|v| !valid_environment(v)) {
+pub fn validate_context_properties(context: &crate::CryptoContext) -> Result<(), ContractError> {
+    if context
+        .environment
+        .as_deref()
+        .is_some_and(|v| !valid_environment(v))
+    {
         return Err(ContractError::InvalidDocument("invalid_environment"));
     }
     for fact in &context.facts {
         if let Some(properties) = &fact.properties {
-            if properties.security_category.is_some_and(|v| !valid_category(v)) {
+            if properties
+                .security_category
+                .is_some_and(|v| !valid_category(v))
+            {
                 return Err(ContractError::InvalidDocument("invalid_security_category"));
             }
             if properties.key_size_bits.is_some_and(|v| !valid_key_bits(v)) {
@@ -536,7 +644,9 @@ pub fn validate_context_properties(
             if properties.source_quality == Some(EvidenceQuality::ExternallyVerified)
                 && !fact.verified
             {
-                return Err(ContractError::InvalidDocument("inconsistent_source_quality"));
+                return Err(ContractError::InvalidDocument(
+                    "inconsistent_source_quality",
+                ));
             }
         }
     }
