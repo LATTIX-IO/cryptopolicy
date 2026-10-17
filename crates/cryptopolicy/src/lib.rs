@@ -7,6 +7,7 @@
 #![warn(missing_docs)]
 
 mod assessment;
+mod capability;
 mod composition;
 mod evaluator;
 mod limits;
@@ -16,6 +17,7 @@ mod types;
 mod validation;
 
 pub use assessment::*;
+pub use capability::*;
 pub use composition::*;
 pub use evaluator::*;
 pub use limits::*;
