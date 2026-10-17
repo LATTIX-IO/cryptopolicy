@@ -33,7 +33,7 @@ pub struct Limits {
     pub max_exceptions: usize,
     /// Reserved future adapter input budget (FOSS-452/455/457).
     pub max_adapter_bytes: usize,
-    /// Reserved future diagnostics budget (FOSS-45).
+    /// Maximum static validation diagnostic findings (FOSS-434).
     pub max_diagnostics: usize,
 }
 

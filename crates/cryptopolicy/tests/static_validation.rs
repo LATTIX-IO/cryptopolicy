@@ -80,6 +80,11 @@ fn source_quality_claim_is_not_implicitly_observed_or_authenticated() {
     let advanced = p.rules[0].selector.advanced.as_mut().unwrap();
     advanced.source_origin = Some(FactOrigin::Configured);
     advanced.source_quality = Some(EvidenceQuality::ExternallyVerified);
+    for requirement in &mut p.rules[0].requirements {
+        if let Requirement::SourceOrigin(origin) = requirement {
+            *origin = FactOrigin::Configured;
+        }
+    }
     assert!(p.static_validate().unwrap().is_valid());
     // This is still a declaration: these contracts have no mechanism to prove
     // either an observation or that the verification claim is authentic.
