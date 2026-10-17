@@ -283,7 +283,7 @@ pub enum DecisionOutcome {
 }
 
 /// Wire reason vocabulary. Adding variants needs a compatibility review.
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ReasonCode {
     /// No applicable authorization under default deny.
@@ -298,6 +298,16 @@ pub enum ReasonCode {
     ProfileNotApproved,
     /// A mandatory requirement was satisfied.
     RequirementSatisfied,
+    /// A validated explicit Allow rule matched and all constraints passed.
+    ExplicitAllow,
+    /// A known mandatory requirement was not satisfied.
+    RequirementNotSatisfied,
+    /// Missing credible observation or provenance; no authorization.
+    UnverifiedEvidence,
+    /// Policy has not reached its inclusive effective-time boundary.
+    PolicyNotEffective,
+    /// Policy has reached its exclusive expiration boundary.
+    PolicyExpired,
 }
 
 /// SHA-256 fingerprint of canonical policy JSON; not a signature.

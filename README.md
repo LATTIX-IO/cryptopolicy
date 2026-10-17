@@ -15,11 +15,12 @@ their first stable release.
 
 ## Security contract (pre-implementation)
 
-The [threat model](THREAT_MODEL.md) specifies fail-closed decision rules, trust
-boundaries and 33 versioned golden test cases. The specification linter is
-executable, but **no policy evaluator exists yet** and CI does not claim runtime
-policy-conformance coverage. Future schema/evaluator increments must bind their
-real outputs to these fixtures without auto-regenerating golden expectations.
+The [threat model](THREAT_MODEL.md) specifies fail-closed decision rules,
+trust boundaries and 33 versioned golden security-contract cases. FOSS-435 now
+provides a conservative, executable single-context evaluator and dedicated
+truth-table regression tests. **The normative 33-case fixture corpus has not
+yet been fully bound to evaluator outputs**, so CI does not claim full runtime
+conformance; FOSS-459 owns that mapping.
 
 Run `python3 scripts/security_contract.py --lint` and
 `python3 -m unittest discover -s tests -p 'test_security_contract.py' -v`.
@@ -66,6 +67,20 @@ Try `cargo run -p cryptopolicy --example static_policy`, then
 `cargo test -p cryptopolicy --test static_validation --locked`.
 See [static validation contract](docs/STATIC_VALIDATION.md) for predicate
 semantics, threat boundaries and unsupported runtime behavior.
+
+## Deterministic offline evaluator (FOSS-435)
+
+Use the pure `evaluate(policy, context, explicit_time)` API for typed,
+bounded Permit/Deny/Indeterminate decisions with Deny precedence.
+The evaluator requires explicit evidence and never treats missing required
+data, unsupported algorithm identities or named profiles as Permit. It
+does not independently authenticate the source or enforce access.
+
+Run `cargo run -p cryptopolicy --example evaluate_offline`, then
+`cargo test -p cryptopolicy --test evaluator --locked`. See
+[the evaluator contract](docs/EVALUATOR.md) for the provisional algorithm
+recognition table, single-fact restriction, time boundaries, test matrix
+and remaining security controls.
 
 ## Crates
 
