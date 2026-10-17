@@ -18,7 +18,7 @@ fn default_limits_are_valid_and_bounded() {
 
 #[test]
 fn exact_byte_boundary_passes_and_one_above_fails() {
-    let mut limits = Limits {
+    let limits = Limits {
         max_json_bytes: 6,
         ..Limits::default()
     };
@@ -84,7 +84,7 @@ fn policy_rule_count_at_limit_and_over_limit() {
         requirements: vec![],
     };
     value.rules.push(rule.clone());
-    let mut limits = Limits {
+    let limits = Limits {
         max_rules: 1,
         ..Limits::default()
     };
