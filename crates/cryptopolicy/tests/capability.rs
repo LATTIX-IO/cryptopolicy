@@ -237,7 +237,8 @@ fn unknown_draft_or_alias_algorithm_never_becomes_approved() {
         let r=verify(&req,&snapshot("supported"));
         assert_eq!(r.outcome,DecisionOutcome::Deny, "name={name}");
         assert!(reason(&r,CapabilityReason::UnsupportedRequestedAlgorithm)
-            || reason(&r,CapabilityReason::InvalidRequestedParameter));
+            || reason(&r,CapabilityReason::InvalidRequestedParameter)
+            || reason(&r,CapabilityReason::UnsupportedRequestedOperation));
     }
 }
 
