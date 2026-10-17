@@ -75,7 +75,11 @@ impl Limits {
             (self.max_imports, UPPER, "imports"),
             (self.max_import_depth, 128, "import depth"),
             (self.max_exceptions, UPPER, "exceptions"),
-            (self.max_adapter_bytes, ABSOLUTE_MAX_JSON_BYTES, "adapter bytes"),
+            (
+                self.max_adapter_bytes,
+                ABSOLUTE_MAX_JSON_BYTES,
+                "adapter bytes",
+            ),
             (self.max_diagnostics, UPPER, "diagnostics"),
         ];
         for (value, hard_cap, name) in entries {

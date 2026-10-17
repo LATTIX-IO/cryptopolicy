@@ -38,7 +38,9 @@ fn exact_nested_container_boundary_and_escaped_text() {
         Err(ContractError::ResourceLimitExceeded("json nesting")),
     );
     limits.max_nesting_depth = 1;
-    limits.check_json(br#"{"text":"escaped \" { [ ] }"}"#).unwrap();
+    limits
+        .check_json(br#"{"text":"escaped \" { [ ] }"}"#)
+        .unwrap();
 }
 
 #[test]
@@ -48,10 +50,16 @@ fn invalid_or_infinite_budget_overrides_rejected() {
     assert_eq!(limits.validate(), Err(ContractError::InvalidLimit("rules")));
     limits = Limits::default();
     limits.max_json_bytes = ABSOLUTE_MAX_JSON_BYTES + 1;
-    assert_eq!(limits.validate(), Err(ContractError::InvalidLimit("json bytes")));
+    assert_eq!(
+        limits.validate(),
+        Err(ContractError::InvalidLimit("json bytes"))
+    );
     limits = Limits::default();
     limits.max_nesting_depth = 129;
-    assert_eq!(limits.validate(), Err(ContractError::InvalidLimit("nesting")));
+    assert_eq!(
+        limits.validate(),
+        Err(ContractError::InvalidLimit("nesting"))
+    );
 }
 
 #[test]
@@ -73,7 +81,10 @@ fn policy_rule_count_at_limit_and_over_limit() {
     let mut limits = Limits::default();
     limits.max_rules = 1;
     value.validate_with_limits(&limits).unwrap();
-    value.rules.push(PolicyRule { rule_id: RuleId::parse("r2").unwrap(), ..rule });
+    value.rules.push(PolicyRule {
+        rule_id: RuleId::parse("r2").unwrap(),
+        ..rule
+    });
     assert_eq!(
         value.validate_with_limits(&limits),
         Err(ContractError::ResourceLimitExceeded("policy rules")),
@@ -102,13 +113,21 @@ fn per_rule_requirements_and_metadata_limits() {
     });
     assert_eq!(
         doc.validate_with_limits(&limits),
-        Err(ContractError::ResourceLimitExceeded("requirements per rule")),
+        Err(ContractError::ResourceLimitExceeded(
+            "requirements per rule"
+        )),
     );
     doc.rules[0].requirements.pop();
     doc.validate_with_limits(&limits).unwrap();
     limits.max_metadata = 1;
-    doc.metadata.push(MetadataEntry { key: PolicyId::parse("a").unwrap(), value: "1".into() });
-    doc.metadata.push(MetadataEntry { key: PolicyId::parse("b").unwrap(), value: "2".into() });
+    doc.metadata.push(MetadataEntry {
+        key: PolicyId::parse("a").unwrap(),
+        value: "1".into(),
+    });
+    doc.metadata.push(MetadataEntry {
+        key: PolicyId::parse("b").unwrap(),
+        value: "2".into(),
+    });
     assert_eq!(
         doc.validate_with_limits(&limits),
         Err(ContractError::ResourceLimitExceeded("policy metadata")),
@@ -139,10 +158,19 @@ fn decision_reason_and_evidence_count_limits() {
         outcome: DecisionOutcome::Deny,
         matched_rules: vec![RuleId::parse("r1").unwrap(), RuleId::parse("r2").unwrap()],
         reasons: vec![
-            DecisionReason { code: ReasonCode::ExplicitDeny, rule_id: Some(RuleId::parse("r1").unwrap()) },
-            DecisionReason { code: ReasonCode::DefaultDenied, rule_id: None },
+            DecisionReason {
+                code: ReasonCode::ExplicitDeny,
+                rule_id: Some(RuleId::parse("r1").unwrap()),
+            },
+            DecisionReason {
+                code: ReasonCode::DefaultDenied,
+                rule_id: None,
+            },
         ],
-        evidence: vec![EvidenceId::parse("e1").unwrap(), EvidenceId::parse("e2").unwrap()],
+        evidence: vec![
+            EvidenceId::parse("e1").unwrap(),
+            EvidenceId::parse("e2").unwrap(),
+        ],
     };
     let json = serde_json::to_vec(&decision).unwrap();
     let mut limits = Limits::default();
@@ -182,8 +210,5 @@ fn programmatically_constructed_huge_metadata_is_rejected_before_clone() {
         key: PolicyId::parse("large").unwrap(),
         value: "x".repeat(MAX_CONTRACT_BYTES + 1),
     });
-    assert_eq!(
-        policy.canonical_json(),
-        Err(ContractError::PayloadTooLarge),
-    );
+    assert_eq!(policy.canonical_json(), Err(ContractError::PayloadTooLarge),);
 }
