@@ -328,8 +328,8 @@ fn allowed_ops(family: AlgorithmFamily) -> &'static [OperationClass] {
 
 fn aliases_allowed(id: &str, aliases: &[String]) -> bool {
     match id {
-        "AES-256-GCM" => aliases.is_empty() || aliases == ["AES256-GCM"],
-        "SHA3-256" => aliases.is_empty() || aliases == ["SHA3_256"],
+        "AES-256-GCM" => aliases.is_empty() || (aliases.len() == 1 && aliases[0] == "AES256-GCM"),
+        "SHA3-256" => aliases.is_empty() || (aliases.len() == 1 && aliases[0] == "SHA3_256"),
         _ => aliases.is_empty(),
     }
 }
