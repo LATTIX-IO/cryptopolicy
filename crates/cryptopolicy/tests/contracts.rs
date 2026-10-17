@@ -132,7 +132,15 @@ fn reject_invalid_identifiers_and_versions() {
         assert!(PolicyId::parse(id).is_err());
     }
     assert!(PolicyId::parse(&"a".repeat(129)).is_err());
-    for version in ["1.0", "01.0.0", "+1.0.0", "1.+1.0", "1.0.+2", "1.0.0-beta", "1.0.4294967296"] {
+    for version in [
+        "1.0",
+        "01.0.0",
+        "+1.0.0",
+        "1.+1.0",
+        "1.0.+2",
+        "1.0.0-beta",
+        "1.0.4294967296",
+    ] {
         assert!(PolicyVersion::parse(version).is_err());
     }
 }
