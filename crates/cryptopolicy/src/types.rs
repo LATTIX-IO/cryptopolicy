@@ -97,6 +97,52 @@ identifier!(AlgorithmId, "Exact algorithm identity.");
 identifier!(ProfileId, "Exact algorithm or protocol profile identity.");
 identifier!(EvidenceId, "Opaque external evidence identity.");
 identifier!(RequestId, "Opaque evaluation request identity.");
+identifier!(ProviderId, "Exact external cryptographic provider identity.");
+
+
+/// Explicit sensitivity classification, ordered from least to most restrictive.
+///
+/// This is a vocabulary, not a verified classification authority. Different
+/// tenants may use different semantics; the caller supplies trusted mapping.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DataSensitivity {
+    /// Data labeled public.
+    Public,
+    /// Internal-use data.
+    Internal,
+    /// Confidential data.
+    Confidential,
+    /// Restricted data.
+    Restricted,
+}
+
+/// Claimed key custody or protection class; no attestation is performed here.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KeyProtection {
+    /// Software-resident key.
+    Software,
+    /// Hardware-backed key that is not necessarily managed in an HSM.
+    HardwareBacked,
+    /// Hardware security module-protected key.
+    HardwareSecurityModule,
+}
+
+/// Classification of the *supplied* evidence source, not proof of trust.
+///
+/// Even ExternallyVerified is an untrusted claim until an integration validates
+/// provenance; this DTO does not perform any source authentication.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum EvidenceQuality {
+    /// Uncorroborated or inferred evidence.
+    Unverified,
+    /// Named or attributable source; authenticity not established here.
+    Attributed,
+    /// Caller claims independent validation of the source.
+    ExternallyVerified,
+}
 
 /// Canonical semantic-version triplet. Prereleases are not in this initial wire schema.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
