@@ -26,7 +26,8 @@
       },
       "expires_at": {
         "unix_millis": 200
-      }
+      },
+      "key_ref": null
     },
     {
       "claim_id": "cap:two",
@@ -49,7 +50,8 @@
       },
       "expires_at": {
         "unix_millis": 200
-      }
+      },
+      "key_ref": null
     }
   ]
 }
