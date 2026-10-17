@@ -56,6 +56,17 @@ Limits for imports, exceptions, external format adapters and diagnostic batching
 are reserved contract fields and will be applied when those features exist;
 they are NOT claimed to be operational enforcement today.
 
+## Typed static policy validation (FOSS-434)
+
+Finite typed selectors and mandatory requirements now support static validation,
+contradiction detection, ordered redaction-safe diagnostics and explicit
+missing-fact classifications. This is **not a policy evaluator or Permit**.
+
+Try `cargo run -p cryptopolicy --example static_policy`, then
+`cargo test -p cryptopolicy --test static_validation --locked`.
+See [static validation contract](docs/STATIC_VALIDATION.md) for predicate
+semantics, threat boundaries and unsupported runtime behavior.
+
 ## Crates
 
 - cryptopolicy

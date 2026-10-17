@@ -15,6 +15,45 @@ pub struct Issuer {
     pub assurance_ref: Option<EvidenceId>,
 }
 
+/// Optional finite attributes of a typed selector.
+///
+/// All present fields compose by logical AND. This data is not executable.
+/// Field presence and missing-fact behavior are specified in validation.rs.
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AdvancedSelector {
+    /// Exact claimed cryptographic security category (1 through 5).
+    pub security_category: Option<u8>,
+    /// Exact request data classification.
+    pub data_sensitivity: Option<DataSensitivity>,
+    /// Exact provider identifier (no aliases).
+    pub provider_id: Option<ProviderId>,
+    /// Exact key custody/protection class.
+    pub key_protection: Option<KeyProtection>,
+    /// Exact key exportability state.
+    pub key_exportable: Option<bool>,
+    /// Exact key-size bit length; algorithm validity is checked by FOSS-445.
+    pub key_size_bits: Option<u32>,
+    /// Exact evidence origin, with configured and observed never conflated.
+    pub source_origin: Option<FactOrigin>,
+    /// Source quality claim, not source authentication.
+    pub source_quality: Option<EvidenceQuality>,
+}
+
+impl AdvancedSelector {
+    /// Determine whether the object provides any actual typed constraints.
+    pub fn is_empty(&self) -> bool {
+        self.security_category.is_none()
+            && self.data_sensitivity.is_none()
+            && self.provider_id.is_none()
+            && self.key_protection.is_none()
+            && self.key_exportable.is_none()
+            && self.key_size_bits.is_none()
+            && self.source_origin.is_none()
+            && self.source_quality.is_none()
+    }
+}
+
 /// Explicit and bounded rule selector. Interpretation is a future increment.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -29,10 +68,13 @@ pub struct RuleSelector {
     pub profile_id: Option<ProfileId>,
     /// Match a caller-supplied environment value.
     pub environment: Option<String>,
+    /// Additional finite exact-match constraints, absent for existing v1 policies.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub advanced: Option<AdvancedSelector>,
 }
 
 /// Typed constraints. The future evaluator must interpret these as conjunctions.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum Requirement {
     /// Require exact algorithm identity.
@@ -45,6 +87,22 @@ pub enum Requirement {
     NonExportable,
     /// Require an exact, named hybrid construction profile.
     NamedHybrid(ProfileId),
+    /// Require an exact external provider identity.
+    Provider(ProviderId),
+    /// Require an exact request data sensitivity classification.
+    Sensitivity(DataSensitivity),
+    /// Require exact hardware/software protection class.
+    KeyProtection(KeyProtection),
+    /// Require explicit key exportability status.
+    KeyExportable(bool),
+    /// Require evidence from a specific origin without promoting its trust.
+    SourceOrigin(FactOrigin),
+    /// Require a source-quality classification, independently attested elsewhere.
+    SourceQuality(EvidenceQuality),
+    /// Require an exact declared key bit length.
+    KeySizeBits(u32),
+    /// Require at least this many key bits (algorithm feasibility deferred).
+    MinimumKeyBits(u32),
 }
 
 /// One typed rule. Its serialized position must not determine deny precedence.
@@ -97,6 +155,29 @@ pub struct PolicyDocument {
     pub metadata: Vec<MetadataEntry>,
 }
 
+/// Optional typed attributes of one cryptographic fact.
+///
+/// Every field remains a claim until authenticated and interpreted by an
+/// appropriate future connector, registry and policy evaluator.
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CryptoProperties {
+    /// Security category claim.
+    pub security_category: Option<u8>,
+    /// Key size in bits, where known.
+    pub key_size_bits: Option<u32>,
+    /// Data classification for the fact.
+    pub data_sensitivity: Option<DataSensitivity>,
+    /// Exact provider identity, where known.
+    pub provider_id: Option<ProviderId>,
+    /// Claimed protection of the corresponding key.
+    pub key_protection: Option<KeyProtection>,
+    /// Claimed exportability.
+    pub key_exportable: Option<bool>,
+    /// Claimed evidence quality, not independent attestation.
+    pub source_quality: Option<EvidenceQuality>,
+}
+
 /// An individual cryptographic fact, with evidence origin preserved.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -113,6 +194,9 @@ pub struct CryptoFact {
     pub evidence_ref: Option<EvidenceId>,
     /// Asserted external verification flag, not independently checked here.
     pub verified: bool,
+    /// Optional typed metadata, kept separately from provenance/verification.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub properties: Option<CryptoProperties>,
 }
 
 /// Wire request context, including explicit time and unpromoted evidence.
@@ -127,6 +211,9 @@ pub struct CryptoContext {
     pub operation: CryptoOperation,
     /// Explicit evaluation time, without hidden wall-clock dependence.
     pub evaluation_time: EvaluationTime,
+    /// Caller environment, if present, as a strict bounded identifier.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub environment: Option<String>,
     /// Facts with independently retained provenance.
     pub facts: Vec<CryptoFact>,
 }
@@ -188,7 +275,8 @@ impl PolicyDocument {
         limits.validate()?;
         limits.check_count(self.rules.len(), limits.max_rules, "policy rules")?;
         limits.check_count(self.metadata.len(), limits.max_metadata, "policy metadata")?;
-        self.validate()?;
+        self.validate_core()?;
+        self.static_validate_with_limits(limits)?.require_valid()?;
         // Preflight attacker-controlled String allocations before cloning or
         // serializing an in-memory document. Escaping growth is checked again
         // against the final encoded size by canonical_json_with_limits.
@@ -216,6 +304,12 @@ impl PolicyDocument {
 
     /// Validate structural consistency; does not match or execute rules.
     pub fn validate(&self) -> Result<(), ContractError> {
+        self.validate_core()?;
+        self.static_validate()?.require_valid()
+    }
+
+    /// Validate legacy structural invariants before static diagnostics.
+    fn validate_core(&self) -> Result<(), ContractError> {
         if self.issuer.subject.trim().is_empty() || self.issuer.subject.len() > 256 {
             return Err(ContractError::InvalidDocument("empty or oversized issuer"));
         }
@@ -236,7 +330,12 @@ impl PolicyDocument {
             let constrained = rule.selector.operation.is_some()
                 || rule.selector.algorithm_id.is_some()
                 || rule.selector.profile_id.is_some()
-                || rule.selector.environment.is_some();
+                || rule.selector.environment.is_some()
+                || rule
+                    .selector
+                    .advanced
+                    .as_ref()
+                    .is_some_and(|extra| !extra.is_empty());
             if rule.selector.match_all == constrained {
                 return Err(ContractError::InvalidDocument("ambiguous rule selector"));
             }
@@ -320,6 +419,7 @@ impl CryptoContext {
                 return Err(ContractError::DuplicateIdentifier);
             }
         }
+        crate::validate_context_properties(&context)?;
         Ok(context)
     }
 }
