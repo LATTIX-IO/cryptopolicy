@@ -1,0 +1,832 @@
+{
+  "schema_version": "1",
+  "catalog_version": "1.0.0",
+  "as_of": "2026-10-17",
+  "entries": [
+    {
+      "id": "AES-128-GCM",
+      "family": "aes_gcm",
+      "status": "standardized",
+      "operations": [
+        "decrypt",
+        "encrypt"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 128
+      },
+      "security": {
+        "classical_bits": 128,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 197 / SP 800-38D",
+        "url": "https://csrc.nist.gov/pubs/fips/197/final",
+        "revision": "FIPS 197 (2023 update); SP 800-38D"
+      },
+      "aliases": []
+    },
+    {
+      "id": "AES-192-GCM",
+      "family": "aes_gcm",
+      "status": "standardized",
+      "operations": [
+        "decrypt",
+        "encrypt"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 192
+      },
+      "security": {
+        "classical_bits": 192,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 197 / SP 800-38D",
+        "url": "https://csrc.nist.gov/pubs/fips/197/final",
+        "revision": "FIPS 197 (2023 update); SP 800-38D"
+      },
+      "aliases": []
+    },
+    {
+      "id": "AES-256-GCM",
+      "family": "aes_gcm",
+      "status": "standardized",
+      "operations": [
+        "decrypt",
+        "encrypt"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 256
+      },
+      "security": {
+        "classical_bits": 256,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 197 / SP 800-38D",
+        "url": "https://csrc.nist.gov/pubs/fips/197/final",
+        "revision": "FIPS 197 (2023 update); SP 800-38D"
+      },
+      "aliases": [
+        "AES256-GCM"
+      ]
+    },
+    {
+      "id": "ECDSA-P256",
+      "family": "ecdsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 256
+      },
+      "security": {
+        "classical_bits": 128,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 186-5 / SP 800-186",
+        "url": "https://csrc.nist.gov/pubs/fips/186-5/final",
+        "revision": "FIPS 186-5; SP 800-186"
+      },
+      "aliases": []
+    },
+    {
+      "id": "ECDSA-P384",
+      "family": "ecdsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 384
+      },
+      "security": {
+        "classical_bits": 192,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 186-5 / SP 800-186",
+        "url": "https://csrc.nist.gov/pubs/fips/186-5/final",
+        "revision": "FIPS 186-5; SP 800-186"
+      },
+      "aliases": []
+    },
+    {
+      "id": "ECDSA-P521",
+      "family": "ecdsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 521
+      },
+      "security": {
+        "classical_bits": 256,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 186-5 / SP 800-186",
+        "url": "https://csrc.nist.gov/pubs/fips/186-5/final",
+        "revision": "FIPS 186-5; SP 800-186"
+      },
+      "aliases": []
+    },
+    {
+      "id": "FALCON-512",
+      "family": "falcon",
+      "status": "experimental",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "FALCON-512"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "NIST Digital Signatures PQC Project",
+        "url": "https://csrc.nist.gov/Projects/digital-signatures",
+        "revision": "FN-DSA/FIPS 206 development (2026)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "ML-DSA-44",
+      "family": "ml_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "ML-DSA-44"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 2
+      },
+      "source": {
+        "document": "FIPS 204",
+        "url": "https://csrc.nist.gov/pubs/fips/204/final",
+        "revision": "FIPS 204 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "ML-DSA-65",
+      "family": "ml_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "ML-DSA-65"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 3
+      },
+      "source": {
+        "document": "FIPS 204",
+        "url": "https://csrc.nist.gov/pubs/fips/204/final",
+        "revision": "FIPS 204 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "ML-DSA-87",
+      "family": "ml_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "ML-DSA-87"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 5
+      },
+      "source": {
+        "document": "FIPS 204",
+        "url": "https://csrc.nist.gov/pubs/fips/204/final",
+        "revision": "FIPS 204 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "ML-KEM-1024",
+      "family": "ml_kem",
+      "status": "standardized",
+      "operations": [
+        "decapsulate",
+        "encapsulate"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "ML-KEM-1024"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 5
+      },
+      "source": {
+        "document": "FIPS 203",
+        "url": "https://csrc.nist.gov/pubs/fips/203/final",
+        "revision": "FIPS 203 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "ML-KEM-512",
+      "family": "ml_kem",
+      "status": "standardized",
+      "operations": [
+        "decapsulate",
+        "encapsulate"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "ML-KEM-512"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 1
+      },
+      "source": {
+        "document": "FIPS 203",
+        "url": "https://csrc.nist.gov/pubs/fips/203/final",
+        "revision": "FIPS 203 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "ML-KEM-768",
+      "family": "ml_kem",
+      "status": "standardized",
+      "operations": [
+        "decapsulate",
+        "encapsulate"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "ML-KEM-768"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 3
+      },
+      "source": {
+        "document": "FIPS 203",
+        "url": "https://csrc.nist.gov/pubs/fips/203/final",
+        "revision": "FIPS 203 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "RSA-PSS-1024",
+      "family": "rsa_pss",
+      "status": "unsupported",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 1024
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 186-5 / SP 800-186",
+        "url": "https://csrc.nist.gov/pubs/fips/186-5/final",
+        "revision": "FIPS 186-5; SP 800-186"
+      },
+      "aliases": []
+    },
+    {
+      "id": "RSA-PSS-2048",
+      "family": "rsa_pss",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 2048
+      },
+      "security": {
+        "classical_bits": 112,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 186-5 / SP 800-186",
+        "url": "https://csrc.nist.gov/pubs/fips/186-5/final",
+        "revision": "FIPS 186-5; SP 800-186"
+      },
+      "aliases": []
+    },
+    {
+      "id": "RSA-PSS-3072",
+      "family": "rsa_pss",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 3072
+      },
+      "security": {
+        "classical_bits": 128,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 186-5 / SP 800-186",
+        "url": "https://csrc.nist.gov/pubs/fips/186-5/final",
+        "revision": "FIPS 186-5; SP 800-186"
+      },
+      "aliases": []
+    },
+    {
+      "id": "RSA-PSS-4096",
+      "family": "rsa_pss",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 4096
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 186-5 / SP 800-186",
+        "url": "https://csrc.nist.gov/pubs/fips/186-5/final",
+        "revision": "FIPS 186-5; SP 800-186"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SHA-256",
+      "family": "sha2",
+      "status": "standardized",
+      "operations": [
+        "hash"
+      ],
+      "parameter": {
+        "kind": "hash_output_bits",
+        "value": 256
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 180-4",
+        "url": "https://csrc.nist.gov/pubs/fips/180-4/upd1/final",
+        "revision": "FIPS 180-4"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SHA-384",
+      "family": "sha2",
+      "status": "standardized",
+      "operations": [
+        "hash"
+      ],
+      "parameter": {
+        "kind": "hash_output_bits",
+        "value": 384
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 180-4",
+        "url": "https://csrc.nist.gov/pubs/fips/180-4/upd1/final",
+        "revision": "FIPS 180-4"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SHA-512",
+      "family": "sha2",
+      "status": "standardized",
+      "operations": [
+        "hash"
+      ],
+      "parameter": {
+        "kind": "hash_output_bits",
+        "value": 512
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 180-4",
+        "url": "https://csrc.nist.gov/pubs/fips/180-4/upd1/final",
+        "revision": "FIPS 180-4"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SHA3-256",
+      "family": "sha3",
+      "status": "standardized",
+      "operations": [
+        "hash"
+      ],
+      "parameter": {
+        "kind": "hash_output_bits",
+        "value": 256
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 202",
+        "url": "https://csrc.nist.gov/pubs/fips/202/final",
+        "revision": "FIPS 202"
+      },
+      "aliases": [
+        "SHA3_256"
+      ]
+    },
+    {
+      "id": "SHA3-384",
+      "family": "sha3",
+      "status": "standardized",
+      "operations": [
+        "hash"
+      ],
+      "parameter": {
+        "kind": "hash_output_bits",
+        "value": 384
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 202",
+        "url": "https://csrc.nist.gov/pubs/fips/202/final",
+        "revision": "FIPS 202"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SHA3-512",
+      "family": "sha3",
+      "status": "standardized",
+      "operations": [
+        "hash"
+      ],
+      "parameter": {
+        "kind": "hash_output_bits",
+        "value": 512
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "FIPS 202",
+        "url": "https://csrc.nist.gov/pubs/fips/202/final",
+        "revision": "FIPS 202"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHA2-128f",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHA2-128f"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 1
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHA2-128s",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHA2-128s"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 1
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHA2-192f",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHA2-192f"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 3
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHA2-192s",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHA2-192s"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 3
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHA2-256f",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHA2-256f"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 5
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHA2-256s",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHA2-256s"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 5
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHAKE-128f",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHAKE-128f"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 1
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHAKE-128s",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHAKE-128s"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 1
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHAKE-192f",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHAKE-192f"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 3
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHAKE-192s",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHAKE-192s"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 3
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHAKE-256f",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHAKE-256f"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 5
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "SLH-DSA-SHAKE-256s",
+      "family": "slh_dsa",
+      "status": "standardized",
+      "operations": [
+        "sign",
+        "verify"
+      ],
+      "parameter": {
+        "kind": "named_set",
+        "value": "SLH-DSA-SHAKE-256s"
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": 5
+      },
+      "source": {
+        "document": "FIPS 205",
+        "url": "https://csrc.nist.gov/pubs/fips/205/final",
+        "revision": "FIPS 205 (2024)"
+      },
+      "aliases": []
+    },
+    {
+      "id": "TDEA-3KEY",
+      "family": "tdea",
+      "status": "deprecated",
+      "operations": [
+        "decrypt"
+      ],
+      "parameter": {
+        "kind": "key_bits",
+        "value": 168
+      },
+      "security": {
+        "classical_bits": null,
+        "pqc_category": null
+      },
+      "source": {
+        "document": "SP 800-131A Rev. 2 / SP 800-67 withdrawal",
+        "url": "https://csrc.nist.gov/News/2023/nist-to-withdraw-sp-800-67-rev-2",
+        "revision": "NIST TDEA withdrawal 2024"
+      },
+      "aliases": []
+    }
+  ]
+}

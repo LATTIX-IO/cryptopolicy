@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-445: immutable SHA-256-pinned v1 pqc-kit catalog of classical and FIPS 203/204/205 PQC profiles, with exact aliases, typed parameters, lifecycle status, standards provenance and adversarial regressions; no evaluator authorization change.
+
 - FOSS-437: atomic offline PolicySet/EffectivePolicy resolver, pinned baseline and overlay imports, strict conjunctive decisions, domain-separated binary canonical digest and graph adversarial tests.
 
 - FOSS-435: pure deterministic single-context policy evaluator with deny-first tri-state decisions, bounded outputs, explicit-time handling, provisional strict algorithm recognition and adversarial/golden tests; source authenticity and registry approval remain external.
