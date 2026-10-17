@@ -82,29 +82,3 @@ jobs:
 
       - name: SemVer compatibility
         run: cargo semver-checks check-release --workspace --all-features
-
-  foss435-formatter-snapshot-temp:
-    name: FOSS-435 exact rustfmt snapshot (temporary read-only)
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          persist-credentials: false
-      - name: Install Rustfmt
-        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable
-        with:
-          toolchain: stable
-          components: rustfmt
-      - name: Capture exact formatted files
-        run: |
-          cargo fmt --all
-          echo "FMT435_EVALUATOR=$(base64 -w0 crates/cryptopolicy/src/evaluator.rs)"
-          echo "FMT435_TYPES=$(base64 -w0 crates/cryptopolicy/src/types.rs)"
-          echo "FMT435_LIB=$(base64 -w0 crates/cryptopolicy/src/lib.rs)"
-          echo "FMT435_POLICY=$(base64 -w0 crates/cryptopolicy/src/policy.rs)"
-          echo "FMT435_TESTS=$(base64 -w0 crates/cryptopolicy/tests/evaluator.rs)"
-          echo "FMT435_EXAMPLE=$(base64 -w0 crates/cryptopolicy/examples/evaluate_offline.rs)"

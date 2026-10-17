@@ -1,12 +1,18 @@
 //! Offline evaluator demonstration. No key operation or network request occurs.
-use cryptopolicy::{DecisionOutcome, PolicyDocument, CryptoContext, evaluate};
+use cryptopolicy::{CryptoContext, DecisionOutcome, PolicyDocument, evaluate};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let policy = PolicyDocument::parse_json(include_bytes!("../tests/fixtures/evaluator-policy-v1.json"))?;
-    let context = CryptoContext::parse_json(include_bytes!("../tests/fixtures/evaluator-context-v1.json"))?;
+    let policy =
+        PolicyDocument::parse_json(include_bytes!("../tests/fixtures/evaluator-policy-v1.json"))?;
+    let context = CryptoContext::parse_json(include_bytes!(
+        "../tests/fixtures/evaluator-context-v1.json"
+    ))?;
     let decision = evaluate(&policy, &context, context.evaluation_time)?;
     assert_eq!(decision.outcome, DecisionOutcome::Permit);
-    println!("policy={} result={:?}", decision.policy_id, decision.outcome);
+    println!(
+        "policy={} result={:?}",
+        decision.policy_id, decision.outcome
+    );
     println!("digest={}", decision.policy_digest.as_str());
     for reason in &decision.reasons {
         println!("reason={:?} rule={:?}", reason.code, reason.rule_id);

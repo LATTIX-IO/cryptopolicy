@@ -5,9 +5,9 @@
 
 use crate::{
     AlgorithmId, ContractError, CryptoContext, CryptoFact, CryptoOperation, DecisionOutcome,
-    DecisionReason, EvaluationTime, EvidenceId, EvidenceQuality, FactOrigin, Limits, PolicyDecision,
-    PolicyDigest, PolicyDocument, PolicyRule, ReasonCode, Requirement, RuleEffect, RuleId,
-    RuleSelector, SchemaVersion,
+    DecisionReason, EvaluationTime, EvidenceId, EvidenceQuality, FactOrigin, Limits,
+    PolicyDecision, PolicyDigest, PolicyDocument, PolicyRule, ReasonCode, Requirement, RuleEffect,
+    RuleId, RuleSelector, SchemaVersion,
 };
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
@@ -107,21 +107,15 @@ fn target_selector(
 fn check_requirement(req: &Requirement, fact: Option<&CryptoFact>) -> Truth {
     let props = fact.and_then(|f| f.properties.as_ref());
     match req {
-        Requirement::Algorithm(value) => {
-            equal(fact.and_then(|f| f.algorithm_id.as_ref()), value)
-        }
+        Requirement::Algorithm(value) => equal(fact.and_then(|f| f.algorithm_id.as_ref()), value),
         Requirement::Profile(value) | Requirement::NamedHybrid(value) => {
             equal(fact.and_then(|f| f.profile_id.as_ref()), value)
         }
         Requirement::MinSecurityCategory(value) => {
             at_least(props.and_then(|p| p.security_category), *value)
         }
-        Requirement::NonExportable => {
-            equal_copy(props.and_then(|p| p.key_exportable), false)
-        }
-        Requirement::Provider(value) => {
-            equal(props.and_then(|p| p.provider_id.as_ref()), value)
-        }
+        Requirement::NonExportable => equal_copy(props.and_then(|p| p.key_exportable), false),
+        Requirement::Provider(value) => equal(props.and_then(|p| p.provider_id.as_ref()), value),
         Requirement::Sensitivity(value) => {
             equal_copy(props.and_then(|p| p.data_sensitivity), *value)
         }
@@ -135,12 +129,8 @@ fn check_requirement(req: &Requirement, fact: Option<&CryptoFact>) -> Truth {
         Requirement::SourceQuality(value) => {
             equal_copy(props.and_then(|p| p.source_quality), *value)
         }
-        Requirement::KeySizeBits(value) => {
-            equal_copy(props.and_then(|p| p.key_size_bits), *value)
-        }
-        Requirement::MinimumKeyBits(value) => {
-            at_least(props.and_then(|p| p.key_size_bits), *value)
-        }
+        Requirement::KeySizeBits(value) => equal_copy(props.and_then(|p| p.key_size_bits), *value),
+        Requirement::MinimumKeyBits(value) => at_least(props.and_then(|p| p.key_size_bits), *value),
     }
 }
 
@@ -160,16 +150,23 @@ fn preview_algorithm_known(
     let bits = fact.properties.as_ref().and_then(|p| p.key_size_bits);
     match algorithm.as_str() {
         "AES-256-GCM" => {
-            matches!(operation, CryptoOperation::Encrypt | CryptoOperation::Decrypt)
-                && bits == Some(256)
+            matches!(
+                operation,
+                CryptoOperation::Encrypt | CryptoOperation::Decrypt
+            ) && bits == Some(256)
         }
         "AES-128-GCM" => {
-            matches!(operation, CryptoOperation::Encrypt | CryptoOperation::Decrypt)
-                && bits == Some(128)
+            matches!(
+                operation,
+                CryptoOperation::Encrypt | CryptoOperation::Decrypt
+            ) && bits == Some(128)
         }
         "SHA3-256" | "SHA3-512" => operation == CryptoOperation::Hash,
         "ML-KEM-768" | "ML-KEM-1024" => {
-            matches!(operation, CryptoOperation::Encapsulate | CryptoOperation::Decapsulate)
+            matches!(
+                operation,
+                CryptoOperation::Encapsulate | CryptoOperation::Decapsulate
+            )
         }
         _ => false,
     }
@@ -180,19 +177,17 @@ fn preview_algorithm_known(
 fn requires_unavailable_profile(rule: &PolicyRule, fact: &CryptoFact) -> bool {
     rule.selector.profile_id.is_some()
         || fact.profile_id.is_some()
-        || rule.requirements.iter().any(|r| {
-            matches!(r, Requirement::Profile(_) | Requirement::NamedHybrid(_))
-        })
+        || rule
+            .requirements
+            .iter()
+            .any(|r| matches!(r, Requirement::Profile(_) | Requirement::NamedHybrid(_)))
 }
 
 fn credible_preview_fact(fact: &CryptoFact) -> bool {
     fact.verified
         && fact.evidence_ref.is_some()
         && matches!(fact.origin, FactOrigin::Observed | FactOrigin::Negotiated)
-        && fact
-            .properties
-            .as_ref()
-            .and_then(|p| p.source_quality)
+        && fact.properties.as_ref().and_then(|p| p.source_quality)
             == Some(EvidenceQuality::ExternallyVerified)
 }
 
@@ -224,7 +219,9 @@ pub fn evaluate_with_limits(
     let policy_bytes = policy.canonical_json_with_limits(limits)?;
     limits.check_count(context.facts.len(), limits.max_facts, "context facts")?;
     if context.facts.len() > 1 {
-        return Err(ContractError::InvalidDocument("multiple target facts unsupported"));
+        return Err(ContractError::InvalidDocument(
+            "multiple target facts unsupported",
+        ));
     }
     if context.evaluation_time != explicit_time {
         return Err(ContractError::InvalidDocument("evaluation time mismatch"));
@@ -234,30 +231,43 @@ pub fn evaluate_with_limits(
         .map_err(|_| ContractError::InvalidDocument("context serialization failed"))?;
     limits.check_json(&encoded_context)?;
     if CryptoContext::parse_json_with_limits(&encoded_context, limits)? != *context {
-        return Err(ContractError::InvalidDocument("context round trip mismatch"));
+        return Err(ContractError::InvalidDocument(
+            "context round trip mismatch",
+        ));
     }
 
     let digest = Sha256::digest(&policy_bytes);
     let fingerprint = PolicyDigest::try_from(
-        digest.iter().map(|b| format!("{b:02x}")).collect::<String>(),
+        digest
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>(),
     )?;
     let fact = context.facts.first();
     if explicit_time < policy.created_at
         || policy.effective_at.is_some_and(|time| explicit_time < time)
     {
         return build_decision(
-            policy, explicit_time, fingerprint, DecisionOutcome::Deny,
+            policy,
+            explicit_time,
+            fingerprint,
+            DecisionOutcome::Deny,
             BTreeSet::new(),
             BTreeSet::from([(None, ReasonCode::PolicyNotEffective)]),
-            None, limits,
+            None,
+            limits,
         );
     }
     if policy.expires_at.is_some_and(|time| explicit_time >= time) {
         return build_decision(
-            policy, explicit_time, fingerprint, DecisionOutcome::Deny,
+            policy,
+            explicit_time,
+            fingerprint,
+            DecisionOutcome::Deny,
             BTreeSet::new(),
             BTreeSet::from([(None, ReasonCode::PolicyExpired)]),
-            None, limits,
+            None,
+            limits,
         );
     }
 
@@ -291,8 +301,12 @@ pub fn evaluate_with_limits(
             }
             RuleEffect::Warn => {}
             RuleEffect::Require => match check_requirements(rule, fact) {
-                Truth::No => { requirement_failed.insert(rule.rule_id.clone()); }
-                Truth::Unknown => { requirement_unknown.insert(rule.rule_id.clone()); }
+                Truth::No => {
+                    requirement_failed.insert(rule.rule_id.clone());
+                }
+                Truth::Unknown => {
+                    requirement_unknown.insert(rule.rule_id.clone());
+                }
                 Truth::Yes => {
                     require_satisfied.insert(rule.rule_id.clone());
                     if fact.is_some_and(|f| requires_unavailable_profile(rule, f)) {
@@ -301,8 +315,12 @@ pub fn evaluate_with_limits(
                 }
             },
             RuleEffect::Allow => match check_requirements(rule, fact) {
-                Truth::No => { allow_failed.insert(rule.rule_id.clone()); }
-                Truth::Unknown => { allow_unknown.insert(rule.rule_id.clone()); }
+                Truth::No => {
+                    allow_failed.insert(rule.rule_id.clone());
+                }
+                Truth::Unknown => {
+                    allow_unknown.insert(rule.rule_id.clone());
+                }
                 Truth::Yes => {
                     allow_satisfied.insert(rule.rule_id.clone());
                     if fact.is_some_and(|f| requires_unavailable_profile(rule, f)) {
@@ -330,9 +348,10 @@ pub fn evaluate_with_limits(
         DecisionOutcome::Indeterminate
     } else if !allow_satisfied.is_empty() {
         if let Some(f) = fact {
-            let known = f.algorithm_id.as_ref().is_some_and(|id| {
-                preview_algorithm_known(id, context.operation, f)
-            });
+            let known = f
+                .algorithm_id
+                .as_ref()
+                .is_some_and(|id| preview_algorithm_known(id, context.operation, f));
             if !unvalidated_profile.is_empty() || !known {
                 for id in &allow_satisfied {
                     reasons.insert((Some(id.clone()), ReasonCode::UnsupportedProfile));
@@ -374,7 +393,16 @@ pub fn evaluate_with_limits(
         }
         DecisionOutcome::Deny
     };
-    build_decision(policy, explicit_time, fingerprint, outcome, matched, reasons, fact, limits)
+    build_decision(
+        policy,
+        explicit_time,
+        fingerprint,
+        outcome,
+        matched,
+        reasons,
+        fact,
+        limits,
+    )
 }
 
 fn build_decision(
@@ -387,8 +415,16 @@ fn build_decision(
     fact: Option<&CryptoFact>,
     limits: &Limits,
 ) -> Result<PolicyDecision, ContractError> {
-    limits.check_count(matched.len(), limits.max_matched_rules, "decision matched rules")?;
-    limits.check_count(reasons.len(), limits.max_decision_reasons, "decision reasons")?;
+    limits.check_count(
+        matched.len(),
+        limits.max_matched_rules,
+        "decision matched rules",
+    )?;
+    limits.check_count(
+        reasons.len(),
+        limits.max_decision_reasons,
+        "decision reasons",
+    )?;
     let mut evidence = BTreeSet::<EvidenceId>::new();
     if !matched.is_empty() {
         if let Some(f) = fact {
@@ -398,7 +434,11 @@ fn build_decision(
             }
         }
     }
-    limits.check_count(evidence.len(), limits.max_evidence_refs, "decision evidence")?;
+    limits.check_count(
+        evidence.len(),
+        limits.max_evidence_refs,
+        "decision evidence",
+    )?;
     let result = PolicyDecision {
         schema_version: SchemaVersion::V1,
         policy_id: policy.policy_id.clone(),

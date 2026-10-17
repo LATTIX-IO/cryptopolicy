@@ -52,13 +52,28 @@ fn explicit_verified_allow_and_conjoined_require_produce_permit() {
     assert_eq!(d.policy_id, p.policy_id);
     assert_eq!(d.policy_digest, p.canonical_digest().unwrap());
     assert_eq!(d.evaluated_at, at(150));
-    assert_eq!(d.matched_rules, vec![id("r-allow-aes"), id("r-require-protection")]);
-    assert_eq!(d.evidence, vec![EvidenceId::parse("attest:1").unwrap(), EvidenceId::parse("fact:1").unwrap()]);
+    assert_eq!(
+        d.matched_rules,
+        vec![id("r-allow-aes"), id("r-require-protection")]
+    );
+    assert_eq!(
+        d.evidence,
+        vec![
+            EvidenceId::parse("attest:1").unwrap(),
+            EvidenceId::parse("fact:1").unwrap()
+        ]
+    );
     assert_eq!(
         d.reasons,
         vec![
-            DecisionReason { code: ReasonCode::ExplicitAllow, rule_id: Some(id("r-allow-aes")) },
-            DecisionReason { code: ReasonCode::RequirementSatisfied, rule_id: Some(id("r-require-protection")) },
+            DecisionReason {
+                code: ReasonCode::ExplicitAllow,
+                rule_id: Some(id("r-allow-aes"))
+            },
+            DecisionReason {
+                code: ReasonCode::RequirementSatisfied,
+                rule_id: Some(id("r-require-protection"))
+            },
         ],
     );
 }
@@ -152,8 +167,14 @@ fn definitive_deny_wins_over_unknown_other_deny() {
 #[test]
 fn known_mandatory_failure_blocks_otherwise_valid_allow() {
     let mut p = policy();
-    let mandatory = p.rules.iter_mut().find(|r| r.effect == RuleEffect::Require).unwrap();
-    mandatory.requirements.push(Requirement::MinimumKeyBits(512));
+    let mandatory = p
+        .rules
+        .iter_mut()
+        .find(|r| r.effect == RuleEffect::Require)
+        .unwrap();
+    mandatory
+        .requirements
+        .push(Requirement::MinimumKeyBits(512));
     let d = result(&p, &context());
     assert_eq!(d.outcome, DecisionOutcome::Deny);
     assert!(has_reason(&d, ReasonCode::RequirementNotSatisfied));
@@ -206,7 +227,11 @@ fn warn_only_cannot_authorize() {
 #[test]
 fn unknown_algorithm_identity_never_grants_permit() {
     let mut p = policy();
-    let allow = p.rules.iter_mut().find(|r| r.effect == RuleEffect::Allow).unwrap();
+    let allow = p
+        .rules
+        .iter_mut()
+        .find(|r| r.effect == RuleEffect::Allow)
+        .unwrap();
     allow.selector.algorithm_id = Some(AlgorithmId::parse("UNKNOWN-PQC-999").unwrap());
     allow.requirements.iter_mut().for_each(|req| {
         if let Requirement::Algorithm(value) = req {
@@ -223,7 +248,11 @@ fn unknown_algorithm_identity_never_grants_permit() {
 #[test]
 fn exact_but_unapproved_profile_is_never_a_permit() {
     let mut p = policy();
-    let allow = p.rules.iter_mut().find(|r| r.effect == RuleEffect::Allow).unwrap();
+    let allow = p
+        .rules
+        .iter_mut()
+        .find(|r| r.effect == RuleEffect::Allow)
+        .unwrap();
     allow.selector.profile_id = Some(ProfileId::parse("profile:unvalidated").unwrap());
     let mut c = context();
     c.facts[0].profile_id = Some(ProfileId::parse("profile:unvalidated").unwrap());
@@ -235,8 +264,14 @@ fn exact_but_unapproved_profile_is_never_a_permit() {
 #[test]
 fn declared_hybrid_requirement_cannot_bypass_unavailable_registry() {
     let mut p = policy();
-    let allow = p.rules.iter_mut().find(|r| r.effect == RuleEffect::Allow).unwrap();
-    allow.requirements.push(Requirement::NamedHybrid(ProfileId::parse("hybrid:unverified").unwrap()));
+    let allow = p
+        .rules
+        .iter_mut()
+        .find(|r| r.effect == RuleEffect::Allow)
+        .unwrap();
+    allow.requirements.push(Requirement::NamedHybrid(
+        ProfileId::parse("hybrid:unverified").unwrap(),
+    ));
     let mut c = context();
     c.facts[0].profile_id = Some(ProfileId::parse("hybrid:unverified").unwrap());
     let d = result(&p, &c);
@@ -265,8 +300,14 @@ fn missing_evidence_reference_is_not_an_implicit_trust_proof() {
 #[test]
 fn configured_claim_is_not_promoted_into_observed_usage() {
     let mut p = policy();
-    let allow = p.rules.iter_mut().find(|r| r.effect == RuleEffect::Allow).unwrap();
-    allow.requirements.retain(|req| !matches!(req, Requirement::SourceOrigin(_)));
+    let allow = p
+        .rules
+        .iter_mut()
+        .find(|r| r.effect == RuleEffect::Allow)
+        .unwrap();
+    allow
+        .requirements
+        .retain(|req| !matches!(req, Requirement::SourceOrigin(_)));
     let mut c = context();
     c.facts[0].origin = FactOrigin::Configured;
     let d = result(&p, &c);
@@ -277,8 +318,12 @@ fn configured_claim_is_not_promoted_into_observed_usage() {
 #[test]
 fn provider_capability_never_counts_as_observation() {
     let mut p = policy();
-    p.rules.iter_mut().find(|r| r.effect == RuleEffect::Allow).unwrap()
-        .requirements.retain(|req| !matches!(req, Requirement::SourceOrigin(_)));
+    p.rules
+        .iter_mut()
+        .find(|r| r.effect == RuleEffect::Allow)
+        .unwrap()
+        .requirements
+        .retain(|req| !matches!(req, Requirement::SourceOrigin(_)));
     let mut c = context();
     c.facts[0].origin = FactOrigin::ProviderCapability;
     assert_eq!(result(&p, &c).outcome, DecisionOutcome::Indeterminate);
@@ -288,7 +333,11 @@ fn provider_capability_never_counts_as_observation() {
 fn effective_inclusive_and_expiration_exclusive_with_injected_time() {
     let p = policy();
     for (millis, outcome, reason) in [
-        (99, DecisionOutcome::Deny, Some(ReasonCode::PolicyNotEffective)),
+        (
+            99,
+            DecisionOutcome::Deny,
+            Some(ReasonCode::PolicyNotEffective),
+        ),
         (100, DecisionOutcome::Permit, None),
         (199, DecisionOutcome::Permit, None),
         (200, DecisionOutcome::Deny, Some(ReasonCode::PolicyExpired)),
@@ -328,19 +377,28 @@ fn invalid_policy_context_and_multi_fact_inputs_return_error() {
     let mut p = policy();
     let duplicate_id = p.rules[1].rule_id.clone();
     p.rules[0].rule_id = duplicate_id;
-    assert_eq!(evaluate(&p, &context(), at(150)), Err(ContractError::DuplicateIdentifier));
+    assert_eq!(
+        evaluate(&p, &context(), at(150)),
+        Err(ContractError::DuplicateIdentifier)
+    );
 
     let mut c = context();
     c.facts.push(c.facts[0].clone());
     assert_eq!(
         evaluate(&policy(), &c, at(150)),
-        Err(ContractError::InvalidDocument("multiple target facts unsupported")),
+        Err(ContractError::InvalidDocument(
+            "multiple target facts unsupported"
+        )),
     );
     let mut invalid = context();
     invalid.environment = Some("invalid environment".into());
     assert!(evaluate(&policy(), &invalid, at(150)).is_err());
     let mut invalid_prop = context();
-    invalid_prop.facts[0].properties.as_mut().unwrap().key_size_bits = Some(0);
+    invalid_prop.facts[0]
+        .properties
+        .as_mut()
+        .unwrap()
+        .key_size_bits = Some(0);
     assert!(evaluate(&policy(), &invalid_prop, at(150)).is_err());
 }
 
@@ -357,12 +415,20 @@ fn resource_limits_reject_unbounded_reason_and_evidence_output() {
         evaluate_with_limits(&p, &context(), at(150), &limits),
         Err(ContractError::ResourceLimitExceeded("decision reasons")),
     );
-    let limits = Limits { max_matched_rules: 1, ..Limits::default() };
+    let limits = Limits {
+        max_matched_rules: 1,
+        ..Limits::default()
+    };
     assert_eq!(
         evaluate_with_limits(&p, &context(), at(150), &limits),
-        Err(ContractError::ResourceLimitExceeded("decision matched rules")),
+        Err(ContractError::ResourceLimitExceeded(
+            "decision matched rules"
+        )),
     );
-    let limits = Limits { max_evidence_refs: 1, ..Limits::default() };
+    let limits = Limits {
+        max_evidence_refs: 1,
+        ..Limits::default()
+    };
     assert_eq!(
         evaluate_with_limits(&policy(), &context(), at(150), &limits),
         Err(ContractError::ResourceLimitExceeded("decision evidence")),
