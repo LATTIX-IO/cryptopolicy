@@ -152,3 +152,7 @@ the 33 golden threat-contract cases remains a separate FOSS-459 requirement.
 ## FOSS-445 algorithm catalog trust boundary
 
 The pqc-kit registry describes published algorithm specifications and named parameter sets, not authenticated implementations or user authorization. Aliases, unknown/pre-standard names, incorrect operation classes, parameter mismatch, and nonstandard lifecycle records do not authorize use. The FOSS-435 evaluator stays conservative; FOSS-447/449 must add authenticated evidence and provider integration, and FOSS-459 still owns the full 33-case runtime conformance gate.
+
+## FOSS-447 third-party observed-fact trust boundary
+
+The assessment adapter preserves direct/negotiated, configured, dependency, inferred and provider-capability sources distinctly. It requires an independently authenticated exact source/evidence/snapshot/use-site/session binding before projecting one fact at a time to FOSS-435. High confidence, raw source_quality or an imported verified flag are not sufficient. Incomplete/uninspected coverage, conflicting observations, missing facts, bad parameters and untrusted evidence never authorize. Definitive policy Deny still dominates. Original IDs and confidence are returned separately from the policy verdict. FOSS-459 still owns the complete 33-case normative conformance gate.

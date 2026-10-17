@@ -23,7 +23,7 @@ Precedence, in descending order: definitive Deny; definitive failed Require; pot
 
 ## Single-target fact restriction
 
-FOSS-435 accepts **zero or one** CryptoFact in CryptoContext. More than one produces ContractError::InvalidDocument("multiple target facts unsupported"), even if both appear valid. No property, algorithm or provenance is ever joined across facts. This is a deliberate fail-closed contract until FOSS-447 models target identity, fact correlation and coverage across inventory observations. An absent fact is not evidence of absence.
+FOSS-435 accepts **zero or one** CryptoFact in CryptoContext. More than one produces ContractError::InvalidDocument("multiple target facts unsupported"), even if both appear valid. No property, algorithm or provenance is ever joined across facts. This is a deliberate fail-closed contract until FOSS-447 now provides scope-bound, independently authenticated per-observation projection and aggregate coverage/conflict reporting while keeping this single-target evaluator unchanged. An absent fact is not evidence of absence.
 
 A candidate Permit additionally requires a fact with:
 - origin = observed or negotiated, never merely configured/inferred/requested/provider_capability

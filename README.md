@@ -108,6 +108,22 @@ cargo test -p pqc-kit --test catalog --locked. The reference contract is
 [Algorithm Catalog](docs/ALGORITHM_CATALOG.md). FOSS-447/449 retain separate
 evidence and provider-integration trust gates.
 
+## Provenance-safe assessment (FOSS-447)
+
+The offline AssessmentContext adapter preserves snapshot, source/evidence
+identifiers, scoped activity, configured vs negotiated vs observed origin,
+partial inspection coverage, and contradictory observations. Independently
+authenticated operational records are evaluated one at a time through FOSS-435.
+The assessment decision remains distinct from claimed confidence and coverage.
+Untrusted, inferred, dependency-only, incomplete and conflicting evidence
+does not grant Permit.
+
+Try cargo run -p cryptopolicy --example assess_observations and
+cargo test -p cryptopolicy --test assessment --locked. See
+[the assessment contract](docs/ASSESSMENT.md) for exact v1 wire and trust
+semantics. FOSS-315/335-339 own real Cryptomap projection; FOSS-459 owns
+the full normative security-conformance corpus.
+
 ## Crates
 
 - cryptopolicy
