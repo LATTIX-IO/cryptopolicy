@@ -57,7 +57,19 @@
           "evidence:tls:1",
           "obs:tls:1"
         ]
+      },
+      "operation": "encrypt",
+      "algorithm_id": "AES-256-GCM",
+      "profile_id": null,
+      "parameter": {
+        "kind": "key_bits",
+        "value": 256
+      },
+      "observed_at": {
+        "unix_millis": 140
       }
     }
-  ]
+  ],
+  "operation": "encrypt",
+  "uninspected_sources": []
 }

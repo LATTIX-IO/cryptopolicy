@@ -450,6 +450,16 @@ pub struct AssessmentFinding {
     pub evidence_ref: Option<EvidenceId>,
     /// Distinguishes direct operation, negotiation and nonoperational claims.
     pub kind: ObservationKind,
+    /// Original claimed operation (untrusted source fact).
+    pub operation: Option<CryptoOperation>,
+    /// Claimed algorithm ID, not automatically catalog-approved.
+    pub algorithm_id: Option<AlgorithmId>,
+    /// Claimed named profile.
+    pub profile_id: Option<ProfileId>,
+    /// Exact typed original parameter, not borrowed from another observation.
+    pub parameter: Option<ObservedParameter>,
+    /// Original observation timestamp supplied by the source.
+    pub observed_at: EvaluationTime,
     /// Claimed confidence, not authenticated assurance.
     pub confidence: AssessmentConfidence,
     /// Claimed evidence quality from source metadata; never automatically trusted.
@@ -475,6 +485,8 @@ pub struct AssessmentReport {
     pub snapshot_id: EvidenceId,
     /// Exact assessment target/use-site/session.
     pub scope: AssessmentScope,
+    /// Assessed operation; prevents reusing one result for another operation.
+    pub operation: CryptoOperation,
     /// Exact evaluated policy ID.
     pub policy_id: PolicyId,
     /// Exact policy version.
@@ -487,6 +499,8 @@ pub struct AssessmentReport {
     pub outcome: DecisionOutcome,
     /// Original completeness claim, not independently attested.
     pub coverage: AssessmentCoverage,
+    /// Exact original IDs of any known uninspected sources, sorted.
+    pub uninspected_sources: Vec<EvidenceId>,
     /// Minimum claimed confidence among operational observations, if any.
     pub evidence_confidence: Option<AssessmentConfidence>,
     /// Stable, bounded reason codes, distinct from core policy reasons.
@@ -507,6 +521,11 @@ impl AssessmentReport {
             report.findings.len(),
             limits.max_facts.min(MAX_ASSESSMENT_OBSERVATIONS),
             "assessment findings",
+        )?;
+        limits.check_count(
+            report.uninspected_sources.len(),
+            limits.max_evidence_refs,
+            "uninspected sources",
         )?;
         limits.check_count(
             report.conflicts.len(),
@@ -803,6 +822,11 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
             source_id: record.source_id.clone(),
             evidence_ref: record.evidence_ref.clone(),
             kind: record.kind,
+            operation: record.operation,
+            algorithm_id: record.algorithm_id.clone(),
+            profile_id: record.profile_id.clone(),
+            parameter: record.parameter.clone(),
+            observed_at: record.observed_at,
             confidence: record.confidence,
             source_quality_claim: record.properties.as_ref().and_then(|p| p.source_quality),
             externally_authenticated: authenticated,
@@ -820,17 +844,21 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
     } else {
         DecisionOutcome::Indeterminate
     };
+    let mut uninspected_sources = context.uninspected_sources.clone();
+    uninspected_sources.sort();
     let report = AssessmentReport {
         schema_version: SchemaVersion::V1,
         assessment_id: context.assessment_id.clone(),
         snapshot_id: context.snapshot_id.clone(),
         scope: context.scope.clone(),
+        operation: context.operation,
         policy_id: policy.policy_id.clone(),
         policy_version: policy.version.clone(),
         policy_digest,
         evaluated_at: explicit_time,
         outcome,
         coverage: context.coverage,
+        uninspected_sources,
         evidence_confidence: min_confidence,
         reasons: reasons.into_iter().collect(),
         conflicts,

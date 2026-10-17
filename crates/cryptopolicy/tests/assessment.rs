@@ -161,6 +161,24 @@ fn negotiated_tls_is_preserved_as_negotiated_not_observed() {
 }
 
 #[test]
+fn serialized_report_preserves_operation_parameters_and_sorted_coverage_gap_ids() {
+    let mut c = input("partial");
+    c.uninspected_sources.push(rid("collector:backup"));
+    let a = report(&c);
+    assert_eq!(a.operation, CryptoOperation::Encrypt);
+    assert_eq!(a.findings[0].algorithm_id, Some(AlgorithmId::parse("AES-256-GCM").unwrap()));
+    assert_eq!(a.findings[0].parameter, Some(ObservedParameter {
+        kind: ObservedParameterKind::KeyBits,
+        value: ObservedParameterValue::Bits(256),
+    }));
+    assert_eq!(a.findings[0].observed_at, EvaluationTime { unix_millis: 140 });
+    assert_eq!(a.uninspected_sources, vec![rid("collector:backup"), rid("collector:uninspected")]);
+    c.uninspected_sources.reverse();
+    let b = report(&c);
+    assert_eq!(serde_json::to_vec(&a).unwrap(), serde_json::to_vec(&b).unwrap());
+}
+
+#[test]
 fn configured_cipher_cannot_be_promoted_into_operational_use() {
     let c = input("configured");
     let r = report(&c);
