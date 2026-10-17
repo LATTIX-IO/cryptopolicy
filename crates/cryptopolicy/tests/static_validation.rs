@@ -187,6 +187,27 @@ fn unrecognized_critical_nested_selector_or_requirement_variant_is_rejected() {
 }
 
 #[test]
+fn requirement_decoder_rejects_duplicate_fields_missing_values_and_unit_payloads() {
+    for invalid in [
+        r#"{"kind":"algorithm"}"#,
+        r#"{"kind":"algorithm","value":null}"#,
+        r#"{"kind":"algorithm","value":"AES-256-GCM","kind":"profile"}"#,
+        r#"{"kind":"algorithm","value":"AES-256-GCM","value":"AES-128-GCM"}"#,
+        r#"{"kind":"non_exportable","value":true}"#,
+        r#"{"kind":"non_exportable","value":null}"#,
+        r#"{"kind":"algorithm","value":"AES-256-GCM","override_deny":true}"#,
+        r#"{"kind":"non_exportable","unauthorized_waiver":true}"#,
+    ] {
+        assert!(
+            serde_json::from_str::<Requirement>(invalid).is_err(),
+            "unexpectedly accepted invalid requirement"
+        );
+    }
+    let good: Requirement = serde_json::from_str(r#"{"kind":"algorithm","value":"AES-256-GCM"}"#).unwrap();
+    assert_eq!(good, Requirement::Algorithm(AlgorithmId::parse("AES-256-GCM").unwrap()));
+}
+
+#[test]
 fn invalid_categories_and_key_sizes_are_fail_closed() {
     let mut p = fixture();
     p.rules[0]
