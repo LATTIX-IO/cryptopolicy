@@ -22,6 +22,10 @@ pub enum ContractError {
     DuplicateIdentifier,
     /// A structural or temporal invariant failed.
     InvalidDocument(&'static str),
+    /// Invalid resource-budget configuration.
+    InvalidLimit(&'static str),
+    /// Resource consumption exceeds a configured budget.
+    ResourceLimitExceeded(&'static str),
 }
 
 impl fmt::Display for ContractError {

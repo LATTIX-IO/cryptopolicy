@@ -16,6 +16,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Security
 
+- FOSS-433: bounded policy/context/decision deserialization and caller-validated structural resource budgets, including adversarial over-limit tests.
+
 - FOSS-426: Add versioned threat model, fail-closed safety invariants, adversarial golden security fixtures, a specification linter, and an opt-in future evaluator results comparator.
 
 - FOSS-424: Explicitly disable publication for all bootstrap crates; separate release proposals from a guarded manual publishing workflow; add manifest/workflow regression checks.

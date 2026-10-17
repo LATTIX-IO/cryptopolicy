@@ -6,8 +6,10 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+mod limits;
 mod policy;
 mod types;
 
+pub use limits::*;
 pub use policy::*;
 pub use types::*;

@@ -1,4 +1,5 @@
 //! Versioned policy, request-context and decision models.
+use crate::Limits;
 use crate::types::*;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -164,19 +165,53 @@ pub struct PolicyDecision {
     pub evidence: Vec<EvidenceId>,
 }
 
-fn parse<T: for<'de> Deserialize<'de>>(input: &[u8]) -> Result<T, ContractError> {
-    if input.len() > MAX_CONTRACT_BYTES {
-        return Err(ContractError::PayloadTooLarge);
-    }
+fn parse<T: for<'de> Deserialize<'de>>(input: &[u8], limits: &Limits) -> Result<T, ContractError> {
+    limits.check_json(input)?;
     serde_json::from_slice(input).map_err(|e| ContractError::InvalidJson(e.to_string()))
 }
 
 impl PolicyDocument {
     /// Parse JSON with strict known-fields and structural validation.
     pub fn parse_json(input: &[u8]) -> Result<Self, ContractError> {
-        let document: Self = parse(input)?;
-        document.validate()?;
+        Self::parse_json_with_limits(input, &Limits::default())
+    }
+
+    /// Parse strict policy JSON under validated caller-supplied limits.
+    pub fn parse_json_with_limits(input: &[u8], limits: &Limits) -> Result<Self, ContractError> {
+        let document: Self = parse(input, limits)?;
+        document.validate_with_limits(limits)?;
         Ok(document)
+    }
+
+    /// Validate bounded document size and nested policy structures.
+    pub fn validate_with_limits(&self, limits: &Limits) -> Result<(), ContractError> {
+        limits.validate()?;
+        limits.check_count(self.rules.len(), limits.max_rules, "policy rules")?;
+        limits.check_count(self.metadata.len(), limits.max_metadata, "policy metadata")?;
+        self.validate()?;
+        // Preflight attacker-controlled String allocations before cloning or
+        // serializing an in-memory document. Escaping growth is checked again
+        // against the final encoded size by canonical_json_with_limits.
+        let mut text_bytes = self.issuer.subject.len();
+        for entry in &self.metadata {
+            text_bytes = text_bytes.saturating_add(entry.value.len());
+        }
+        for rule in &self.rules {
+            if let Some(environment) = &rule.selector.environment {
+                text_bytes = text_bytes.saturating_add(environment.len());
+            }
+        }
+        if text_bytes > limits.max_json_bytes {
+            return Err(ContractError::PayloadTooLarge);
+        }
+        for rule in &self.rules {
+            limits.check_count(
+                rule.requirements.len(),
+                limits.max_requirements_per_rule,
+                "requirements per rule",
+            )?;
+        }
+        Ok(())
     }
 
     /// Validate structural consistency; does not match or execute rules.
@@ -226,7 +261,12 @@ impl PolicyDocument {
     /// normalized by rule identity; metadata by key; AND-requirements by
     /// serialized value. This is not RFC 8785 canonicalization.
     pub fn canonical_json(&self) -> Result<Vec<u8>, ContractError> {
-        self.validate()?;
+        self.canonical_json_with_limits(&Limits::default())
+    }
+
+    /// Serialize under caller-supplied, bounded resource constraints.
+    pub fn canonical_json_with_limits(&self, limits: &Limits) -> Result<Vec<u8>, ContractError> {
+        self.validate_with_limits(limits)?;
         let mut document = self.clone();
         document.rules.sort_by(|a, b| a.rule_id.cmp(&b.rule_id));
         document.metadata.sort_by(|a, b| a.key.cmp(&b.key));
@@ -248,9 +288,7 @@ impl PolicyDocument {
         }
         let encoded = serde_json::to_vec(&document)
             .map_err(|err| ContractError::InvalidJson(err.to_string()))?;
-        if encoded.len() > MAX_CONTRACT_BYTES {
-            return Err(ContractError::PayloadTooLarge);
-        }
+        limits.check_json(&encoded)?;
         Ok(encoded)
     }
 
@@ -269,7 +307,13 @@ impl CryptoContext {
     /// Parse strict versioned input without promoting configured or inferred
     /// evidence into observed usage.
     pub fn parse_json(input: &[u8]) -> Result<Self, ContractError> {
-        let context: Self = parse(input)?;
+        Self::parse_json_with_limits(input, &Limits::default())
+    }
+
+    /// Parse context with caller-chosen, validated fact and JSON budgets.
+    pub fn parse_json_with_limits(input: &[u8], limits: &Limits) -> Result<Self, ContractError> {
+        let context: Self = parse(input, limits)?;
+        limits.check_count(context.facts.len(), limits.max_facts, "context facts")?;
         let mut ids = BTreeSet::new();
         for fact in &context.facts {
             if !ids.insert(&fact.fact_id) {
@@ -284,6 +328,27 @@ impl PolicyDecision {
     /// Parse strict decision records. Authentication of the producing
     /// evaluator must be performed outside this library.
     pub fn parse_json(input: &[u8]) -> Result<Self, ContractError> {
-        parse(input)
+        Self::parse_json_with_limits(input, &Limits::default())
+    }
+
+    /// Parse a decision with independently bounded reasoning and evidence.
+    pub fn parse_json_with_limits(input: &[u8], limits: &Limits) -> Result<Self, ContractError> {
+        let decision: Self = parse(input, limits)?;
+        limits.check_count(
+            decision.matched_rules.len(),
+            limits.max_matched_rules,
+            "decision matched rules",
+        )?;
+        limits.check_count(
+            decision.reasons.len(),
+            limits.max_decision_reasons,
+            "decision reasons",
+        )?;
+        limits.check_count(
+            decision.evidence.len(),
+            limits.max_evidence_refs,
+            "decision evidence",
+        )?;
+        Ok(decision)
     }
 }
