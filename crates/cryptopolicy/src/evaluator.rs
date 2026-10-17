@@ -249,24 +249,22 @@ pub fn evaluate_with_limits(
     {
         return build_decision(
             policy,
-            explicit_time,
+            context,
             fingerprint,
             DecisionOutcome::Deny,
             BTreeSet::new(),
             BTreeSet::from([(None, ReasonCode::PolicyNotEffective)]),
-            None,
             limits,
         );
     }
     if policy.expires_at.is_some_and(|time| explicit_time >= time) {
         return build_decision(
             policy,
-            explicit_time,
+            context,
             fingerprint,
             DecisionOutcome::Deny,
             BTreeSet::new(),
             BTreeSet::from([(None, ReasonCode::PolicyExpired)]),
-            None,
             limits,
         );
     }
@@ -395,24 +393,22 @@ pub fn evaluate_with_limits(
     };
     build_decision(
         policy,
-        explicit_time,
+        context,
         fingerprint,
         outcome,
         matched,
         reasons,
-        fact,
         limits,
     )
 }
 
 fn build_decision(
     policy: &PolicyDocument,
-    time: EvaluationTime,
+    context: &CryptoContext,
     digest: PolicyDigest,
     outcome: DecisionOutcome,
     matched: BTreeSet<RuleId>,
     reasons: BTreeSet<(Option<RuleId>, ReasonCode)>,
-    fact: Option<&CryptoFact>,
     limits: &Limits,
 ) -> Result<PolicyDecision, ContractError> {
     limits.check_count(
@@ -427,7 +423,7 @@ fn build_decision(
     )?;
     let mut evidence = BTreeSet::<EvidenceId>::new();
     if !matched.is_empty() {
-        if let Some(f) = fact {
+        if let Some(f) = context.facts.first() {
             evidence.insert(f.fact_id.clone());
             if let Some(reference) = &f.evidence_ref {
                 evidence.insert(reference.clone());
@@ -444,7 +440,7 @@ fn build_decision(
         policy_id: policy.policy_id.clone(),
         policy_version: policy.version.clone(),
         policy_digest: digest,
-        evaluated_at: time,
+        evaluated_at: context.evaluation_time,
         outcome,
         matched_rules: matched.into_iter().collect(),
         reasons: reasons
