@@ -95,6 +95,19 @@ Run `cargo run -p cryptopolicy --example compose_offline` and
 [the canonical composition contract](docs/COMPOSITION.md) for precise
 encoding, fail-closed semantics, resource limits and trust boundaries.
 
+## Versioned algorithm/profile catalog (FOSS-445)
+
+The standalone pqc-kit crate now exposes a source-traceable immutable v1
+algorithm/profile catalog covering classical and NIST PQC parameter sets.
+It enforces exact canonical names, parsing-only aliases, operation classes,
+typed parameters and separate PQ categories vs key bit lengths. Catalog
+membership is **not implementation approval or an authorization Permit**.
+
+Run cargo run -p pqc-kit --example catalog_smoke and
+cargo test -p pqc-kit --test catalog --locked. The reference contract is
+[Algorithm Catalog](docs/ALGORITHM_CATALOG.md). FOSS-447/449 retain separate
+evidence and provider-integration trust gates.
+
 ## Crates
 
 - cryptopolicy

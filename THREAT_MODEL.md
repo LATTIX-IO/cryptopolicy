@@ -148,3 +148,7 @@ layers so a permissive overlay cannot override a baseline Deny. The digest is
 not provenance authentication, and the FOSS-435 single-fact and untrusted
 issuer/evidence limitations still apply. Complete runtime correspondence to
 the 33 golden threat-contract cases remains a separate FOSS-459 requirement.
+
+## FOSS-445 algorithm catalog trust boundary
+
+The pqc-kit registry describes published algorithm specifications and named parameter sets, not authenticated implementations or user authorization. Aliases, unknown/pre-standard names, incorrect operation classes, parameter mismatch, and nonstandard lifecycle records do not authorize use. The FOSS-435 evaluator stays conservative; FOSS-447/449 must add authenticated evidence and provider integration, and FOSS-459 still owns the full 33-case runtime conformance gate.
