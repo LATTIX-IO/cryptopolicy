@@ -74,7 +74,7 @@ pub struct RuleSelector {
 }
 
 /// Typed constraints. The future evaluator must interpret these as conjunctions.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Serialize)]
 #[serde(tag = "kind", content = "value", rename_all = "snake_case")]
 pub enum Requirement {
     /// Require exact algorithm identity.
