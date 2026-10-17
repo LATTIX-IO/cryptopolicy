@@ -270,6 +270,30 @@ fn conflicting_support_and_exportability_claims_cannot_authorize() {
 }
 
 #[test]
+fn audit_report_retains_exact_claim_attributes_evidence_age_and_trust_flags() {
+    let req=request();
+    let r=verify(&req,&snapshot("supported"));
+    assert_eq!(r.evaluated_at,req.evaluation_time);
+    assert_eq!(r.max_evidence_age_ms,req.max_evidence_age_ms);
+    let finding=&r.findings[0];
+    assert_eq!(finding.key_origin,Some(KeyOrigin::ProviderGenerated));
+    assert_eq!(finding.key_exportable,Some(false));
+    assert_eq!(finding.protection,Some(KeyProtection::HardwareSecurityModule));
+    assert_eq!(finding.assurance,Some(AssuranceClaim::IndependentAssessment));
+    assert_eq!(finding.assurance_ref,Some(rid("attestation:cap:one")));
+    assert_eq!(finding.asserted_at,EvaluationTime{unix_millis:120});
+    assert_eq!(finding.expires_at,EvaluationTime{unix_millis:200});
+}
+
+#[test]
+fn aggregated_deny_does_not_advertise_compatible_capability_reason() {
+    let r=verify(&request(),&snapshot("conflict"));
+    assert_eq!(r.outcome,DecisionOutcome::Deny);
+    assert!(!reason(&r,CapabilityReason::CompatibleCapability));
+    assert!(r.findings[0].reasons.contains(&CapabilityReason::CompatibleCapability));
+}
+
+#[test]
 fn claim_order_and_requirement_order_never_change_serialized_output() {
     let req=request();let cap=snapshot("conflict");
     let expected=serde_json::to_vec(&verify(&req,&cap)).unwrap();

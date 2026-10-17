@@ -28,8 +28,23 @@
       "reasons": [
         "compatible_capability"
       ],
-      "key_ref": null
+      "key_ref": null,
+      "key_origin": "provider_generated",
+      "key_exportable": false,
+      "protection": "hardware_security_module",
+      "assurance": "independent_assessment",
+      "assurance_ref": "attestation:cap:one",
+      "asserted_at": {
+        "unix_millis": 120
+      },
+      "expires_at": {
+        "unix_millis": 200
+      }
     }
   ],
-  "key_ref": null
+  "key_ref": null,
+  "evaluated_at": {
+    "unix_millis": 150
+  },
+  "max_evidence_age_ms": 50
 }

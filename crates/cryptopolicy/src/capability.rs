@@ -329,6 +329,20 @@ pub struct CapabilityFinding {
     pub parameter: KeyParameter,
     /// Claimed status.
     pub availability: CapabilityAvailability,
+    /// Original origin claim, which is not authentication.
+    pub key_origin: Option<KeyOrigin>,
+    /// Claimed key exportability, if known.
+    pub key_exportable: Option<bool>,
+    /// Claimed key protection, without proof of module validation.
+    pub protection: Option<KeyProtection>,
+    /// Original claimed assurance maturity.
+    pub assurance: Option<AssuranceClaim>,
+    /// Original independent assurance evidence reference.
+    pub assurance_ref: Option<EvidenceId>,
+    /// Original asserted-at timestamp.
+    pub asserted_at: EvaluationTime,
+    /// Original exclusive expiry timestamp.
+    pub expires_at: EvaluationTime,
     /// Verified source and separately verified attestation flags.
     pub source_authenticated: bool,
     /// The assurance reference was independently verified.
@@ -365,6 +379,10 @@ pub struct CapabilityReport {
     pub operation: CryptoOperation,
     /// The request's exact algorithm/profile identity.
     pub algorithm_id: AlgorithmId,
+    /// Explicit time at which capability was assessed.
+    pub evaluated_at: EvaluationTime,
+    /// Maximum evidence age permitted by the request.
+    pub max_evidence_age_ms: u64,
     /// Only a compatibility preflight verdict; not a policy authorization.
     pub outcome: DecisionOutcome,
     /// Stable redaction-safe aggregate reasons.
@@ -829,6 +847,13 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
             algorithm_id: claim.algorithm_id.clone(),
             parameter: claim.parameter.clone(),
             availability: claim.availability,
+            key_origin: claim.key_origin,
+            key_exportable: claim.key_exportable,
+            protection: claim.protection,
+            assurance: claim.assurance,
+            assurance_ref: claim.assurance_ref.clone(),
+            asserted_at: claim.asserted_at,
+            expires_at: claim.expires_at,
             source_authenticated,
             assurance_authenticated,
             disposition,
@@ -847,6 +872,11 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
     } else {
         DecisionOutcome::Permit
     };
+    if outcome != DecisionOutcome::Permit {
+        // Per-claim findings retain local compatibility, but the aggregate
+        // cannot advertise compatibility when global authorization is blocked.
+        reasons.remove(&CapabilityReason::CompatibleCapability);
+    }
     let report = CapabilityReport {
         schema_version: SchemaVersion::V1,
         request_id: request.request_id.clone(),
@@ -857,6 +887,8 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
         catalog_digest: request.catalog_digest.clone(),
         operation: request.operation,
         algorithm_id: request.algorithm_id.clone(),
+        evaluated_at: request.evaluation_time,
+        max_evidence_age_ms: request.max_evidence_age_ms,
         outcome,
         reasons: reasons.into_iter().collect(),
         findings,
