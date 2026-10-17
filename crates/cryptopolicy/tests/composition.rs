@@ -581,3 +581,37 @@ fn sorted_binary_manifest_uses_length_prefixed_fields() {
         1
     );
 }
+
+#[test]
+fn versioned_two_layer_binary_and_digest_are_pinned() {
+    let baseline = policy();
+    let overlay = rename(policy(), "org:overlay-prod");
+    let graph = catalog(vec![
+        node(baseline.clone(), vec![]),
+        node(overlay.clone(), vec![]),
+    ]);
+    let compiled = compose(&set(&baseline, &[overlay]), &graph, &limits()).unwrap();
+    assert_eq!(compiled.canonical_bytes().len(), 3042);
+    assert_eq!(
+        compiled.digest().as_str(),
+        "e5ac6c292efb17b68d158af5a6d0c76de2d08358d8338432cea2d4afb385b2cf"
+    );
+    assert_eq!(eval(&compiled).outcome, DecisionOutcome::Permit);
+}
+
+#[test]
+fn import_edge_limit_rejects_excess_before_any_child_can_authorize() {
+    let base = policy();
+    let a = rename(policy(), "org:edge-a");
+    let b = rename(policy(), "org:edge-b");
+    let c = rename(policy(), "org:edge-c");
+    let graph = catalog(vec![
+        node(base.clone(), vec![reference(&a), reference(&b), reference(&c)]),
+        node(a, vec![]), node(b, vec![]), node(c, vec![]),
+    ]);
+    let max = Limits { max_imports: 2, ..limits() };
+    assert_eq!(
+        compose(&set(&base, &[]), &graph, &max),
+        Err(CompositionError::ResourceLimit("import_edges"))
+    );
+}
