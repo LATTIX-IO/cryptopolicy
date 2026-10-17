@@ -82,3 +82,32 @@ jobs:
 
       - name: SemVer compatibility
         run: cargo semver-checks check-release --workspace --all-features
+
+  format-snapshot-foss434-temp:
+    name: FOSS-434 rustfmt snapshot (temporary, read-only)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable
+        with:
+          toolchain: stable
+          components: rustfmt
+      - name: Record exact rustfmt snapshot
+        run: |
+          cargo fmt --all
+          echo "FMT434_TYPES=$(base64 -w0 crates/cryptopolicy/src/types.rs)"
+          echo "FMT434_POLICY=$(base64 -w0 crates/cryptopolicy/src/policy.rs)"
+          echo "FMT434_VALIDATION=$(base64 -w0 crates/cryptopolicy/src/validation.rs)"
+          echo "FMT434_LIB=$(base64 -w0 crates/cryptopolicy/src/lib.rs)"
+          echo "FMT434_LIMITS=$(base64 -w0 crates/cryptopolicy/src/limits.rs)"
+          echo "FMT434_CONTRACTS=$(base64 -w0 crates/cryptopolicy/tests/contracts.rs)"
+          echo "FMT434_RESOURCE_TESTS=$(base64 -w0 crates/cryptopolicy/tests/limits.rs)"
+          echo "FMT434_STATIC_TESTS=$(base64 -w0 crates/cryptopolicy/tests/static_validation.rs)"
+          echo "FMT434_EXAMPLE=$(base64 -w0 crates/cryptopolicy/examples/static_policy.rs)"
