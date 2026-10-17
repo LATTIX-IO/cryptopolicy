@@ -1,3 +1,4 @@
+//! Integration and regression tests for the versioned cryptographic policy contract.
 #![allow(clippy::unwrap_used)] // Test fixtures use fallible construction deliberately.
 
 use cryptopolicy::*;
