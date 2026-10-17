@@ -175,6 +175,15 @@ fn unrecognized_critical_nested_selector_or_requirement_variant_is_rejected() {
         text.replace("\"kind\": \"algorithm\"", "\"kind\": \"permit_everything\"");
     assert_ne!(text, bad_requirement);
     assert!(PolicyDocument::parse_json(bad_requirement.as_bytes()).is_err());
+
+    // A recognized enum variant must not permit an unknown critical sibling
+    // attribute to be silently dropped by the Serde tagged-enum decoder.
+    let extra_requirement_field = text.replace(
+        "\"kind\": \"algorithm\",",
+        "\"kind\": \"algorithm\", \"override_deny\": true,",
+    );
+    assert_ne!(text, extra_requirement_field);
+    assert!(PolicyDocument::parse_json(extra_requirement_field.as_bytes()).is_err());
 }
 
 #[test]
