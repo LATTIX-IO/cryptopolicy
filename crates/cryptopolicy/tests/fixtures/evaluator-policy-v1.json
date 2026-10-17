@@ -1,0 +1,92 @@
+{
+  "schema_version": "1",
+  "policy_id": "org:evaluator-preview",
+  "version": "1.0.0",
+  "issuer": {
+    "subject": "fixture-owner-unverified",
+    "assurance_ref": null
+  },
+  "created_at": {
+    "unix_millis": 0
+  },
+  "effective_at": {
+    "unix_millis": 100
+  },
+  "expires_at": {
+    "unix_millis": 200
+  },
+  "default_effect": "deny",
+  "rules": [
+    {
+      "rule_id": "r-require-protection",
+      "effect": "require",
+      "selector": {
+        "match_all": true,
+        "operation": null,
+        "algorithm_id": null,
+        "profile_id": null,
+        "environment": null
+      },
+      "requirements": [
+        {
+          "kind": "minimum_key_bits",
+          "value": 256
+        },
+        {
+          "kind": "min_security_category",
+          "value": 3
+        },
+        {
+          "kind": "source_quality",
+          "value": "externally_verified"
+        }
+      ]
+    },
+    {
+      "rule_id": "r-warn-legacy",
+      "effect": "warn",
+      "selector": {
+        "match_all": false,
+        "operation": "verify",
+        "algorithm_id": "RSA-3072",
+        "profile_id": null,
+        "environment": null
+      },
+      "requirements": []
+    },
+    {
+      "rule_id": "r-allow-aes",
+      "effect": "allow",
+      "selector": {
+        "match_all": false,
+        "operation": "encrypt",
+        "algorithm_id": "AES-256-GCM",
+        "profile_id": null,
+        "environment": null
+      },
+      "requirements": [
+        {
+          "kind": "non_exportable"
+        },
+        {
+          "kind": "algorithm",
+          "value": "AES-256-GCM"
+        },
+        {
+          "kind": "key_protection",
+          "value": "hardware_security_module"
+        },
+        {
+          "kind": "source_origin",
+          "value": "observed"
+        }
+      ]
+    }
+  ],
+  "metadata": [
+    {
+      "key": "purpose",
+      "value": "FOSS-435 deterministic evaluator preview; NOT authenticated policy"
+    }
+  ]
+}
