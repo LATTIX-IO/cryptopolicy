@@ -47,7 +47,7 @@ Configured TLS and a negotiated TLS handshake remain separate kinds. A negotiate
 
 ## Conflict and resource semantics
 
-For the same scope/activity and operation, direct/negotiated observations are compared pairwise for exact populated mismatches in algorithm, profile, typed parameter, security category, provider, key protection and key exportability. Two distinct populated values create ObservationConflict(first, second, field). Missing values remain missing; no winner is selected by arrival order or claimed confidence. Even two independently individually permitting observations produce Indeterminate when they contradict; a separate definitive Deny wins.
+For the same scope/activity and operation, direct/negotiated observations are compared pairwise for exact populated mismatches in algorithm, profile, typed parameter, security category, provider, key protection, key exportability, key bit lengths and data sensitivity. Two distinct populated values create ObservationConflict(first, second, field). Missing values remain missing; no winner is selected by arrival order or claimed confidence. Even two independently individually permitting observations produce Indeterminate when they contradict; a separate definitive Deny wins.
 
 To prevent quadratic denial of service, at most 128 observations (or a lower Limits.max_facts) are accepted. Limits.max_diagnostics bounds conflict pairs; other FOSS-433 limits bound source lists, reasons, JSON bytes, nesting and output. On overflow, compilation returns a typed error rather than truncating evidence or manufacturing a Permit.
 

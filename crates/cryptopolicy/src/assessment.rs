@@ -419,6 +419,10 @@ pub enum ConflictField {
     KeyExportable,
     /// Claimed provider identity differs.
     Provider,
+    /// Claimed key bit lengths differ.
+    KeySizeBits,
+    /// Claimed data sensitivity differs.
+    DataSensitivity,
 }
 
 /// Stable comparison of two original observation references.
@@ -591,6 +595,20 @@ fn conflicts_between(a: &AssessmentObservation, b: &AssessmentObservation) -> Ve
             .is_some_and(|(x, y)| x != y)
     }) {
         found.push(ConflictField::SecurityCategory);
+    }
+    if pa.zip(pb).is_some_and(|(a, b)| {
+        a.key_size_bits
+            .zip(b.key_size_bits)
+            .is_some_and(|(x, y)| x != y)
+    }) {
+        found.push(ConflictField::KeySizeBits);
+    }
+    if pa.zip(pb).is_some_and(|(a, b)| {
+        a.data_sensitivity
+            .zip(b.data_sensitivity)
+            .is_some_and(|(x, y)| x != y)
+    }) {
+        found.push(ConflictField::DataSensitivity);
     }
     found
 }

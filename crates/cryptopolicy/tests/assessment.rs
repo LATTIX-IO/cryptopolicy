@@ -257,6 +257,22 @@ fn conflicting_provider_observations_remain_separate_and_block_permit() {
 }
 
 #[test]
+fn differing_sensitivity_blocks_permit_even_when_each_core_fact_permits() {
+    let mut c = input("conflict");
+    c.observations[1].properties.as_mut().unwrap().provider_id =
+        Some(ProviderId::parse("provider:alpha").unwrap());
+    c.observations[1].properties.as_mut().unwrap().data_sensitivity =
+        Some(DataSensitivity::Restricted);
+    let r = report(&c);
+    assert_eq!(r.outcome, DecisionOutcome::Indeterminate);
+    assert_eq!(r.conflicts.len(), 1);
+    assert_eq!(r.conflicts[0].field, ConflictField::DataSensitivity);
+    assert!(r.findings.iter().all(|f| {
+        f.core_decision.as_ref().unwrap().outcome == DecisionOutcome::Permit
+    }));
+}
+
+#[test]
 fn known_denial_dominates_otherwise_permitting_evidence_and_conflict() {
     let mut c = input("conflict");
     let weak = &mut c.observations[1];
