@@ -57,10 +57,7 @@ pub struct PolicySet {
 
 impl PolicySet {
     /// Parse a strict versioned reference set with bounded JSON bytes.
-    pub fn parse_json_with_limits(
-        input: &[u8],
-        limits: &Limits,
-    ) -> Result<Self, CompositionError> {
+    pub fn parse_json_with_limits(input: &[u8], limits: &Limits) -> Result<Self, CompositionError> {
         limits.check_json(input)?;
         let set: Self = serde_json::from_slice(input)
             .map_err(|_| CompositionError::InvalidSet("invalid_policy_set_json"))?;
@@ -71,7 +68,10 @@ impl PolicySet {
     /// Reject repeated roots and oversized overlay lists.
     pub fn validate(&self, limits: &Limits) -> Result<(), CompositionError> {
         limits.validate()?;
-        let total = self.overlays.len().checked_add(1)
+        let total = self
+            .overlays
+            .len()
+            .checked_add(1)
             .ok_or(CompositionError::ResourceLimit("policy_nodes"))?;
         if total > limits.max_imports {
             return Err(CompositionError::ResourceLimit("policy_nodes"));
@@ -221,9 +221,8 @@ impl EffectivePolicy {
         let mut has_deny = false;
         let mut has_indeterminate = false;
         for component in &self.components {
-            let decision = evaluate_with_limits(
-                &component.document, context, explicit_time, limits,
-            )?;
+            let decision =
+                evaluate_with_limits(&component.document, context, explicit_time, limits)?;
             match decision.outcome {
                 DecisionOutcome::Deny => has_deny = true,
                 DecisionOutcome::Indeterminate => has_indeterminate = true,
@@ -310,7 +309,9 @@ impl<R: PolicyResolver> Walker<'_, R> {
         if self.nodes.len() >= self.limits.max_imports {
             return Err(CompositionError::ResourceLimit("policy_nodes"));
         }
-        let mut node = self.resolver.resolve(reference)?
+        let mut node = self
+            .resolver
+            .resolve(reference)?
             .ok_or_else(|| CompositionError::UnresolvedReference(reference.policy_id.clone()))?;
         if node.document.policy_id != reference.policy_id
             || node.document.version != reference.version
@@ -322,9 +323,13 @@ impl<R: PolicyResolver> Walker<'_, R> {
             return Err(CompositionError::DigestMismatch);
         }
         node.document.validate_with_limits(self.limits)?;
-        self.rules = self.rules.checked_add(node.document.rules.len())
+        self.rules = self
+            .rules
+            .checked_add(node.document.rules.len())
             .ok_or(CompositionError::ResourceLimit("total_rules"))?;
-        self.metadata = self.metadata.checked_add(node.document.metadata.len())
+        self.metadata = self
+            .metadata
+            .checked_add(node.document.metadata.len())
             .ok_or(CompositionError::ResourceLimit("total_metadata"))?;
         if self.rules > self.limits.max_rules {
             return Err(CompositionError::ResourceLimit("total_rules"));
@@ -339,7 +344,9 @@ impl<R: PolicyResolver> Walker<'_, R> {
         if node.imports.windows(2).any(|pair| pair[0] == pair[1]) {
             return Err(CompositionError::DuplicateReference);
         }
-        self.edges = self.edges.checked_add(node.imports.len())
+        self.edges = self
+            .edges
+            .checked_add(node.imports.len())
             .ok_or(CompositionError::ResourceLimit("import_edges"))?;
         if self.edges > self.limits.max_imports {
             return Err(CompositionError::ResourceLimit("import_edges"));
@@ -348,11 +355,14 @@ impl<R: PolicyResolver> Walker<'_, R> {
         // Insert before descending so alternate paths can identify inconsistent
         // pinned identities; the active set still detects cycles first.
         let imports = node.imports.clone();
-        self.nodes.insert(reference.policy_id.clone(), ResolvedPolicy {
-            reference: reference.clone(),
-            document: node.document,
-            imports,
-        });
+        self.nodes.insert(
+            reference.policy_id.clone(),
+            ResolvedPolicy {
+                reference: reference.clone(),
+                document: node.document,
+                imports,
+            },
+        );
         for imported in &node.imports {
             self.visit(imported, depth + 1)?;
         }
@@ -393,12 +403,18 @@ pub fn compile_policy_set<R: PolicyResolver>(
     let hex = hash.iter().map(|b| format!("{b:02x}")).collect::<String>();
     let digest = PolicyDigest::try_from(hex)?;
     Ok(EffectivePolicy {
-        set, components, canonical_bytes, digest,
+        set,
+        components,
+        canonical_bytes,
+        digest,
     })
 }
 
 fn push_blob(buf: &mut Vec<u8>, blob: &[u8], max: usize) -> Result<(), CompositionError> {
-    let total = buf.len().checked_add(4).and_then(|n| n.checked_add(blob.len()))
+    let total = buf
+        .len()
+        .checked_add(4)
+        .and_then(|n| n.checked_add(blob.len()))
         .ok_or(CompositionError::ResourceLimit("effective_bytes"))?;
     if total > max {
         return Err(CompositionError::ResourceLimit("effective_bytes"));
@@ -411,8 +427,8 @@ fn push_blob(buf: &mut Vec<u8>, blob: &[u8], max: usize) -> Result<(), Compositi
 }
 
 fn push_count(buf: &mut Vec<u8>, count: usize, max: usize) -> Result<(), CompositionError> {
-    let value = u32::try_from(count)
-        .map_err(|_| CompositionError::ResourceLimit("effective_bytes"))?;
+    let value =
+        u32::try_from(count).map_err(|_| CompositionError::ResourceLimit("effective_bytes"))?;
     if buf.len().checked_add(4).is_none_or(|size| size > max) {
         return Err(CompositionError::ResourceLimit("effective_bytes"));
     }
@@ -421,8 +437,7 @@ fn push_count(buf: &mut Vec<u8>, count: usize, max: usize) -> Result<(), Composi
 }
 
 fn ref_bytes(reference: &PolicyReference) -> Result<Vec<u8>, CompositionError> {
-    serde_json::to_vec(reference)
-        .map_err(|_| CompositionError::InvalidSet("reference_encoding"))
+    serde_json::to_vec(reference).map_err(|_| CompositionError::InvalidSet("reference_encoding"))
 }
 
 fn canonical_effective_bytes(
