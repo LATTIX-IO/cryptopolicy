@@ -27,10 +27,20 @@ fn trust(ctx: &AssessmentContext, record: &AssessmentObservation) -> Result<bool
         && ctx.scope.use_site_id.as_str() == "use:tls-egress"
         && ctx.scope.activity_id.as_str() == "session:42";
     let pair = match record.observation_id.as_str() {
-        "obs:tls:1" => record.source_id.as_str() == "collector:tls"
-            && record.evidence_ref.as_ref().is_some_and(|id| id.as_str() == "evidence:tls:1"),
-        "obs:tls:2" => record.source_id.as_str() == "collector:wire"
-            && record.evidence_ref.as_ref().is_some_and(|id| id.as_str() == "evidence:wire:2"),
+        "obs:tls:1" => {
+            record.source_id.as_str() == "collector:tls"
+                && record
+                    .evidence_ref
+                    .as_ref()
+                    .is_some_and(|id| id.as_str() == "evidence:tls:1")
+        }
+        "obs:tls:2" => {
+            record.source_id.as_str() == "collector:wire"
+                && record
+                    .evidence_ref
+                    .as_ref()
+                    .is_some_and(|id| id.as_str() == "evidence:wire:2")
+        }
         _ => false,
     };
     Ok(base && pair && record.scope == ctx.scope)
@@ -63,19 +73,33 @@ fn high_confidence_externally_authenticated_direct_observation_can_permit() {
     assert_eq!(r.findings[0].kind, ObservationKind::DirectOperation);
     assert!(r.findings[0].externally_authenticated);
     assert_eq!(r.findings[0].source_id.as_str(), "collector:tls");
-    assert_eq!(r.findings[0].evidence_ref.as_ref().unwrap().as_str(), "evidence:tls:1");
-    assert_eq!(r.findings[0].core_decision.as_ref().unwrap().outcome, DecisionOutcome::Permit);
-    assert_eq!(r.findings[0].core_decision.as_ref().unwrap().evidence, vec![rid("evidence:tls:1"), rid("obs:tls:1")]);
+    assert_eq!(
+        r.findings[0].evidence_ref.as_ref().unwrap().as_str(),
+        "evidence:tls:1"
+    );
+    assert_eq!(
+        r.findings[0].core_decision.as_ref().unwrap().outcome,
+        DecisionOutcome::Permit
+    );
+    assert_eq!(
+        r.findings[0].core_decision.as_ref().unwrap().evidence,
+        vec![rid("evidence:tls:1"), rid("obs:tls:1")]
+    );
 }
 
 #[test]
 fn explicit_structured_report_matches_checked_in_golden() {
     let r = report(&input("observed"));
-    let expected: serde_json::Value =
-        serde_json::from_slice(include_bytes!("fixtures/assessment-result-observed-v1.json")).unwrap();
+    let expected: serde_json::Value = serde_json::from_slice(include_bytes!(
+        "fixtures/assessment-result-observed-v1.json"
+    ))
+    .unwrap();
     assert_eq!(serde_json::to_value(&r).unwrap(), expected);
     let bytes = serde_json::to_vec(&r).unwrap();
-    assert_eq!(AssessmentReport::parse_json_with_limits(&bytes, &Limits::default()).unwrap(), r);
+    assert_eq!(
+        AssessmentReport::parse_json_with_limits(&bytes, &Limits::default()).unwrap(),
+        r
+    );
     assert_eq!(r.policy_digest, policy().canonical_digest().unwrap());
 }
 
@@ -86,8 +110,14 @@ fn source_quality_and_claimed_high_confidence_cannot_self_authenticate() {
     assert_eq!(r.outcome, DecisionOutcome::Indeterminate);
     assert!(has(&r, AssessmentReason::EvidenceNotAuthenticated));
     assert!(!r.findings[0].externally_authenticated);
-    assert_eq!(r.findings[0].disposition, AssessmentDisposition::Unauthenticated);
-    assert_eq!(r.findings[0].source_quality_claim, Some(EvidenceQuality::ExternallyVerified));
+    assert_eq!(
+        r.findings[0].disposition,
+        AssessmentDisposition::Unauthenticated
+    );
+    assert_eq!(
+        r.findings[0].source_quality_claim,
+        Some(EvidenceQuality::ExternallyVerified)
+    );
     assert_eq!(r.findings[0].core_decision, None);
 }
 
@@ -109,7 +139,11 @@ fn original_snapshot_source_and_evidence_binding_cannot_be_substituted() {
 fn negotiated_tls_is_preserved_as_negotiated_not_observed() {
     let c = input("negotiated");
     let mut p = policy();
-    let allow = p.rules.iter_mut().find(|r| r.effect == RuleEffect::Allow).unwrap();
+    let allow = p
+        .rules
+        .iter_mut()
+        .find(|r| r.effect == RuleEffect::Allow)
+        .unwrap();
     for constraint in &mut allow.requirements {
         if let Requirement::SourceOrigin(origin) = constraint {
             *origin = FactOrigin::Negotiated;
@@ -118,7 +152,10 @@ fn negotiated_tls_is_preserved_as_negotiated_not_observed() {
     let r = assess(&p, &c, c.evaluation_time, &trust).unwrap();
     assert_eq!(r.outcome, DecisionOutcome::Permit);
     assert_eq!(r.findings[0].kind.origin(), FactOrigin::Negotiated);
-    assert_eq!(r.findings[0].core_decision.as_ref().unwrap().outcome, DecisionOutcome::Permit);
+    assert_eq!(
+        r.findings[0].core_decision.as_ref().unwrap().outcome,
+        DecisionOutcome::Permit
+    );
     // An observed-only requirement does not accidentally match a negotiated fact.
     assert_ne!(report(&c).outcome, DecisionOutcome::Permit);
 }
@@ -129,7 +166,10 @@ fn configured_cipher_cannot_be_promoted_into_operational_use() {
     let r = report(&c);
     assert_eq!(r.outcome, DecisionOutcome::Indeterminate);
     assert!(has(&r, AssessmentReason::NoOperationalObservation));
-    assert_eq!(r.findings[0].disposition, AssessmentDisposition::NotOperational);
+    assert_eq!(
+        r.findings[0].disposition,
+        AssessmentDisposition::NotOperational
+    );
     assert_eq!(r.findings[0].kind.origin(), FactOrigin::Configured);
     assert!(r.findings[0].core_decision.is_none());
 }
@@ -141,7 +181,10 @@ fn installed_crypto_capable_dependency_never_proves_algorithm_use() {
     assert_eq!(r.outcome, DecisionOutcome::Indeterminate);
     assert!(has(&r, AssessmentReason::NoOperationalObservation));
     assert_eq!(r.findings[0].kind.origin(), FactOrigin::Inferred);
-    assert_eq!(r.findings[0].disposition, AssessmentDisposition::NotOperational);
+    assert_eq!(
+        r.findings[0].disposition,
+        AssessmentDisposition::NotOperational
+    );
     assert_eq!(r.findings[0].core_decision, None);
 }
 
@@ -188,7 +231,10 @@ fn partial_scan_with_an_approved_single_observation_cannot_permit() {
     assert_eq!(r.outcome, DecisionOutcome::Indeterminate);
     assert!(has(&r, AssessmentReason::CoverageIncomplete));
     assert!(has(&r, AssessmentReason::UninspectedSources));
-    assert_eq!(r.findings[0].core_decision.as_ref().unwrap().outcome, DecisionOutcome::Permit);
+    assert_eq!(
+        r.findings[0].core_decision.as_ref().unwrap().outcome,
+        DecisionOutcome::Permit
+    );
 }
 
 #[test]
@@ -201,7 +247,11 @@ fn conflicting_provider_observations_remain_separate_and_block_permit() {
     assert_eq!(r.conflicts[0].first, rid("obs:tls:1"));
     assert_eq!(r.conflicts[0].second, rid("obs:tls:2"));
     assert!(has(&r, AssessmentReason::ConflictingObservations));
-    assert!(r.findings.iter().all(|f| f.core_decision.as_ref().unwrap().outcome == DecisionOutcome::Permit));
+    assert!(
+        r.findings
+            .iter()
+            .all(|f| f.core_decision.as_ref().unwrap().outcome == DecisionOutcome::Permit)
+    );
     assert_eq!(r.findings[0].source_id.as_str(), "collector:tls");
     assert_eq!(r.findings[1].source_id.as_str(), "collector:wire");
 }
@@ -220,8 +270,14 @@ fn known_denial_dominates_otherwise_permitting_evidence_and_conflict() {
     assert_eq!(r.outcome, DecisionOutcome::Deny);
     assert!(has(&r, AssessmentReason::CoreDenied));
     assert!(has(&r, AssessmentReason::ConflictingObservations));
-    assert_eq!(r.findings[0].core_decision.as_ref().unwrap().outcome, DecisionOutcome::Permit);
-    assert_eq!(r.findings[1].core_decision.as_ref().unwrap().outcome, DecisionOutcome::Deny);
+    assert_eq!(
+        r.findings[0].core_decision.as_ref().unwrap().outcome,
+        DecisionOutcome::Permit
+    );
+    assert_eq!(
+        r.findings[1].core_decision.as_ref().unwrap().outcome,
+        DecisionOutcome::Deny
+    );
 }
 
 #[test]
@@ -246,7 +302,10 @@ fn confidence_is_explicit_and_cannot_replace_verified_evidence() {
     assert!(has(&r, AssessmentReason::InsufficientConfidence));
     assert_eq!(r.evidence_confidence, Some(AssessmentConfidence::Low));
     assert!(r.findings[0].externally_authenticated);
-    assert_eq!(r.findings[0].core_decision.as_ref().unwrap().outcome, DecisionOutcome::Permit);
+    assert_eq!(
+        r.findings[0].core_decision.as_ref().unwrap().outcome,
+        DecisionOutcome::Permit
+    );
 }
 
 #[test]
@@ -256,7 +315,10 @@ fn missing_evidence_reference_blocks_even_when_other_fields_match() {
     let r = report(&c);
     assert_eq!(r.outcome, DecisionOutcome::Indeterminate);
     assert!(has(&r, AssessmentReason::MissingEvidenceReference));
-    assert_eq!(r.findings[0].disposition, AssessmentDisposition::MissingEvidence);
+    assert_eq!(
+        r.findings[0].disposition,
+        AssessmentDisposition::MissingEvidence
+    );
     assert!(r.findings[0].core_decision.is_none());
 }
 
@@ -270,12 +332,18 @@ fn missing_algorithm_and_parameter_are_not_completed_from_other_observations() {
     let r = report(&c);
     assert_eq!(r.outcome, DecisionOutcome::Indeterminate);
     assert!(has(&r, AssessmentReason::MissingOperationalFields));
-    assert_eq!(r.findings[0].disposition, AssessmentDisposition::MissingAlgorithm);
+    assert_eq!(
+        r.findings[0].disposition,
+        AssessmentDisposition::MissingAlgorithm
+    );
     assert!(r.findings[0].core_decision.is_none());
     c.observations[0].algorithm_id = Some(AlgorithmId::parse("AES-256-GCM").unwrap());
     let r = report(&c);
     assert_eq!(r.outcome, DecisionOutcome::Indeterminate);
-    assert_eq!(r.findings[0].disposition, AssessmentDisposition::MissingParameter);
+    assert_eq!(
+        r.findings[0].disposition,
+        AssessmentDisposition::MissingParameter
+    );
 }
 
 #[test]
@@ -296,7 +364,9 @@ fn mismatched_algorithm_parameter_cannot_be_laundered() {
     });
     assert_eq!(
         c.validate(&Limits::default()),
-        Err(ContractError::InvalidDocument("named_set_identity_mismatch"))
+        Err(ContractError::InvalidDocument(
+            "named_set_identity_mismatch"
+        ))
     );
 }
 
@@ -312,7 +382,9 @@ fn wrong_sha3_output_bits_are_rejected_without_catalog_shortcuts() {
     });
     assert_eq!(
         c.validate(&Limits::default()),
-        Err(ContractError::InvalidDocument("contradictory_hash_output_bits"))
+        Err(ContractError::InvalidDocument(
+            "contradictory_hash_output_bits"
+        ))
     );
 }
 
@@ -322,7 +394,10 @@ fn wrong_operation_is_preserved_without_authorization() {
     c.observations[0].operation = Some(CryptoOperation::Decrypt);
     let r = report(&c);
     assert_eq!(r.outcome, DecisionOutcome::Indeterminate);
-    assert_eq!(r.findings[0].disposition, AssessmentDisposition::DifferentOperation);
+    assert_eq!(
+        r.findings[0].disposition,
+        AssessmentDisposition::DifferentOperation
+    );
     assert!(r.findings[0].core_decision.is_none());
 }
 
@@ -339,8 +414,12 @@ fn expired_and_globally_denied_policies_apply_even_without_evidence() {
         rule_id: RuleId::parse("global:deny").unwrap(),
         effect: RuleEffect::Deny,
         selector: RuleSelector {
-            match_all: true, operation: None, algorithm_id: None,
-            profile_id: None, environment: None, advanced: None,
+            match_all: true,
+            operation: None,
+            algorithm_id: None,
+            profile_id: None,
+            environment: None,
+            advanced: None,
         },
         requirements: vec![],
     });
@@ -370,40 +449,63 @@ fn observation_order_and_rule_order_do_not_change_serialized_result() {
 fn duplicate_observations_and_coverage_source_ids_reject_atomically() {
     let mut c = input("observed");
     c.observations.push(c.observations[0].clone());
-    assert_eq!(c.validate(&Limits::default()), Err(ContractError::DuplicateIdentifier));
+    assert_eq!(
+        c.validate(&Limits::default()),
+        Err(ContractError::DuplicateIdentifier)
+    );
     let mut c = input("partial");
     c.uninspected_sources.push(c.uninspected_sources[0].clone());
-    assert_eq!(c.validate(&Limits::default()), Err(ContractError::DuplicateIdentifier));
+    assert_eq!(
+        c.validate(&Limits::default()),
+        Err(ContractError::DuplicateIdentifier)
+    );
 }
 
 #[test]
 fn cross_scope_asset_site_or_activity_laundering_is_rejected() {
     let mut c = input("observed");
     c.observations[0].scope.asset_id = PolicyId::parse("asset:other").unwrap();
-    assert_eq!(c.validate(&Limits::default()), Err(ContractError::InvalidDocument("assessment_scope_mismatch")));
+    assert_eq!(
+        c.validate(&Limits::default()),
+        Err(ContractError::InvalidDocument("assessment_scope_mismatch"))
+    );
     c = input("observed");
     c.observations[0].scope.use_site_id = PolicyId::parse("use:other").unwrap();
-    assert_eq!(c.validate(&Limits::default()), Err(ContractError::InvalidDocument("assessment_scope_mismatch")));
+    assert_eq!(
+        c.validate(&Limits::default()),
+        Err(ContractError::InvalidDocument("assessment_scope_mismatch"))
+    );
     c = input("observed");
     c.observations[0].scope.activity_id = rid("session:forged");
-    assert_eq!(c.validate(&Limits::default()), Err(ContractError::InvalidDocument("assessment_scope_mismatch")));
+    assert_eq!(
+        c.validate(&Limits::default()),
+        Err(ContractError::InvalidDocument("assessment_scope_mismatch"))
+    );
 }
 
 #[test]
 fn complete_coverage_with_known_uninspected_sources_is_invalid() {
     let mut c = input("partial");
     c.coverage = AssessmentCoverage::Complete;
-    assert_eq!(c.validate(&Limits::default()), Err(ContractError::InvalidDocument("complete_coverage_with_gaps")));
+    assert_eq!(
+        c.validate(&Limits::default()),
+        Err(ContractError::InvalidDocument(
+            "complete_coverage_with_gaps"
+        ))
+    );
 }
 
 #[test]
 fn future_observations_and_mismatched_clock_fail() {
     let mut c = input("observed");
     c.observations[0].observed_at = EvaluationTime { unix_millis: 151 };
-    assert_eq!(c.validate(&Limits::default()), Err(ContractError::InvalidDocument("future_observation")));
+    assert_eq!(
+        c.validate(&Limits::default()),
+        Err(ContractError::InvalidDocument("future_observation"))
+    );
     let c = input("observed");
     assert_eq!(
-        assess(&policy(), &c, EvaluationTime {unix_millis: 151}, &trust),
+        assess(&policy(), &c, EvaluationTime { unix_millis: 151 }, &trust),
         Err(ContractError::InvalidDocument("assessment_time_mismatch"))
     );
 }
@@ -412,11 +514,15 @@ fn future_observations_and_mismatched_clock_fail() {
 fn untrusted_external_verifier_error_never_silently_authorizes() {
     let c = input("observed");
     let fails = |_: &AssessmentContext, _: &AssessmentObservation| {
-        Err(ContractError::InvalidDocument("verification_service_unavailable"))
+        Err(ContractError::InvalidDocument(
+            "verification_service_unavailable",
+        ))
     };
     assert_eq!(
         assess(&policy(), &c, c.evaluation_time, &fails),
-        Err(ContractError::InvalidDocument("verification_service_unavailable"))
+        Err(ContractError::InvalidDocument(
+            "verification_service_unavailable"
+        ))
     );
 }
 
@@ -424,14 +530,24 @@ fn untrusted_external_verifier_error_never_silently_authorizes() {
 fn strict_json_rejects_extra_critical_fields_duplicate_and_unknown_schema() {
     let valid = include_bytes!("fixtures/assessment-observed-v1.json");
     let text = std::str::from_utf8(valid).unwrap();
-    let extra = text.replacen("\"confidence\": \"high\"", "\"confidence\": \"high\", \"override_deny\": true", 1);
+    let extra = text.replacen(
+        "\"confidence\": \"high\"",
+        "\"confidence\": \"high\", \"override_deny\": true",
+        1,
+    );
     assert_ne!(text, extra);
     assert!(AssessmentContext::parse_json(extra.as_bytes()).is_err());
-    let duplicate = text.replacen("\"schema_version\": \"1\"", "\"schema_version\": \"1\", \"schema_version\": \"1\"", 1);
+    let duplicate = text.replacen(
+        "\"schema_version\": \"1\"",
+        "\"schema_version\": \"1\", \"schema_version\": \"1\"",
+        1,
+    );
     assert_ne!(text, duplicate);
     assert!(AssessmentContext::parse_json(duplicate.as_bytes()).is_err());
     assert!(mut_json(|v| v["schema_version"] = "2".into()).is_err());
-    assert!(mut_json(|v| v["observations"][0]["parameter"]["kind"] = "never_trust".into()).is_err());
+    assert!(
+        mut_json(|v| v["observations"][0]["parameter"]["kind"] = "never_trust".into()).is_err()
+    );
     assert!(mut_json(|v| v["observations"][0]["parameter"]["permit"] = true.into()).is_err());
 }
 
@@ -439,23 +555,45 @@ fn strict_json_rejects_extra_critical_fields_duplicate_and_unknown_schema() {
 fn byte_budget_and_observation_budget_bound_untrusted_inputs() {
     let c = input("observed");
     let bytes = serde_json::to_vec(&c).unwrap();
-    let small = Limits { max_json_bytes: bytes.len() - 1, ..Limits::default() };
-    assert_eq!(AssessmentContext::parse_json_with_limits(&bytes, &small), Err(ContractError::PayloadTooLarge));
+    let small = Limits {
+        max_json_bytes: bytes.len() - 1,
+        ..Limits::default()
+    };
+    assert_eq!(
+        AssessmentContext::parse_json_with_limits(&bytes, &small),
+        Err(ContractError::PayloadTooLarge)
+    );
     let mut c = input("conflict");
-    let low = Limits { max_facts: 1, ..Limits::default() };
-    assert_eq!(c.validate(&low), Err(ContractError::ResourceLimitExceeded("assessment observations")));
+    let low = Limits {
+        max_facts: 1,
+        ..Limits::default()
+    };
+    assert_eq!(
+        c.validate(&low),
+        Err(ContractError::ResourceLimitExceeded(
+            "assessment observations"
+        ))
+    );
     while c.observations.len() <= MAX_ASSESSMENT_OBSERVATIONS {
         let mut item = c.observations[0].clone();
         item.observation_id = rid(&format!("obs:large:{}", c.observations.len()));
         c.observations.push(item);
     }
-    assert_eq!(c.validate(&Limits::default()), Err(ContractError::ResourceLimitExceeded("assessment observations")));
+    assert_eq!(
+        c.validate(&Limits::default()),
+        Err(ContractError::ResourceLimitExceeded(
+            "assessment observations"
+        ))
+    );
 }
 
 #[test]
 fn conflicting_observation_budget_is_enforced() {
     let c = input("conflict");
-    let quota = Limits { max_diagnostics: 1, ..Limits::default() };
+    let quota = Limits {
+        max_diagnostics: 1,
+        ..Limits::default()
+    };
     assert!(assess_with_limits(&policy(), &c, c.evaluation_time, &trust, &quota).is_ok());
     let mut c = c.clone();
     c.observations[1].algorithm_id = Some(AlgorithmId::parse("AES-128-GCM").unwrap());
@@ -475,9 +613,21 @@ fn report_parser_cannot_accept_unknown_fields_or_oversized_output() {
     let r = report(&input("observed"));
     let bytes = serde_json::to_vec(&r).unwrap();
     let text = String::from_utf8(bytes.clone()).unwrap();
-    let invalid = text.replacen("\"outcome\":\"permit\"", "\"outcome\":\"permit\",\"bypass\":true", 1);
+    let invalid = text.replacen(
+        "\"outcome\":\"permit\"",
+        "\"outcome\":\"permit\",\"bypass\":true",
+        1,
+    );
     assert_ne!(text, invalid);
-    assert!(AssessmentReport::parse_json_with_limits(invalid.as_bytes(), &Limits::default()).is_err());
-    let small = Limits { max_json_bytes: bytes.len()-1, ..Limits::default() };
-    assert_eq!(AssessmentReport::parse_json_with_limits(&bytes, &small), Err(ContractError::PayloadTooLarge));
+    assert!(
+        AssessmentReport::parse_json_with_limits(invalid.as_bytes(), &Limits::default()).is_err()
+    );
+    let small = Limits {
+        max_json_bytes: bytes.len() - 1,
+        ..Limits::default()
+    };
+    assert_eq!(
+        AssessmentReport::parse_json_with_limits(&bytes, &small),
+        Err(ContractError::PayloadTooLarge)
+    );
 }

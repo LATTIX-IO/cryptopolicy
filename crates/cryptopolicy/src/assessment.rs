@@ -186,10 +186,7 @@ impl AssessmentContext {
     }
 
     /// Read and validate input without trusting its provenance claims.
-    pub fn parse_json_with_limits(
-        input: &[u8],
-        limits: &Limits,
-    ) -> Result<Self, ContractError> {
+    pub fn parse_json_with_limits(input: &[u8], limits: &Limits) -> Result<Self, ContractError> {
         limits.check_json(input)?;
         let context: Self = serde_json::from_slice(input)
             .map_err(|error| ContractError::InvalidJson(error.to_string()))?;
@@ -200,10 +197,20 @@ impl AssessmentContext {
     /// Check all scope, cardinality, time, parameter and correlation invariants.
     pub fn validate(&self, limits: &Limits) -> Result<(), ContractError> {
         limits.validate()?;
-        limits.check_count(self.observations.len(), limits.max_facts.min(MAX_ASSESSMENT_OBSERVATIONS), "assessment observations")?;
-        limits.check_count(self.uninspected_sources.len(), limits.max_evidence_refs, "uninspected sources")?;
+        limits.check_count(
+            self.observations.len(),
+            limits.max_facts.min(MAX_ASSESSMENT_OBSERVATIONS),
+            "assessment observations",
+        )?;
+        limits.check_count(
+            self.uninspected_sources.len(),
+            limits.max_evidence_refs,
+            "uninspected sources",
+        )?;
         if self.coverage == AssessmentCoverage::Complete && !self.uninspected_sources.is_empty() {
-            return Err(ContractError::InvalidDocument("complete_coverage_with_gaps"));
+            return Err(ContractError::InvalidDocument(
+                "complete_coverage_with_gaps",
+            ));
         }
         // Reuse the trusted core validator for environment values.
         let skeleton = CryptoContext {
@@ -254,14 +261,20 @@ impl AssessmentContext {
 }
 
 fn validate_observed_parameter(record: &AssessmentObservation) -> Result<(), ContractError> {
-    let Some(parameter) = &record.parameter else { return Ok(()); };
+    let Some(parameter) = &record.parameter else {
+        return Ok(());
+    };
     match (&parameter.kind, &parameter.value) {
         (ObservedParameterKind::KeyBits, ObservedParameterValue::Bits(bits)) => {
             if !(1..=crate::MAX_DECLARED_KEY_BITS).contains(bits) {
                 return Err(ContractError::InvalidDocument("invalid_observed_key_bits"));
             }
-            if record.properties.as_ref().and_then(|p| p.key_size_bits)
-                .is_some_and(|value| value != *bits) {
+            if record
+                .properties
+                .as_ref()
+                .and_then(|p| p.key_size_bits)
+                .is_some_and(|value| value != *bits)
+            {
                 return Err(ContractError::InvalidDocument("contradictory_key_bits"));
             }
         }
@@ -270,17 +283,25 @@ fn validate_observed_parameter(record: &AssessmentObservation) -> Result<(), Con
                 return Err(ContractError::InvalidDocument("invalid_hash_output_bits"));
             }
             if let Some(id) = &record.algorithm_id {
-                let named = id.as_str().strip_prefix("SHA3-")
+                let named = id
+                    .as_str()
+                    .strip_prefix("SHA3-")
                     .or_else(|| id.as_str().strip_prefix("SHA-"));
-                if named.and_then(|number| number.parse::<u32>().ok())
-                    .is_some_and(|expected| expected != *bits) {
-                    return Err(ContractError::InvalidDocument("contradictory_hash_output_bits"));
+                if named
+                    .and_then(|number| number.parse::<u32>().ok())
+                    .is_some_and(|expected| expected != *bits)
+                {
+                    return Err(ContractError::InvalidDocument(
+                        "contradictory_hash_output_bits",
+                    ));
                 }
             }
         }
         (ObservedParameterKind::NamedSet, ObservedParameterValue::Name(id)) => {
             if record.algorithm_id.as_ref() != Some(id) {
-                return Err(ContractError::InvalidDocument("named_set_identity_mismatch"));
+                return Err(ContractError::InvalidDocument(
+                    "named_set_identity_mismatch",
+                ));
             }
         }
         _ => return Err(ContractError::InvalidDocument("invalid_observed_parameter")),
@@ -474,16 +495,25 @@ pub struct AssessmentReport {
 
 impl AssessmentReport {
     /// Parse a strict report, preserving independent evidence and decision fields.
-    pub fn parse_json_with_limits(
-        input: &[u8],
-        limits: &Limits,
-    ) -> Result<Self, ContractError> {
+    pub fn parse_json_with_limits(input: &[u8], limits: &Limits) -> Result<Self, ContractError> {
         limits.check_json(input)?;
         let report: Self = serde_json::from_slice(input)
             .map_err(|error| ContractError::InvalidJson(error.to_string()))?;
-        limits.check_count(report.findings.len(), limits.max_facts.min(MAX_ASSESSMENT_OBSERVATIONS), "assessment findings")?;
-        limits.check_count(report.conflicts.len(), limits.max_diagnostics, "assessment conflicts")?;
-        limits.check_count(report.reasons.len(), limits.max_decision_reasons, "assessment reasons")?;
+        limits.check_count(
+            report.findings.len(),
+            limits.max_facts.min(MAX_ASSESSMENT_OBSERVATIONS),
+            "assessment findings",
+        )?;
+        limits.check_count(
+            report.conflicts.len(),
+            limits.max_diagnostics,
+            "assessment conflicts",
+        )?;
+        limits.check_count(
+            report.reasons.len(),
+            limits.max_decision_reasons,
+            "assessment reasons",
+        )?;
         Ok(report)
     }
 }
@@ -500,7 +530,8 @@ fn project_fact(record: &AssessmentObservation, verified: bool) -> CryptoFact {
     if let Some(ObservedParameter {
         kind: ObservedParameterKind::KeyBits,
         value: ObservedParameterValue::Bits(bits),
-    }) = &record.parameter {
+    }) = &record.parameter
+    {
         properties.key_size_bits = Some(*bits);
     }
     CryptoFact {
@@ -515,13 +546,13 @@ fn project_fact(record: &AssessmentObservation, verified: bool) -> CryptoFact {
 }
 
 fn conflicting<T: Eq>(first: &Option<T>, second: &Option<T>) -> bool {
-    first.as_ref().zip(second.as_ref()).is_some_and(|(a, b)| a != b)
+    first
+        .as_ref()
+        .zip(second.as_ref())
+        .is_some_and(|(a, b)| a != b)
 }
 
-fn conflicts_between(
-    a: &AssessmentObservation,
-    b: &AssessmentObservation,
-) -> Vec<ConflictField> {
+fn conflicts_between(a: &AssessmentObservation, b: &AssessmentObservation) -> Vec<ConflictField> {
     let mut found = Vec::new();
     if conflicting(&a.algorithm_id, &b.algorithm_id) {
         found.push(ConflictField::Algorithm);
@@ -534,16 +565,31 @@ fn conflicts_between(
     }
     let pa = a.properties.as_ref();
     let pb = b.properties.as_ref();
-    if pa.zip(pb).is_some_and(|(a, b)| conflicting(&a.provider_id, &b.provider_id)) {
+    if pa
+        .zip(pb)
+        .is_some_and(|(a, b)| conflicting(&a.provider_id, &b.provider_id))
+    {
         found.push(ConflictField::Provider);
     }
-    if pa.zip(pb).is_some_and(|(a, b)| a.key_protection.zip(b.key_protection).is_some_and(|(x, y)| x != y)) {
+    if pa.zip(pb).is_some_and(|(a, b)| {
+        a.key_protection
+            .zip(b.key_protection)
+            .is_some_and(|(x, y)| x != y)
+    }) {
         found.push(ConflictField::KeyProtection);
     }
-    if pa.zip(pb).is_some_and(|(a, b)| a.key_exportable.zip(b.key_exportable).is_some_and(|(x, y)| x != y)) {
+    if pa.zip(pb).is_some_and(|(a, b)| {
+        a.key_exportable
+            .zip(b.key_exportable)
+            .is_some_and(|(x, y)| x != y)
+    }) {
         found.push(ConflictField::KeyExportable);
     }
-    if pa.zip(pb).is_some_and(|(a, b)| a.security_category.zip(b.security_category).is_some_and(|(x, y)| x != y)) {
+    if pa.zip(pb).is_some_and(|(a, b)| {
+        a.security_category
+            .zip(b.security_category)
+            .is_some_and(|(x, y)| x != y)
+    }) {
         found.push(ConflictField::SecurityCategory);
     }
     found
@@ -584,12 +630,18 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
     let policy_bytes = policy.canonical_json_with_limits(limits)?;
     let hash = sha2::Sha256::digest(&policy_bytes);
     let policy_digest = PolicyDigest::try_from(
-        hash.iter().map(|byte| format!("{byte:02x}")).collect::<String>()
+        hash.iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
     )?;
     let mut ordered: Vec<&AssessmentObservation> = context.observations.iter().collect();
     ordered.sort_by(|a, b| a.observation_id.cmp(&b.observation_id));
-    let operational: Vec<_> = ordered.iter().copied()
-        .filter(|record| record.kind.is_operational() && record.operation == Some(context.operation))
+    let operational: Vec<_> = ordered
+        .iter()
+        .copied()
+        .filter(|record| {
+            record.kind.is_operational() && record.operation == Some(context.operation)
+        })
         .collect();
 
     let mut conflicts = Vec::new();
@@ -601,7 +653,11 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
                     second: b.observation_id.clone(),
                     field,
                 });
-                limits.check_count(conflicts.len(), limits.max_diagnostics, "assessment conflicts")?;
+                limits.check_count(
+                    conflicts.len(),
+                    limits.max_diagnostics,
+                    "assessment conflicts",
+                )?;
             }
         }
     }
@@ -624,9 +680,14 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
         limits,
     )?;
     let global_deny = global.outcome == DecisionOutcome::Deny
-        && global.reasons.iter().any(|r| matches!(
-            r.code, ReasonCode::ExplicitDeny | ReasonCode::PolicyExpired | ReasonCode::PolicyNotEffective
-        ));
+        && global.reasons.iter().any(|r| {
+            matches!(
+                r.code,
+                ReasonCode::ExplicitDeny
+                    | ReasonCode::PolicyExpired
+                    | ReasonCode::PolicyNotEffective
+            )
+        });
 
     let mut reasons = BTreeSet::new();
     if context.coverage != AssessmentCoverage::Complete {
@@ -658,7 +719,11 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
             disposition = AssessmentDisposition::DifferentOperation;
         }
         if relevant {
-            min_confidence = Some(min_confidence.map_or(record.confidence, |current: AssessmentConfidence| current.min(record.confidence)));
+            min_confidence = Some(
+                min_confidence.map_or(record.confidence, |current: AssessmentConfidence| {
+                    current.min(record.confidence)
+                }),
+            );
             if record.algorithm_id.is_none() {
                 disposition = AssessmentDisposition::MissingAlgorithm;
                 reasons.insert(AssessmentReason::MissingOperationalFields);
@@ -686,28 +751,28 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
                         reasons.insert(AssessmentReason::InsufficientConfidence);
                     }
                     let projected = CryptoContext {
-                    schema_version: SchemaVersion::V1,
-                    request_id: context.assessment_id.clone(),
-                    operation: context.operation,
-                    evaluation_time: context.evaluation_time,
-                    environment: context.environment.clone(),
-                    facts: vec![project_fact(record, authenticated)],
-                };
-                let decision = evaluate_with_limits(policy, &projected, explicit_time, limits)?;
-                match decision.outcome {
-                    DecisionOutcome::Deny => {
-                        has_deny = true;
-                        reasons.insert(AssessmentReason::CoreDenied);
-                        every_permit = false;
+                        schema_version: SchemaVersion::V1,
+                        request_id: context.assessment_id.clone(),
+                        operation: context.operation,
+                        evaluation_time: context.evaluation_time,
+                        environment: context.environment.clone(),
+                        facts: vec![project_fact(record, authenticated)],
+                    };
+                    let decision = evaluate_with_limits(policy, &projected, explicit_time, limits)?;
+                    match decision.outcome {
+                        DecisionOutcome::Deny => {
+                            has_deny = true;
+                            reasons.insert(AssessmentReason::CoreDenied);
+                            every_permit = false;
+                        }
+                        DecisionOutcome::Indeterminate => {
+                            reasons.insert(AssessmentReason::CoreIndeterminate);
+                            every_permit = false;
+                        }
+                        DecisionOutcome::Permit => {
+                            reasons.insert(AssessmentReason::CorePermitted);
+                        }
                     }
-                    DecisionOutcome::Indeterminate => {
-                        reasons.insert(AssessmentReason::CoreIndeterminate);
-                        every_permit = false;
-                    }
-                    DecisionOutcome::Permit => {
-                        reasons.insert(AssessmentReason::CorePermitted);
-                    }
-                }
                     if record.confidence != AssessmentConfidence::High {
                         every_permit = false;
                     }
@@ -729,7 +794,10 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
     }
     let outcome = if has_deny {
         DecisionOutcome::Deny
-    } else if every_permit && context.coverage == AssessmentCoverage::Complete && conflicts.is_empty() {
+    } else if every_permit
+        && context.coverage == AssessmentCoverage::Complete
+        && conflicts.is_empty()
+    {
         DecisionOutcome::Permit
     } else {
         DecisionOutcome::Indeterminate
@@ -750,8 +818,16 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
         conflicts,
         findings,
     };
-    limits.check_count(report.reasons.len(), limits.max_decision_reasons, "assessment reasons")?;
-    limits.check_count(report.findings.len(), limits.max_facts.min(MAX_ASSESSMENT_OBSERVATIONS), "assessment findings")?;
+    limits.check_count(
+        report.reasons.len(),
+        limits.max_decision_reasons,
+        "assessment reasons",
+    )?;
+    limits.check_count(
+        report.findings.len(),
+        limits.max_facts.min(MAX_ASSESSMENT_OBSERVATIONS),
+        "assessment findings",
+    )?;
     let bytes = serde_json::to_vec(&report)
         .map_err(|_| ContractError::InvalidDocument("assessment_report_serialization"))?;
     limits.check_json(&bytes)?;
