@@ -1,0 +1,81 @@
+{
+  "schema_version": "1",
+  "assessment_id": "assess:tls:42",
+  "snapshot_id": "snapshot:cryptomap:01",
+  "scope": {
+    "asset_id": "asset:app",
+    "use_site_id": "use:tls-egress",
+    "activity_id": "session:42"
+  },
+  "operation": "encrypt",
+  "evaluation_time": {
+    "unix_millis": 150
+  },
+  "environment": "prod",
+  "coverage": "complete",
+  "uninspected_sources": [],
+  "observations": [
+    {
+      "observation_id": "obs:tls:1",
+      "source_id": "collector:tls",
+      "evidence_ref": "evidence:tls:1",
+      "scope": {
+        "asset_id": "asset:app",
+        "use_site_id": "use:tls-egress",
+        "activity_id": "session:42"
+      },
+      "kind": "direct_operation",
+      "operation": "encrypt",
+      "algorithm_id": "AES-256-GCM",
+      "profile_id": null,
+      "parameter": {
+        "kind": "key_bits",
+        "value": 256
+      },
+      "properties": {
+        "security_category": 5,
+        "key_size_bits": 256,
+        "data_sensitivity": "confidential",
+        "provider_id": "provider:alpha",
+        "key_protection": "hardware_security_module",
+        "key_exportable": false,
+        "source_quality": "externally_verified"
+      },
+      "observed_at": {
+        "unix_millis": 140
+      },
+      "confidence": "high"
+    },
+    {
+      "observation_id": "obs:tls:2",
+      "source_id": "collector:wire",
+      "evidence_ref": "evidence:wire:2",
+      "scope": {
+        "asset_id": "asset:app",
+        "use_site_id": "use:tls-egress",
+        "activity_id": "session:42"
+      },
+      "kind": "direct_operation",
+      "operation": "encrypt",
+      "algorithm_id": "AES-256-GCM",
+      "profile_id": null,
+      "parameter": {
+        "kind": "key_bits",
+        "value": 256
+      },
+      "properties": {
+        "security_category": 5,
+        "key_size_bits": 256,
+        "data_sensitivity": "confidential",
+        "provider_id": "provider:beta",
+        "key_protection": "hardware_security_module",
+        "key_exportable": false,
+        "source_quality": "externally_verified"
+      },
+      "observed_at": {
+        "unix_millis": 140
+      },
+      "confidence": "high"
+    }
+  ]
+}

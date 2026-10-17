@@ -1,0 +1,75 @@
+{
+  "schema_version": "1",
+  "assessment_id": "assess:tls:42",
+  "snapshot_id": "snapshot:cryptomap:01",
+  "scope": {
+    "asset_id": "asset:app",
+    "use_site_id": "use:tls-egress",
+    "activity_id": "session:42"
+  },
+  "policy_id": "org:evaluator-preview",
+  "policy_version": "1.0.0",
+  "policy_digest": "5eebc2f80c0fc21d7b2d065edb6f2bf095dedd546f10974078bd9c9e868af43f",
+  "evaluated_at": {
+    "unix_millis": 150
+  },
+  "outcome": "permit",
+  "coverage": "complete",
+  "evidence_confidence": "high",
+  "reasons": [
+    "core_permitted"
+  ],
+  "conflicts": [],
+  "findings": [
+    {
+      "observation_id": "obs:tls:1",
+      "source_id": "collector:tls",
+      "evidence_ref": "evidence:tls:1",
+      "kind": "direct_operation",
+      "confidence": "high",
+      "source_quality_claim": "externally_verified",
+      "externally_authenticated": true,
+      "disposition": "evaluated",
+      "core_decision": {
+        "schema_version": "1",
+        "policy_id": "org:evaluator-preview",
+        "policy_version": "1.0.0",
+        "policy_digest": "5eebc2f80c0fc21d7b2d065edb6f2bf095dedd546f10974078bd9c9e868af43f",
+        "evaluated_at": {
+          "unix_millis": 150
+        },
+        "outcome": "permit",
+        "matched_rules": [
+          "r-allow-aes",
+          "r-require-protection"
+        ],
+        "reasons": [
+          {
+            "code": "explicit_allow",
+            "rule_id": "r-allow-aes"
+          },
+          {
+            "code": "requirement_satisfied",
+            "rule_id": "r-require-protection"
+          }
+        ],
+        "evidence": [
+          "evidence:tls:1",
+          "obs:tls:1"
+        ]
+      },
+      "operation": "encrypt",
+      "algorithm_id": "AES-256-GCM",
+      "profile_id": null,
+      "parameter": {
+        "kind": "key_bits",
+        "value": 256
+      },
+      "observed_at": {
+        "unix_millis": 140
+      }
+    }
+  ],
+  "operation": "encrypt",
+  "uninspected_sources": []
+}

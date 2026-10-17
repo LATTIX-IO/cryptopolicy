@@ -6,6 +6,7 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs)]
 
+mod assessment;
 mod composition;
 mod evaluator;
 mod limits;
@@ -14,6 +15,7 @@ mod requirement_codec;
 mod types;
 mod validation;
 
+pub use assessment::*;
 pub use composition::*;
 pub use evaluator::*;
 pub use limits::*;
