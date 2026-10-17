@@ -1,0 +1,20 @@
+{
+  "schema_version": "1",
+  "assessment_id": "assess:tls:42",
+  "snapshot_id": "snapshot:cryptomap:01",
+  "scope": {
+    "asset_id": "asset:app",
+    "use_site_id": "use:tls-egress",
+    "activity_id": "session:42"
+  },
+  "operation": "encrypt",
+  "evaluation_time": {
+    "unix_millis": 150
+  },
+  "environment": "prod",
+  "coverage": "uninspected",
+  "uninspected_sources": [
+    "collector:uninspected"
+  ],
+  "observations": []
+}
