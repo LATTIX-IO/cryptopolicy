@@ -26,7 +26,7 @@ pub const CATALOG_VERSION_V1: &str = "1.0.0";
 ///
 /// Pinned during FOSS-445 CI. Never silently regenerate in tests.
 pub const EMBEDDED_CATALOG_SHA256_V1: &str =
-    "0000000000000000000000000000000000000000000000000000000000000000";
+    "91cca1ed7fe8a0391045801108089bb38bee0b34fdff40e2c7e0fac4e87fb685";
 
 /// Algorithm family. Families are distinct from fully specified profiles.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -250,7 +250,9 @@ fn is_identifier(text: &str) -> bool {
     !bytes.is_empty()
         && bytes.len() <= 128
         && bytes[0].is_ascii_alphanumeric()
-        && bytes.iter().all(|byte| byte.is_ascii_alphanumeric() || b"-_.".contains(byte))
+        && bytes
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"-_.".contains(byte))
 }
 
 fn validate_source(source: &StandardsSource) -> Result<(), CatalogError> {
@@ -266,14 +268,18 @@ fn validate_source(source: &StandardsSource) -> Result<(), CatalogError> {
     Ok(())
 }
 
-fn expected_family_and_category(id: &str) -> Option<(AlgorithmFamily, Option<u8>, StandardizationStatus)> {
+fn expected_family_and_category(
+    id: &str,
+) -> Option<(AlgorithmFamily, Option<u8>, StandardizationStatus)> {
     use AlgorithmFamily as F;
     use StandardizationStatus as S;
     match id {
         "AES-128-GCM" | "AES-192-GCM" | "AES-256-GCM" => Some((F::AesGcm, None, S::Standardized)),
         "SHA-256" | "SHA-384" | "SHA-512" => Some((F::Sha2, None, S::Standardized)),
         "SHA3-256" | "SHA3-384" | "SHA3-512" => Some((F::Sha3, None, S::Standardized)),
-        "RSA-PSS-2048" | "RSA-PSS-3072" | "RSA-PSS-4096" => Some((F::RsaPss, None, S::Standardized)),
+        "RSA-PSS-2048" | "RSA-PSS-3072" | "RSA-PSS-4096" => {
+            Some((F::RsaPss, None, S::Standardized))
+        }
         "ECDSA-P256" | "ECDSA-P384" | "ECDSA-P521" => Some((F::Ecdsa, None, S::Standardized)),
         "ML-KEM-512" => Some((F::MlKem, Some(1), S::Standardized)),
         "ML-KEM-768" => Some((F::MlKem, Some(3), S::Standardized)),
@@ -285,7 +291,8 @@ fn expected_family_and_category(id: &str) -> Option<(AlgorithmFamily, Option<u8>
         "RSA-PSS-1024" => Some((F::RsaPss, None, S::Unsupported)),
         "TDEA-3KEY" => Some((F::Tdea, None, S::Deprecated)),
         _ if id.starts_with("SLH-DSA-SHA2-") || id.starts_with("SLH-DSA-SHAKE-") => {
-            let suffix = id.strip_prefix("SLH-DSA-SHA2-")
+            let suffix = id
+                .strip_prefix("SLH-DSA-SHA2-")
                 .or_else(|| id.strip_prefix("SLH-DSA-SHAKE-"))?;
             let cat = match suffix {
                 "128f" | "128s" => 1,
@@ -319,8 +326,11 @@ fn allowed_ops(family: AlgorithmFamily) -> &'static [OperationClass] {
     match family {
         AlgorithmFamily::AesGcm => &[Op::Decrypt, Op::Encrypt],
         AlgorithmFamily::Sha2 | AlgorithmFamily::Sha3 => &[Op::Hash],
-        AlgorithmFamily::RsaPss | AlgorithmFamily::Ecdsa | AlgorithmFamily::MlDsa
-            | AlgorithmFamily::SlhDsa | AlgorithmFamily::Falcon => &[Op::Sign, Op::Verify],
+        AlgorithmFamily::RsaPss
+        | AlgorithmFamily::Ecdsa
+        | AlgorithmFamily::MlDsa
+        | AlgorithmFamily::SlhDsa
+        | AlgorithmFamily::Falcon => &[Op::Sign, Op::Verify],
         AlgorithmFamily::MlKem => &[Op::Decapsulate, Op::Encapsulate],
         AlgorithmFamily::Tdea => &[Op::Decrypt],
     }
@@ -361,16 +371,29 @@ fn validate_entry(entry: &AlgorithmProfile) -> Result<(), CatalogError> {
             if matches!(family, AlgorithmFamily::Sha2 | AlgorithmFamily::Sha3)
                 && *actual == value => {}
         (ParameterKind::NamedSet, ParameterValue::Name(actual), None)
-            if matches!(family, AlgorithmFamily::MlKem | AlgorithmFamily::MlDsa
-                | AlgorithmFamily::SlhDsa | AlgorithmFamily::Falcon)
-                && *actual == entry.id => {}
+            if matches!(
+                family,
+                AlgorithmFamily::MlKem
+                    | AlgorithmFamily::MlDsa
+                    | AlgorithmFamily::SlhDsa
+                    | AlgorithmFamily::Falcon
+            ) && *actual == entry.id => {}
         _ => return Err(CatalogError::InvalidProfile("profile_parameter")),
     }
-    if entry.security.classical_bits.is_some_and(|value| value == 0 || value > 256) {
+    if entry
+        .security
+        .classical_bits
+        .is_some_and(|value| value == 0 || value > 256)
+    {
         return Err(CatalogError::InvalidProfile("classical_strength"));
     }
-    if matches!(family, AlgorithmFamily::Sha2 | AlgorithmFamily::Sha3 | AlgorithmFamily::Tdea
-        | AlgorithmFamily::Falcon) && entry.security.classical_bits.is_some()
+    if matches!(
+        family,
+        AlgorithmFamily::Sha2
+            | AlgorithmFamily::Sha3
+            | AlgorithmFamily::Tdea
+            | AlgorithmFamily::Falcon
+    ) && entry.security.classical_bits.is_some()
     {
         return Err(CatalogError::InvalidProfile("unsupported_strength_claim"));
     }
@@ -427,7 +450,11 @@ impl Catalog {
             return Err(CatalogError::InvalidAlias);
         }
         let fingerprint = hex_digest(bytes);
-        Ok(Self { snapshot, aliases, fingerprint })
+        Ok(Self {
+            snapshot,
+            aliases,
+            fingerprint,
+        })
     }
 
     /// Load the exact reviewed v1 bytes shipped with this crate.
@@ -454,8 +481,11 @@ impl Catalog {
 
     /// Exact canonical-ID lookup; aliases always return None.
     pub fn get(&self, canonical_id: &str) -> Option<&AlgorithmProfile> {
-        self.snapshot.entries.binary_search_by(|p| p.id.as_str().cmp(canonical_id))
-            .ok().map(|index| &self.snapshot.entries[index])
+        self.snapshot
+            .entries
+            .binary_search_by(|p| p.id.as_str().cmp(canonical_id))
+            .ok()
+            .map(|index| &self.snapshot.entries[index])
     }
 
     /// Explicit, case-sensitive external-name parsing, never authorization.
@@ -464,9 +494,15 @@ impl Catalog {
     /// automatically equated to standardized ML-KEM/ML-DSA/SLH-DSA sets.
     pub fn resolve_name(&self, input: &str) -> Result<ResolvedName<'_>, CatalogError> {
         if let Some(profile) = self.get(input) {
-            return Ok(ResolvedName { canonical_id: &profile.id, via_alias: false });
+            return Ok(ResolvedName {
+                canonical_id: &profile.id,
+                via_alias: false,
+            });
         }
-        let index = self.aliases.get(input).ok_or(CatalogError::UnknownProfile)?;
+        let index = self
+            .aliases
+            .get(input)
+            .ok_or(CatalogError::UnknownProfile)?;
         Ok(ResolvedName {
             canonical_id: &self.snapshot.entries[*index].id,
             via_alias: true,
@@ -497,9 +533,21 @@ impl Catalog {
             return Err(CatalogError::OperationMismatch);
         }
         let matched = match (&profile.parameter.kind, &profile.parameter.value, parameter) {
-            (ParameterKind::KeyBits, ParameterValue::Bits(expected), UsageParameter::KeyBits(value)) => *expected == value,
-            (ParameterKind::HashOutputBits, ParameterValue::Bits(expected), UsageParameter::HashOutputBits(value)) => *expected == value,
-            (ParameterKind::NamedSet, ParameterValue::Name(expected), UsageParameter::NamedSet(value)) => expected == value,
+            (
+                ParameterKind::KeyBits,
+                ParameterValue::Bits(expected),
+                UsageParameter::KeyBits(value),
+            ) => *expected == value,
+            (
+                ParameterKind::HashOutputBits,
+                ParameterValue::Bits(expected),
+                UsageParameter::HashOutputBits(value),
+            ) => *expected == value,
+            (
+                ParameterKind::NamedSet,
+                ParameterValue::Name(expected),
+                UsageParameter::NamedSet(value),
+            ) => expected == value,
             _ => false,
         };
         if !matched {
@@ -511,5 +559,7 @@ impl Catalog {
 
 fn hex_digest(bytes: &[u8]) -> String {
     Sha256::digest(bytes)
-        .iter().map(|byte| format!("{byte:02x}")).collect()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
 }
