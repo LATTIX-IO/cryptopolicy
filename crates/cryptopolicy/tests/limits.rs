@@ -18,8 +18,10 @@ fn default_limits_are_valid_and_bounded() {
 
 #[test]
 fn exact_byte_boundary_passes_and_one_above_fails() {
-    let mut limits = Limits::default();
-    limits.max_json_bytes = 6;
+    let mut limits = Limits {
+        max_json_bytes: 6,
+        ..Limits::default()
+    };
     limits.check_json(b"  {}  ").unwrap();
     assert_eq!(
         limits.check_json(b"  {}   "),
@@ -29,8 +31,10 @@ fn exact_byte_boundary_passes_and_one_above_fails() {
 
 #[test]
 fn exact_nested_container_boundary_and_escaped_text() {
-    let mut limits = Limits::default();
-    limits.max_nesting_depth = 3;
+    let mut limits = Limits {
+        max_nesting_depth: 3,
+        ..Limits::default()
+    };
     limits.check_json(b"[[[]]]").unwrap();
     limits.max_nesting_depth = 2;
     assert_eq!(
@@ -45,8 +49,10 @@ fn exact_nested_container_boundary_and_escaped_text() {
 
 #[test]
 fn invalid_or_infinite_budget_overrides_rejected() {
-    let mut limits = Limits::default();
-    limits.max_rules = 0;
+    let mut limits = Limits {
+        max_rules: 0,
+        ..Limits::default()
+    };
     assert_eq!(limits.validate(), Err(ContractError::InvalidLimit("rules")));
     limits = Limits::default();
     limits.max_json_bytes = ABSOLUTE_MAX_JSON_BYTES + 1;
@@ -78,8 +84,10 @@ fn policy_rule_count_at_limit_and_over_limit() {
         requirements: vec![],
     };
     value.rules.push(rule.clone());
-    let mut limits = Limits::default();
-    limits.max_rules = 1;
+    let mut limits = Limits {
+        max_rules: 1,
+        ..Limits::default()
+    };
     value.validate_with_limits(&limits).unwrap();
     value.rules.push(PolicyRule {
         rule_id: RuleId::parse("r2").unwrap(),
@@ -94,8 +102,10 @@ fn policy_rule_count_at_limit_and_over_limit() {
 #[test]
 fn per_rule_requirements_and_metadata_limits() {
     let mut doc = document();
-    let mut limits = Limits::default();
-    limits.max_requirements_per_rule = 1;
+    let mut limits = Limits {
+        max_requirements_per_rule: 1,
+        ..Limits::default()
+    };
     doc.rules.push(PolicyRule {
         rule_id: RuleId::parse("r").unwrap(),
         effect: RuleEffect::Require,
@@ -137,8 +147,10 @@ fn per_rule_requirements_and_metadata_limits() {
 #[test]
 fn context_fact_limit_controls_deserialization() {
     let payload = br#"{"schema_version":"1","request_id":"x","operation":"sign","evaluation_time":{"unix_millis":1},"facts":[{"fact_id":"a","origin":"requested","algorithm_id":null,"profile_id":null,"evidence_ref":null,"verified":false},{"fact_id":"b","origin":"observed","algorithm_id":null,"profile_id":null,"evidence_ref":null,"verified":true}]}"#;
-    let mut limits = Limits::default();
-    limits.max_facts = 2;
+    let mut limits = Limits {
+        max_facts: 2,
+        ..Limits::default()
+    };
     CryptoContext::parse_json_with_limits(payload, &limits).unwrap();
     limits.max_facts = 1;
     assert_eq!(
@@ -173,8 +185,10 @@ fn decision_reason_and_evidence_count_limits() {
         ],
     };
     let json = serde_json::to_vec(&decision).unwrap();
-    let mut limits = Limits::default();
-    limits.max_decision_reasons = 2;
+    let mut limits = Limits {
+        max_decision_reasons: 2,
+        ..Limits::default()
+    };
     PolicyDecision::parse_json_with_limits(&json, &limits).unwrap();
     limits.max_decision_reasons = 1;
     assert_eq!(
