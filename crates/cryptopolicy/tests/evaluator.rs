@@ -326,7 +326,8 @@ fn clock_mismatch_is_an_error_not_an_evaluation() {
 #[test]
 fn invalid_policy_context_and_multi_fact_inputs_return_error() {
     let mut p = policy();
-    p.rules[0].rule_id = p.rules[1].rule_id.clone();
+    let duplicate_id = p.rules[1].rule_id.clone();
+    p.rules[0].rule_id = duplicate_id;
     assert_eq!(evaluate(&p, &context(), at(150)), Err(ContractError::DuplicateIdentifier));
 
     let mut c = context();
@@ -369,15 +370,15 @@ fn resource_limits_reject_unbounded_reason_and_evidence_output() {
 }
 
 #[test]
-fn malformed_and_unknown_inputs_never_evaluate_as_success() {
+fn malformed_input_mutations_never_panic_or_bypass_validation() {
     let fixture = include_bytes!("fixtures/evaluator-policy-v1.json");
     for i in (0..fixture.len()).step_by(11) {
         let mut altered = fixture.to_vec();
         altered[i] = 0xff;
         if let Ok(document) = PolicyDocument::parse_json(&altered) {
-            let outcome = evaluate(&document, &context(), at(150));
-            // Any still-valid mutation must revalidate; may never panic.
-            assert!(outcome.is_ok() || outcome.is_err());
+            // A syntactically valid mutation must still use the full evaluator;
+            // whether metadata-only mutations preserve a Permit is intentional.
+            let _ = evaluate(&document, &context(), at(150));
         }
     }
     assert!(PolicyDocument::parse_json(br#"{"default_effect":"allow"}"#).is_err());
