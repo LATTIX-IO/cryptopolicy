@@ -82,6 +82,19 @@ Run `cargo run -p cryptopolicy --example evaluate_offline`, then
 recognition table, single-fact restriction, time boundaries, test matrix
 and remaining security controls.
 
+## Baseline/overlay composition (FOSS-437)
+
+Offline PolicySet compilation resolves exact pinned policy ID/version/digest
+references and requires an independent Permit from every baseline, overlay
+and imported policy layer. Cycles, unresolved imports and oversized graphs
+abort atomically. The effective digest is a domain-separated SHA-256 of
+the full versioned, order-independent dependency graph and policy content.
+
+Run `cargo run -p cryptopolicy --example compose_offline` and
+`cargo test -p cryptopolicy --test composition --locked`. See
+[the canonical composition contract](docs/COMPOSITION.md) for precise
+encoding, fail-closed semantics, resource limits and trust boundaries.
+
 ## Crates
 
 - cryptopolicy

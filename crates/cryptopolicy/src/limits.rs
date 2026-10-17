@@ -25,9 +25,9 @@ pub struct Limits {
     pub max_decision_reasons: usize,
     /// Maximum evidence identifiers in one decision.
     pub max_evidence_refs: usize,
-    /// Reserved future policy import count bound (FOSS-437).
+    /// Maximum effective policy nodes and import edges (FOSS-437).
     pub max_imports: usize,
-    /// Reserved future policy import depth bound (FOSS-437).
+    /// Maximum dependency graph depth, counting hops from a root (FOSS-437).
     pub max_import_depth: usize,
     /// Reserved future exception count bound (FOSS-443).
     pub max_exceptions: usize,

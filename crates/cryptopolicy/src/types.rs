@@ -311,7 +311,7 @@ pub enum ReasonCode {
 }
 
 /// SHA-256 fingerprint of canonical policy JSON; not a signature.
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct PolicyDigest(String);
 impl PolicyDigest {
