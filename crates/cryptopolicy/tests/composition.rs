@@ -606,10 +606,18 @@ fn import_edge_limit_rejects_excess_before_any_child_can_authorize() {
     let b = rename(policy(), "org:edge-b");
     let c = rename(policy(), "org:edge-c");
     let graph = catalog(vec![
-        node(base.clone(), vec![reference(&a), reference(&b), reference(&c)]),
-        node(a, vec![]), node(b, vec![]), node(c, vec![]),
+        node(
+            base.clone(),
+            vec![reference(&a), reference(&b), reference(&c)],
+        ),
+        node(a, vec![]),
+        node(b, vec![]),
+        node(c, vec![]),
     ]);
-    let max = Limits { max_imports: 2, ..limits() };
+    let max = Limits {
+        max_imports: 2,
+        ..limits()
+    };
     assert_eq!(
         compose(&set(&base, &[]), &graph, &max),
         Err(CompositionError::ResourceLimit("import_edges"))
