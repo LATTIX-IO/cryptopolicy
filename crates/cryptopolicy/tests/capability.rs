@@ -41,8 +41,8 @@ fn fixture_verifier(
         _ => false,
     };
     Ok(ProviderVerification {
-        source_authenticated: base && named,
-        assurance_authenticated: base && named
+        source_authenticated: base && named && request.key_ref == claim.key_ref,
+        assurance_authenticated: base && named && request.key_ref == claim.key_ref
             && claim.assurance == Some(AssuranceClaim::IndependentAssessment)
             && claim.assurance_ref.as_ref().is_some_and(|id| {
                 id.as_str() == "attestation:cap:one" || id.as_str() == "attestation:cap:two"
@@ -363,6 +363,35 @@ fn source_spoof_and_assurance_issuer_confusion_does_not_authenticate() {
     assert_eq!(verify(&request(),&cap).outcome,DecisionOutcome::Indeterminate);
     cap=snapshot("supported");cap.claims[0].assurance_ref=Some(rid("attestation:wrong"));
     assert_eq!(verify(&request(),&cap).outcome,DecisionOutcome::Indeterminate);
+}
+
+#[test]
+fn existing_key_requires_exact_attested_key_reference_binding() {
+    let mut req=request();
+    req.key_ref=Some(rid("key:existing:one"));
+    let missing=verify(&req,&snapshot("supported"));
+    assert_eq!(missing.outcome,DecisionOutcome::Indeterminate);
+    assert!(reason(&missing,CapabilityReason::KeyBindingMismatch));
+    assert_eq!(missing.key_ref,req.key_ref);
+    assert_eq!(missing.findings[0].disposition,CapabilityDisposition::KeyBindingMismatch);
+    assert!(!missing.findings[0].source_authenticated);
+    let mut cap=snapshot("supported");
+    cap.claims[0].key_ref=req.key_ref.clone();
+    let trusted=verify(&req,&cap);
+    assert_eq!(trusted.outcome,DecisionOutcome::Permit);
+    assert_eq!(trusted.findings[0].key_ref,req.key_ref);
+    cap.claims[0].key_ref=Some(rid("key:existing:other"));
+    assert_eq!(verify(&req,&cap).outcome,DecisionOutcome::Indeterminate);
+}
+
+#[test]
+fn generic_new_key_capability_cannot_claim_a_specific_existing_key() {
+    let req=request();
+    let mut cap=snapshot("supported");
+    cap.claims[0].key_ref=Some(rid("key:existing:one"));
+    let report=verify(&req,&cap);
+    assert_eq!(report.outcome,DecisionOutcome::Indeterminate);
+    assert!(reason(&report,CapabilityReason::KeyBindingMismatch));
 }
 
 #[test]
