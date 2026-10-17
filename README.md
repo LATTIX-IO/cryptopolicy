@@ -42,6 +42,20 @@ Canonical encoding is versioned internally as cryptopolicy-canon-v1: ordered
 typed fields; sorted rules, conjunctive requirements and metadata. It is NOT
 RFC 8785 and must not be treated as interoperable signing serialization.
 
+## Central resource limits (FOSS-433)
+
+The Limits API bounds JSON bytes, nesting, rule counts, per-rule requirements,
+metadata, context facts, decision reasons, matched rules, and evidence references.
+Limits are validated before use, with hard ceilings even for caller overrides.
+Parsing applies a quote-aware, allocation-free nesting preflight before
+serde_json, which remains responsible for complete JSON syntax validation.
+
+Use PolicyDocument::parse_json_with_limits, CryptoContext::parse_json_with_limits
+or PolicyDecision::parse_json_with_limits. The default APIs use Limits::default.
+Limits for imports, exceptions, external format adapters and diagnostic batching
+are reserved contract fields and will be applied when those features exist;
+they are NOT claimed to be operational enforcement today.
+
 ## Crates
 
 - cryptopolicy
