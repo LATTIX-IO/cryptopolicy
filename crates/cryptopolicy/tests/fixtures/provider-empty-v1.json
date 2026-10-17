@@ -1,0 +1,8 @@
+{
+  "schema_version": "1",
+  "provider_id": "provider:alpha",
+  "snapshot_id": "snapshot:keymesh:01",
+  "catalog_version": "1.0.0",
+  "catalog_digest": "91cca1ed7fe8a0391045801108089bb38bee0b34fdff40e2c7e0fac4e87fb685",
+  "claims": []
+}

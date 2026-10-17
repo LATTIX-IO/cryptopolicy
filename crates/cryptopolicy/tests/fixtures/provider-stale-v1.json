@@ -1,0 +1,32 @@
+{
+  "schema_version": "1",
+  "provider_id": "provider:alpha",
+  "snapshot_id": "snapshot:keymesh:01",
+  "catalog_version": "1.0.0",
+  "catalog_digest": "91cca1ed7fe8a0391045801108089bb38bee0b34fdff40e2c7e0fac4e87fb685",
+  "claims": [
+    {
+      "claim_id": "cap:one",
+      "source_id": "provider:metadata",
+      "evidence_ref": "evidence:cap:one",
+      "algorithm_id": "AES-256-GCM",
+      "operation": "encrypt",
+      "parameter": {
+        "kind": "key_bits",
+        "value": 256
+      },
+      "availability": "supported",
+      "key_origin": "provider_generated",
+      "key_exportable": false,
+      "protection": "hardware_security_module",
+      "assurance": "independent_assessment",
+      "assurance_ref": "attestation:cap:one",
+      "asserted_at": {
+        "unix_millis": 80
+      },
+      "expires_at": {
+        "unix_millis": 200
+      }
+    }
+  ]
+}
