@@ -53,8 +53,9 @@ where
     E: DeError,
 {
     match value {
-        WireValue::Present(value) if !value.is_null() => serde_json::from_value(value)
-            .map_err(|_| E::custom("invalid requirement value")),
+        WireValue::Present(value) if !value.is_null() => {
+            serde_json::from_value(value).map_err(|_| E::custom("invalid requirement value"))
+        }
         WireValue::Missing | WireValue::Present(_) => Err(E::custom("missing requirement value")),
     }
 }
@@ -80,7 +81,9 @@ impl<'de> Deserialize<'de> for Requirement {
             Kind::MinimumKeyBits => required(wire.value).map(Self::MinimumKeyBits),
             Kind::NonExportable => match wire.value {
                 WireValue::Missing => Ok(Self::NonExportable),
-                WireValue::Present(_) => Err(D::Error::custom("unit requirement must not contain value")),
+                WireValue::Present(_) => {
+                    Err(D::Error::custom("unit requirement must not contain value"))
+                }
             },
         }
     }

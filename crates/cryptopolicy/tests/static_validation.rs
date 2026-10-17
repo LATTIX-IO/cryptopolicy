@@ -203,8 +203,12 @@ fn requirement_decoder_rejects_duplicate_fields_missing_values_and_unit_payloads
             "unexpectedly accepted invalid requirement"
         );
     }
-    let good: Requirement = serde_json::from_str(r#"{"kind":"algorithm","value":"AES-256-GCM"}"#).unwrap();
-    assert_eq!(good, Requirement::Algorithm(AlgorithmId::parse("AES-256-GCM").unwrap()));
+    let good: Requirement =
+        serde_json::from_str(r#"{"kind":"algorithm","value":"AES-256-GCM"}"#).unwrap();
+    assert_eq!(
+        good,
+        Requirement::Algorithm(AlgorithmId::parse("AES-256-GCM").unwrap())
+    );
 }
 
 #[test]
