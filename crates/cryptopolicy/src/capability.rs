@@ -10,9 +10,7 @@ use crate::{
     AlgorithmId, ContractError, CryptoOperation, DecisionOutcome, EvaluationTime, EvidenceId,
     KeyProtection, Limits, PolicyDigest, PolicyVersion, ProviderId, RequestId, SchemaVersion,
 };
-use pqc_kit::{
-    AlgorithmProfile, Catalog, OperationClass, ParameterKind, ParameterValue, UsageParameter,
-};
+use pqc_kit::{AlgorithmProfile, Catalog, OperationClass, UsageParameter};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
