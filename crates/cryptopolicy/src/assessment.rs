@@ -342,6 +342,10 @@ pub enum AssessmentDisposition {
     MissingAlgorithm,
     /// Missing an exact mandatory algorithm parameter.
     MissingParameter,
+    /// No attached evidence reference exists to authenticate.
+    MissingEvidence,
+    /// The independent verifier did not authenticate this observation.
+    Unauthenticated,
     /// Direct observation was evaluated, including its explicit limitations.
     Evaluated,
 }
@@ -491,7 +495,7 @@ fn project_fact(record: &AssessmentObservation, verified: bool) -> CryptoFact {
     properties.source_quality = if verified {
         Some(EvidenceQuality::ExternallyVerified)
     } else {
-        Some(EvidenceQuality::Unverified)
+        None
     };
     if let Some(ObservedParameter {
         kind: ObservedParameterKind::KeyBits,
@@ -664,19 +668,24 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
                 reasons.insert(AssessmentReason::MissingOperationalFields);
                 every_permit = false;
             } else {
-                disposition = AssessmentDisposition::Evaluated;
                 if record.evidence_ref.is_none() {
+                    disposition = AssessmentDisposition::MissingEvidence;
                     reasons.insert(AssessmentReason::MissingEvidenceReference);
+                    every_permit = false;
                 } else {
                     authenticated = verifier.verify(context, record)?;
+                    if !authenticated {
+                        disposition = AssessmentDisposition::Unauthenticated;
+                        reasons.insert(AssessmentReason::EvidenceNotAuthenticated);
+                        every_permit = false;
+                    }
                 }
-                if !authenticated {
-                    reasons.insert(AssessmentReason::EvidenceNotAuthenticated);
-                }
-                if record.confidence != AssessmentConfidence::High {
-                    reasons.insert(AssessmentReason::InsufficientConfidence);
-                }
-                let projected = CryptoContext {
+                if authenticated {
+                    disposition = AssessmentDisposition::Evaluated;
+                    if record.confidence != AssessmentConfidence::High {
+                        reasons.insert(AssessmentReason::InsufficientConfidence);
+                    }
+                    let projected = CryptoContext {
                     schema_version: SchemaVersion::V1,
                     request_id: context.assessment_id.clone(),
                     operation: context.operation,
@@ -699,10 +708,11 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
                         reasons.insert(AssessmentReason::CorePermitted);
                     }
                 }
-                if !authenticated || record.confidence != AssessmentConfidence::High {
-                    every_permit = false;
+                    if record.confidence != AssessmentConfidence::High {
+                        every_permit = false;
+                    }
+                    core_decision = Some(decision);
                 }
-                core_decision = Some(decision);
             }
         }
         findings.push(AssessmentFinding {
