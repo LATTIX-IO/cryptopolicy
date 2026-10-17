@@ -1,0 +1,134 @@
+{
+  "schema_version": "1",
+  "policy_id": "org:strict-crypto",
+  "version": "1.0.0",
+  "issuer": {
+    "subject": "example-org",
+    "assurance_ref": null
+  },
+  "created_at": {
+    "unix_millis": 0
+  },
+  "effective_at": null,
+  "expires_at": null,
+  "default_effect": "deny",
+  "rules": [
+    {
+      "rule_id": "r-allow-approved",
+      "effect": "allow",
+      "selector": {
+        "match_all": false,
+        "operation": "encrypt",
+        "algorithm_id": "AES-256-GCM",
+        "profile_id": "aes-256-gcm-prod",
+        "environment": "prod",
+        "advanced": {
+          "security_category": 5,
+          "data_sensitivity": "confidential",
+          "provider_id": "provider:alpha",
+          "key_protection": "hardware_security_module",
+          "key_exportable": false,
+          "key_size_bits": 256,
+          "source_origin": "observed",
+          "source_quality": "externally_verified"
+        }
+      },
+      "requirements": [
+        {
+          "kind": "algorithm",
+          "value": "AES-256-GCM"
+        },
+        {
+          "kind": "profile",
+          "value": "aes-256-gcm-prod"
+        },
+        {
+          "kind": "provider",
+          "value": "provider:alpha"
+        },
+        {
+          "kind": "sensitivity",
+          "value": "confidential"
+        },
+        {
+          "kind": "key_protection",
+          "value": "hardware_security_module"
+        },
+        {
+          "kind": "non_exportable"
+        },
+        {
+          "kind": "key_size_bits",
+          "value": 256
+        },
+        {
+          "kind": "minimum_key_bits",
+          "value": 128
+        },
+        {
+          "kind": "min_security_category",
+          "value": 3
+        },
+        {
+          "kind": "source_origin",
+          "value": "observed"
+        },
+        {
+          "kind": "source_quality",
+          "value": "externally_verified"
+        }
+      ]
+    },
+    {
+      "rule_id": "r-require-protection",
+      "effect": "require",
+      "selector": {
+        "match_all": true,
+        "operation": null,
+        "algorithm_id": null,
+        "profile_id": null,
+        "environment": null
+      },
+      "requirements": [
+        {
+          "kind": "minimum_key_bits",
+          "value": 256
+        },
+        {
+          "kind": "source_quality",
+          "value": "externally_verified"
+        }
+      ]
+    },
+    {
+      "rule_id": "r-deny-legacy",
+      "effect": "deny",
+      "selector": {
+        "match_all": false,
+        "operation": "encrypt",
+        "algorithm_id": "RSA-1024",
+        "profile_id": null,
+        "environment": null
+      },
+      "requirements": []
+    },
+    {
+      "rule_id": "r-warn-transition",
+      "effect": "warn",
+      "selector": {
+        "match_all": false,
+        "operation": "verify",
+        "algorithm_id": "RSA-3072",
+        "profile_id": null,
+        "environment": null
+      },
+      "requirements": []
+    }
+  ],
+  "metadata": [
+    {
+      "key": "reference",
+      "value": "FOSS-434: specification fixture, not a runtime decision"
+    }
+  ]
+}
