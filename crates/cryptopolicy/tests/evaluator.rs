@@ -385,6 +385,31 @@ fn malformed_input_mutations_never_panic_or_bypass_validation() {
 }
 
 #[test]
+fn pinned_golden_permit_deny_and_indeterminate_bytes() {
+    let p = policy();
+    let mut c = context();
+    let permit = result(&p, &c);
+    assert_eq!(
+        permit.policy_digest.as_str(),
+        "5eebc2f80c0fc21d7b2d065edb6f2bf095dedd546f10974078bd9c9e868af43f"
+    );
+    assert_eq!(
+        serde_json::to_vec(&permit).unwrap(),
+        include_bytes!("fixtures/decision-permit-v1.json")
+    );
+    c.facts[0].properties.as_mut().unwrap().key_exportable = Some(true);
+    assert_eq!(
+        serde_json::to_vec(&result(&p, &c)).unwrap(),
+        include_bytes!("fixtures/decision-denied-v1.json")
+    );
+    c.facts[0].properties.as_mut().unwrap().key_exportable = None;
+    assert_eq!(
+        serde_json::to_vec(&result(&p, &c)).unwrap(),
+        include_bytes!("fixtures/decision-indeterminate-v1.json")
+    );
+}
+
+#[test]
 fn golden_decision_can_be_read_back_and_has_only_safe_reference_fields() {
     let p = policy();
     let d = result(&p, &context());
