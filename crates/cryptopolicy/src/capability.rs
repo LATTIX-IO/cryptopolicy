@@ -10,7 +10,7 @@ use crate::{
     AlgorithmId, ContractError, CryptoOperation, DecisionOutcome, EvaluationTime, EvidenceId,
     KeyProtection, Limits, PolicyDigest, PolicyVersion, ProviderId, RequestId, SchemaVersion,
 };
-use pqc_kit::{AlgorithmProfile, Catalog, OperationClass, UsageParameter};
+use pqc_kit::{AlgorithmProfile, Catalog, OperationClass, StandardizationStatus, UsageParameter};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 
@@ -144,6 +144,8 @@ pub struct ProviderCapabilityClaim {
     pub claim_id: EvidenceId,
     /// Original source identity; not independently authenticated.
     pub source_id: EvidenceId,
+    /// Exact bound existing key, or None for provider-wide new-key claims.
+    pub key_ref: Option<EvidenceId>,
     /// Reference to independently verifiable original evidence.
     pub evidence_ref: Option<EvidenceId>,
     /// Exact algorithm claimed supported/unsupported/unknown.
@@ -267,6 +269,8 @@ pub enum CapabilityReason {
     ParameterMismatch,
     /// Original evidence reference missing from the claimed source.
     MissingEvidence,
+    /// Exact requested key was not bound by the provider claim.
+    KeyBindingMismatch,
     /// Independent source and claim verification was not established.
     UnauthenticatedSource,
     /// Claim was issued after evaluation time or has exceeded its validity.
@@ -293,6 +297,8 @@ pub enum CapabilityDisposition {
     Unrelated,
     /// Missing independent evidence or verifier rejected provenance.
     Unauthenticated,
+    /// A different or generic key was referenced.
+    KeyBindingMismatch,
     /// Evidence was expired, stale, or from the future.
     Stale,
     /// Provider does not know whether this operation is supported.
@@ -313,6 +319,8 @@ pub struct CapabilityFinding {
     pub claim_id: EvidenceId,
     /// Original source identity.
     pub source_id: EvidenceId,
+    /// Exact bound existing key identity, if applicable.
+    pub key_ref: Option<EvidenceId>,
     /// Original evidence reference.
     pub evidence_ref: Option<EvidenceId>,
     /// Claimed exact profile, not proof of a validated implementation.
@@ -347,6 +355,8 @@ pub struct CapabilityReport {
     pub provider_id: ProviderId,
     /// Original snapshot identity.
     pub snapshot_id: EvidenceId,
+    /// Optional original existing key identity, never material.
+    pub key_ref: Option<EvidenceId>,
     /// Exact catalog version and content SHA-256.
     pub catalog_version: PolicyVersion,
     /// Exact catalog content fingerprint.
@@ -630,6 +640,7 @@ fn check_constraints(
 fn claim_facts_equal(a: &ProviderCapabilityClaim, b: &ProviderCapabilityClaim) -> bool {
     a.algorithm_id == b.algorithm_id
         && a.operation == b.operation
+        && a.key_ref == b.key_ref
         && a.parameter == b.parameter
         && a.availability == b.availability
         && a.key_origin == b.key_origin
@@ -696,7 +707,10 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
         denied = true;
         reasons.insert(CapabilityReason::UnsupportedRequestedAlgorithm);
     } else if let (Some(op), Some(profile)) = (catalog_operation, requested_profile) {
-        if !profile.operations.contains(&op) {
+        if profile.status != StandardizationStatus::Standardized {
+            denied = true;
+            reasons.insert(CapabilityReason::UnsupportedRequestedAlgorithm);
+        } else if !profile.operations.contains(&op) {
             denied = true;
             reasons.insert(CapabilityReason::UnsupportedRequestedOperation);
         } else if catalog.validate_usage(request.algorithm_id.as_str(), op, request.parameter.usage()).is_err() {
@@ -733,14 +747,20 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
                 }
             }
             previous = Some(claim);
-            if claim.evidence_ref.is_none() {
+            if claim.key_ref != request.key_ref {
+                uncertain = true;
+                disposition = CapabilityDisposition::KeyBindingMismatch;
+                claim_reasons.insert(CapabilityReason::KeyBindingMismatch);
+            } else if claim.evidence_ref.is_none() {
                 uncertain = true;
                 disposition = CapabilityDisposition::Unauthenticated;
                 claim_reasons.insert(CapabilityReason::MissingEvidence);
             } else {
                 let proof = verifier.verify(request, snapshot, claim)?;
                 source_authenticated = proof.source_authenticated;
-                assurance_authenticated = proof.source_authenticated && proof.assurance_authenticated
+                assurance_authenticated = proof.source_authenticated
+                    && proof.assurance_authenticated
+                    && claim.assurance == Some(AssuranceClaim::IndependentAssessment)
                     && claim.assurance_ref.is_some();
                 if !source_authenticated {
                     uncertain = true;
@@ -798,6 +818,7 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
         findings.push(CapabilityFinding {
             claim_id: claim.claim_id.clone(),
             source_id: claim.source_id.clone(),
+            key_ref: claim.key_ref.clone(),
             evidence_ref: claim.evidence_ref.clone(),
             algorithm_id: claim.algorithm_id.clone(),
             parameter: claim.parameter.clone(),
@@ -825,6 +846,7 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
         request_id: request.request_id.clone(),
         provider_id: request.provider_id.clone(),
         snapshot_id: snapshot.snapshot_id.clone(),
+        key_ref: request.key_ref.clone(),
         catalog_version: request.catalog_version.clone(),
         catalog_digest: request.catalog_digest.clone(),
         operation: request.operation,
