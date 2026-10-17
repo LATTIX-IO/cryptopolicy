@@ -330,7 +330,8 @@ impl PolicyDocument {
             let constrained = rule.selector.operation.is_some()
                 || rule.selector.algorithm_id.is_some()
                 || rule.selector.profile_id.is_some()
-                || rule.selector.environment.is_some();
+                || rule.selector.environment.is_some()
+                || rule.selector.advanced.as_ref().is_some_and(|extra| !extra.is_empty());
             if rule.selector.match_all == constrained {
                 return Err(ContractError::InvalidDocument("ambiguous rule selector"));
             }

@@ -26,6 +26,7 @@ fn sample() -> PolicyDocument {
                     algorithm_id: None,
                     profile_id: None,
                     environment: None,
+                    advanced: None,
                 },
                 requirements: vec![Requirement::NonExportable],
             },
@@ -38,6 +39,7 @@ fn sample() -> PolicyDocument {
                     algorithm_id: None,
                     profile_id: None,
                     environment: None,
+                    advanced: None,
                 },
                 requirements: vec![
                     Requirement::MinSecurityCategory(3),
@@ -182,6 +184,7 @@ fn preserve_fact_origin_without_equating_capability_to_usage() {
         request_id: RequestId::parse("req:1").unwrap(),
         operation: CryptoOperation::Encrypt,
         evaluation_time: EvaluationTime { unix_millis: 100 },
+        environment: None,
         facts: vec![
             CryptoFact {
                 fact_id: EvidenceId::parse("e1").unwrap(),
@@ -190,6 +193,7 @@ fn preserve_fact_origin_without_equating_capability_to_usage() {
                 profile_id: None,
                 evidence_ref: None,
                 verified: false,
+                properties: None,
             },
             CryptoFact {
                 fact_id: EvidenceId::parse("e2").unwrap(),
@@ -198,6 +202,7 @@ fn preserve_fact_origin_without_equating_capability_to_usage() {
                 profile_id: None,
                 evidence_ref: None,
                 verified: false,
+                properties: None,
             },
         ],
     };

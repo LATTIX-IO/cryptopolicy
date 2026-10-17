@@ -80,6 +80,7 @@ fn policy_rule_count_at_limit_and_over_limit() {
             algorithm_id: None,
             profile_id: None,
             environment: None,
+            advanced: None,
         },
         requirements: vec![],
     };
@@ -115,6 +116,7 @@ fn per_rule_requirements_and_metadata_limits() {
             algorithm_id: None,
             profile_id: None,
             environment: None,
+            advanced: None,
         },
         requirements: vec![
             Requirement::NonExportable,
