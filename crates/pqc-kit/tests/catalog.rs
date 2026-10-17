@@ -76,7 +76,7 @@ fn ml_kem_named_sets_have_exact_nist_pqc_categories_not_key_lengths() {
             c.validate_usage(
                 name,
                 OperationClass::Encapsulate,
-                UsageParameter::KeyBits(name.split('-').last().unwrap().parse().unwrap())
+                UsageParameter::KeyBits(name.split('-').next_back().unwrap().parse().unwrap())
             ),
             Err(CatalogError::ParameterMismatch),
         );
@@ -204,7 +204,7 @@ fn explicit_aliases_are_parsing_only_and_case_sensitive() {
             via_alias: true
         }
     );
-    assert_eq!(c.resolve_name("AES-256-GCM").unwrap().via_alias, false);
+    assert!(!c.resolve_name("AES-256-GCM").unwrap().via_alias);
     assert_eq!(c.resolve_name("SHA3_256").unwrap().canonical_id, "SHA3-256");
     assert_eq!(
         c.resolve_name("aes256-gcm"),
