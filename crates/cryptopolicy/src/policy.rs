@@ -129,7 +129,7 @@ pub struct MetadataEntry {
     pub value: String,
 }
 
-/// Strict versioned JSON policy document; not yet an executable policy.
+/// Strict versioned JSON policy document, interpreted by the offline evaluator.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PolicyDocument {
@@ -242,7 +242,7 @@ pub struct PolicyDecision {
     pub policy_digest: PolicyDigest,
     /// Evaluation time.
     pub evaluated_at: EvaluationTime,
-    /// Stated result: no evaluator exists in this increment.
+    /// Outcome of a completed evaluation; callers must authenticate provenance.
     pub outcome: DecisionOutcome,
     /// Referenced matching rules.
     pub matched_rules: Vec<RuleId>,
