@@ -13,6 +13,7 @@ use crate::{
     RequestId, SchemaVersion, evaluate_with_limits,
 };
 use serde::{Deserialize, Serialize};
+use sha2::Digest;
 use std::collections::BTreeSet;
 
 /// Absolute additional cap to prevent quadratic conflict analysis.
@@ -576,7 +577,11 @@ pub fn assess_with_limits<V: EvidenceVerifier>(
     if context.evaluation_time != explicit_time {
         return Err(ContractError::InvalidDocument("assessment_time_mismatch"));
     }
-    let policy_digest = policy.canonical_digest_with_limits(limits)?;
+    let policy_bytes = policy.canonical_json_with_limits(limits)?;
+    let hash = sha2::Sha256::digest(&policy_bytes);
+    let policy_digest = PolicyDigest::try_from(
+        hash.iter().map(|byte| format!("{byte:02x}")).collect::<String>()
+    )?;
     let mut ordered: Vec<&AssessmentObservation> = context.observations.iter().collect();
     ordered.sort_by(|a, b| a.observation_id.cmp(&b.observation_id));
     let operational: Vec<_> = ordered.iter().copied()
