@@ -24,6 +24,24 @@ real outputs to these fixtures without auto-regenerating golden expectations.
 Run `python3 scripts/security_contract.py --lint` and
 `python3 -m unittest discover -s tests -p 'test_security_contract.py' -v`.
 
+## Versioned Rust policy contracts (FOSS-429)
+
+The cryptopolicy crate provides typed JSON DTOs for PolicyDocument, identifiers,
+evaluation time, CryptoContext facts with source provenance, and PolicyDecision.
+Parsing and SHA-256 fingerprinting do not execute a policy or authorize an
+operation. The issuer is a claim, not proof of policy authenticity.
+
+Try `cargo run -p cryptopolicy --example contract_smoke` and
+`cargo test -p cryptopolicy --test contracts` once the dependency lockfile
+has been generated. Inputs are strict JSON with a mandatory schema and
+explicit default effect. Unknown fields, unexpected enum variants, duplicate
+rule/fact IDs and oversized input are rejected. The 1 MiB limit is provisional;
+FOSS-433 will supply centrally configured nested and structural limits.
+
+Canonical encoding is versioned internally as cryptopolicy-canon-v1: ordered
+typed fields; sorted rules, conjunctive requirements and metadata. It is NOT
+RFC 8785 and must not be treated as interoperable signing serialization.
+
 ## Crates
 
 - cryptopolicy
