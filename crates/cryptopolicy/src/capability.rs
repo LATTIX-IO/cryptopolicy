@@ -769,9 +769,15 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
                 } else {
                     let age = request.evaluation_time.unix_millis
                         .checked_sub(claim.asserted_at.unix_millis);
-                    let stale = age.is_none_or(|delta| delta < 0
-                        || u64::try_from(delta).is_err_or(|elapsed| elapsed > request.max_evidence_age_ms))
-                        || request.evaluation_time >= claim.expires_at;
+                    let stale = match age {
+                        Some(delta) if delta >= 0 => {
+                            match u64::try_from(delta) {
+                                Ok(elapsed) => elapsed > request.max_evidence_age_ms,
+                                Err(_) => true,
+                            }
+                        }
+                        _ => true,
+                    } || request.evaluation_time >= claim.expires_at;
                     if stale {
                         uncertain = true;
                         disposition = CapabilityDisposition::Stale;
