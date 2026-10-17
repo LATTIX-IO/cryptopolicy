@@ -18,7 +18,7 @@ fn reference(policy: &PolicyDocument) -> PolicyReference {
     PolicyReference::from_document(policy).unwrap()
 }
 fn node(policy: PolicyDocument, imports: Vec<PolicyReference>) -> PolicyNode {
-    PolicyNode { document: policy, imports }
+    PolicyNode { schema_version: SchemaVersion::V1, document: policy, imports }
 }
 fn catalog(nodes: Vec<PolicyNode>) -> BTreeMap<PolicyId, PolicyNode> {
     nodes.into_iter().map(|n| (n.document.policy_id.clone(), n)).collect()
@@ -32,6 +32,7 @@ fn compose(
 }
 fn set(root: &PolicyDocument, overlays: &[PolicyDocument]) -> PolicySet {
     PolicySet {
+        schema_version: SchemaVersion::V1,
         baseline: reference(root),
         overlays: overlays.iter().map(reference).collect(),
     }
@@ -293,7 +294,7 @@ fn import_depth_node_count_and_edge_budgets_are_hard_limits() {
     let depth=Limits{max_import_depth:1,..limits()};
     assert_eq!(compose(&set(&base,&[]),&map,&depth),Err(CompositionError::ResourceLimit("import_depth")));
     let nodes=Limits{max_imports:2,..limits()};
-    assert_eq!(compose(&set(&base,&[]),&map,&nodes),Err(CompositionError::ResourceLimit("import_edges")));
+    assert_eq!(compose(&set(&base,&[]),&map,&nodes),Err(CompositionError::ResourceLimit("policy_nodes")));
 }
 
 #[test]
@@ -351,7 +352,8 @@ fn resolver_failure_and_invalid_document_abort_compilation() {
     let down=compile_policy_set(&root,&|_:&PolicyReference| Err(CompositionError::InvalidSet("resolver_failed")),&limits());
     assert_eq!(down,Err(CompositionError::InvalidSet("resolver_failed")));
     let mut invalid=base;
-    invalid.rules[0].rule_id=invalid.rules[1].rule_id.clone();
+    let duplicate=invalid.rules[1].rule_id.clone();
+    invalid.rules[0].rule_id=duplicate;
     assert!(compose(&root,&catalog(vec![node(invalid,vec![])]),&limits()).is_err());
 }
 

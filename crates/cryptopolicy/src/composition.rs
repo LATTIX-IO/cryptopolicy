@@ -47,6 +47,8 @@ impl PolicyReference {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PolicySet {
+    /// Explicit policy-set wire contract version.
+    pub schema_version: SchemaVersion,
     /// Required baseline policy identity.
     pub baseline: PolicyReference,
     /// Additional mandatory policies. Their ordering is not precedence.
@@ -92,6 +94,8 @@ impl PolicySet {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct PolicyNode {
+    /// Explicit resolver-node wire contract version.
+    pub schema_version: SchemaVersion,
     /// Exact versioned policy document.
     pub document: PolicyDocument,
     /// Referenced policies, all required for authorization.
