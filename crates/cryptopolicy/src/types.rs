@@ -105,6 +105,7 @@ impl PolicyVersion {
         if parts.len() != 3
             || parts.iter().any(|part| {
                 part.is_empty()
+                    || !part.bytes().all(|digit| digit.is_ascii_digit())
                     || (part.len() > 1 && part.starts_with('0'))
                     || part.parse::<u32>().is_err()
             })
