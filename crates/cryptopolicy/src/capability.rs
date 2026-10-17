@@ -219,8 +219,11 @@ pub trait ProviderClaimVerifier {
 
 impl<F> ProviderClaimVerifier for F
 where
-    F: Fn(&KeyRequest, &ProviderCapabilitySnapshot, &ProviderCapabilityClaim)
-        -> Result<ProviderVerification, ContractError>,
+    F: Fn(
+        &KeyRequest,
+        &ProviderCapabilitySnapshot,
+        &ProviderCapabilityClaim,
+    ) -> Result<ProviderVerification, ContractError>,
 {
     fn verify(
         &self,
@@ -402,10 +405,7 @@ fn codec_json<T: for<'de> Deserialize<'de>>(
     serde_json::from_slice(input).map_err(|e| ContractError::InvalidJson(e.to_string()))
 }
 
-fn checked_wire_bytes<T: Serialize>(
-    value: &T,
-    limits: &Limits,
-) -> Result<Vec<u8>, ContractError> {
+fn checked_wire_bytes<T: Serialize>(value: &T, limits: &Limits) -> Result<Vec<u8>, ContractError> {
     let bytes = serde_json::to_vec(value)
         .map_err(|_| ContractError::InvalidDocument("provider_serialization"))?;
     limits.check_json(&bytes)?;
@@ -453,12 +453,17 @@ impl KeyRequest {
         limits.validate()?;
         validate_parameter(&self.parameter)?;
         if self.max_evidence_age_ms == 0 || self.max_evidence_age_ms > MAX_CAPABILITY_AGE_MS {
-            return Err(ContractError::InvalidDocument("invalid_evidence_age_budget"));
+            return Err(ContractError::InvalidDocument(
+                "invalid_evidence_age_budget",
+            ));
         }
         if self.required.is_empty() && self.forbidden.is_empty() {
             return Err(ContractError::InvalidDocument("unconstrained_key_request"));
         }
-        let count = self.required.len().checked_add(self.forbidden.len())
+        let count = self
+            .required
+            .len()
+            .checked_add(self.forbidden.len())
             .ok_or(ContractError::ResourceLimitExceeded("key requirements"))?;
         limits.check_count(count, limits.max_requirements_per_rule, "key requirements")?;
         constraints_unique(&self.required)?;
@@ -469,7 +474,10 @@ impl KeyRequest {
             }
         }
         for forbidden in &self.forbidden {
-            if matches!(forbidden, ForbiddenCapability::KeyOrigin(KeyOrigin::Unknown)) {
+            if matches!(
+                forbidden,
+                ForbiddenCapability::KeyOrigin(KeyOrigin::Unknown)
+            ) {
                 return Err(ContractError::InvalidDocument("forbid_unknown_origin"));
             }
         }
@@ -515,7 +523,9 @@ impl ProviderCapabilitySnapshot {
                     || claim.assurance.is_some()
                     || claim.assurance_ref.is_some())
             {
-                return Err(ContractError::InvalidDocument("nonsupport_with_key_attributes"));
+                return Err(ContractError::InvalidDocument(
+                    "nonsupport_with_key_attributes",
+                ));
             }
         }
         checked_wire_bytes(self, limits)?;
@@ -532,9 +542,17 @@ impl CapabilityReport {
             limits.max_facts.min(MAX_PROVIDER_CAPABILITY_CLAIMS),
             "capability findings",
         )?;
-        limits.check_count(value.reasons.len(), limits.max_decision_reasons, "capability reasons")?;
+        limits.check_count(
+            value.reasons.len(),
+            limits.max_decision_reasons,
+            "capability reasons",
+        )?;
         for finding in &value.findings {
-            limits.check_count(finding.reasons.len(), limits.max_decision_reasons, "claim reasons")?;
+            limits.check_count(
+                finding.reasons.len(),
+                limits.max_decision_reasons,
+                "claim reasons",
+            )?;
         }
         Ok(value)
     }
@@ -566,10 +584,18 @@ fn weaker_same_family(requested: &AlgorithmProfile, candidate: &AlgorithmProfile
     if requested.family != candidate.family {
         return false;
     }
-    if let Some((expected, actual)) = requested.security.pqc_category.zip(candidate.security.pqc_category) {
+    if let Some((expected, actual)) = requested
+        .security
+        .pqc_category
+        .zip(candidate.security.pqc_category)
+    {
         return actual < expected;
     }
-    if let Some((expected, actual)) = requested.security.classical_bits.zip(candidate.security.classical_bits) {
+    if let Some((expected, actual)) = requested
+        .security
+        .classical_bits
+        .zip(candidate.security.classical_bits)
+    {
         return actual < expected;
     }
     false
@@ -598,7 +624,10 @@ fn check_constraints(
             RequiredCapability::ProtectionAtLeast(minimum) => match claim.protection {
                 None => unknown = true,
                 Some(observed) if rank(observed) < rank(*minimum) => denied = true,
-                Some(observed) if rank(observed) >= rank(KeyProtection::HardwareBacked) && !assurance_verified => {
+                Some(observed)
+                    if rank(observed) >= rank(KeyProtection::HardwareBacked)
+                        && !assurance_verified =>
+                {
                     reasons.insert(CapabilityReason::AssuranceNotVerified);
                     unknown = true;
                 }
@@ -630,11 +659,13 @@ fn check_constraints(
             ForbiddenCapability::Protection(forbidden) => match claim.protection {
                 None => unknown = true,
                 Some(observed) if observed == *forbidden => denied = true,
-                Some(observed) if rank(observed) >= rank(KeyProtection::HardwareBacked)
-                    && !assurance_verified => {
-                        reasons.insert(CapabilityReason::AssuranceNotVerified);
-                        unknown = true;
-                    }
+                Some(observed)
+                    if rank(observed) >= rank(KeyProtection::HardwareBacked)
+                        && !assurance_verified =>
+                {
+                    reasons.insert(CapabilityReason::AssuranceNotVerified);
+                    unknown = true;
+                }
                 Some(_) => {}
             },
         }
@@ -731,7 +762,10 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
         } else if !profile.operations.contains(&op) {
             denied = true;
             reasons.insert(CapabilityReason::UnsupportedRequestedOperation);
-        } else if catalog.validate_usage(request.algorithm_id.as_str(), op, request.parameter.usage()).is_err() {
+        } else if catalog
+            .validate_usage(request.algorithm_id.as_str(), op, request.parameter.usage())
+            .is_err()
+        {
             denied = true;
             reasons.insert(CapabilityReason::InvalidRequestedParameter);
         }
@@ -749,10 +783,12 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
         let mut source_authenticated = false;
         let mut assurance_authenticated = false;
         let mut disposition = CapabilityDisposition::Unrelated;
-        let exact = claim.algorithm_id == request.algorithm_id && claim.operation == request.operation;
+        let exact =
+            claim.algorithm_id == request.algorithm_id && claim.operation == request.operation;
         let downgrade = !exact
             && claim.operation == request.operation
-            && requested_profile.zip(catalog.get(claim.algorithm_id.as_str()))
+            && requested_profile
+                .zip(catalog.get(claim.algorithm_id.as_str()))
                 .is_some_and(|(expected, observed)| weaker_same_family(expected, observed));
         if exact || downgrade {
             // A strict request cannot cherry-pick one of several contradictory
@@ -785,15 +821,15 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
                     disposition = CapabilityDisposition::Unauthenticated;
                     claim_reasons.insert(CapabilityReason::UnauthenticatedSource);
                 } else {
-                    let age = request.evaluation_time.unix_millis
+                    let age = request
+                        .evaluation_time
+                        .unix_millis
                         .checked_sub(claim.asserted_at.unix_millis);
                     let stale = match age {
-                        Some(delta) if delta >= 0 => {
-                            match u64::try_from(delta) {
-                                Ok(elapsed) => elapsed > request.max_evidence_age_ms,
-                                Err(_) => true,
-                            }
-                        }
+                        Some(delta) if delta >= 0 => match u64::try_from(delta) {
+                            Ok(elapsed) => elapsed > request.max_evidence_age_ms,
+                            Err(_) => true,
+                        },
                         _ => true,
                     } || request.evaluation_time >= claim.expires_at;
                     if stale {
@@ -829,7 +865,8 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
                                     claim_reasons.extend(findings);
                                     if !bad && !missing {
                                         compatible = true;
-                                        claim_reasons.insert(CapabilityReason::CompatibleCapability);
+                                        claim_reasons
+                                            .insert(CapabilityReason::CompatibleCapability);
                                     }
                                 }
                             }
@@ -893,9 +930,17 @@ pub fn assess_key_capabilities_with_limits<V: ProviderClaimVerifier>(
         reasons: reasons.into_iter().collect(),
         findings,
     };
-    limits.check_count(report.reasons.len(), limits.max_decision_reasons, "capability reasons")?;
+    limits.check_count(
+        report.reasons.len(),
+        limits.max_decision_reasons,
+        "capability reasons",
+    )?;
     for finding in &report.findings {
-        limits.check_count(finding.reasons.len(), limits.max_decision_reasons, "claim reasons")?;
+        limits.check_count(
+            finding.reasons.len(),
+            limits.max_decision_reasons,
+            "claim reasons",
+        )?;
     }
     checked_wire_bytes(&report, limits)?;
     Ok(report)

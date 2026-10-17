@@ -25,30 +25,41 @@ fn fixture_proof(
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let request = KeyRequest::parse_json(include_bytes!("../tests/fixtures/request-v1.json"))?;
-    let supported = ProviderCapabilitySnapshot::parse_json(
-        include_bytes!("../tests/fixtures/provider-supported-v1.json"),
-    )?;
+    let supported = ProviderCapabilitySnapshot::parse_json(include_bytes!(
+        "../tests/fixtures/provider-supported-v1.json"
+    ))?;
     let unknown_trust = assess_key_capabilities(&request, &supported, &UnverifiedProviderClaims)?;
     assert_eq!(unknown_trust.outcome, DecisionOutcome::Indeterminate);
-    assert!(unknown_trust.reasons.contains(&CapabilityReason::UnauthenticatedSource));
+    assert!(
+        unknown_trust
+            .reasons
+            .contains(&CapabilityReason::UnauthenticatedSource)
+    );
 
     // Test-only fixture identity matching. This is NOT signature verification
     // or a production proof of a provider's HSM/CMVP authorization.
     let compatible = assess_key_capabilities(&request, &supported, &fixture_proof)?;
     assert_eq!(compatible.outcome, DecisionOutcome::Permit);
-    println!("catalog={} digest={}", compatible.catalog_version, compatible.catalog_digest.as_str());
-    println!("unverified={:?}, fixture_bound={:?}", unknown_trust.outcome, compatible.outcome);
+    println!(
+        "catalog={} digest={}",
+        compatible.catalog_version,
+        compatible.catalog_digest.as_str()
+    );
+    println!(
+        "unverified={:?}, fixture_bound={:?}",
+        unknown_trust.outcome, compatible.outcome
+    );
 
-    let stale = ProviderCapabilitySnapshot::parse_json(
-        include_bytes!("../tests/fixtures/provider-stale-v1.json"),
-    )?;
+    let stale = ProviderCapabilitySnapshot::parse_json(include_bytes!(
+        "../tests/fixtures/provider-stale-v1.json"
+    ))?;
     let stale_report = assess_key_capabilities(&request, &stale, &fixture_proof)?;
     assert_eq!(stale_report.outcome, DecisionOutcome::Indeterminate);
     println!("stale evidence={:?}", stale_report.outcome);
 
-    let weaker = ProviderCapabilitySnapshot::parse_json(
-        include_bytes!("../tests/fixtures/provider-downgrade-v1.json"),
-    )?;
+    let weaker = ProviderCapabilitySnapshot::parse_json(include_bytes!(
+        "../tests/fixtures/provider-downgrade-v1.json"
+    ))?;
     let weak_report = assess_key_capabilities(&request, &weaker, &fixture_proof)?;
     assert_eq!(weak_report.outcome, DecisionOutcome::Deny);
     println!("downgraded provider claim={:?}", weak_report.outcome);
