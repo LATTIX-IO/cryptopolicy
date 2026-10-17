@@ -1,6 +1,6 @@
 # Cryptopolicy threat model
 
-**Status:** Normative security requirements for the future evaluator; NOT a claim that a working evaluator exists. Companion corpus: `tests/fixtures/security/contract-v1.json`. Tracking: FOSS-426. Security controls must remain fail-closed at every implementation stage.
+**Status:** Normative security requirements. FOSS-435 implements a bounded single-target offline evaluator, but full scenario coverage is not yet proven. Companion corpus: `tests/fixtures/security/contract-v1.json`. Tracking: FOSS-426. Security controls must remain fail-closed at every implementation stage.
 
 ## 1. Scope and assets
 
@@ -126,7 +126,7 @@ Resource budgets to be designed in FOSS-433 include maximum policy bytes, nestin
 
 ## 8. Verification and honest maturity status
 
-The JSON corpus is a **contract and adversarial fixture specification**, not executable engine conformance: the repository does not yet contain a policy schema or evaluator. The linter validates fixture integrity, threat coverage, negative non-Permit expectations, and version/ID stability. An optional strict results comparator can match actual results supplied by a future evaluator, and fails on missing, extra or altered outcomes. No expected-output fixture may be automatically regenerated in CI. `runtime_conformance_verified` remains false until the evaluator is integrated and CI tests it. No false green behavior test is accepted.
+The JSON corpus is a **contract and adversarial fixture specification**, not full executable engine conformance: the repository contains the versioned FOSS-435 single-context evaluator, but it has not yet been bound to every golden fixture. The linter validates fixture integrity, threat coverage, negative non-Permit expectations, and version/ID stability. An optional strict results comparator can match actual results supplied by a future evaluator, and fails on missing, extra or altered outcomes. No expected-output fixture may be automatically regenerated in CI. `runtime_conformance_verified` remains false for the complete normative corpus until all cases are independently mapped and CI executes them against the evaluator (FOSS-459). No false green behavior test is accepted.
 
 Future required handoff: FOSS-429 implements schema/validation; FOSS-433 implements bounds; FOSS-434 typed predicates; FOSS-435 decision runtime; FOSS-437 composition; FOSS-439 time; FOSS-443 waivers; FOSS-445 registry; FOSS-447 observed evidence; FOSS-449 provider capability; FOSS-452/455/457 format adapters; FOSS-459 canonical conformance. Owners must connect each applicable golden CASE-* to actual public API tests. FOSS-426 closes only when the normative model, fixture linter, and regression checks pass, not when future runtime tests are green.
 
