@@ -1,0 +1,100 @@
+# FOSS-459 — Normative conformance, runtime-binding increment A
+
+## Existing and new evidence
+
+The original 33-case `cryptopolicy.security-contract.v1` JSON corpus is a
+**normative specification**, not the output of the evaluator. It remains
+byte-for-byte unchanged and explicitly says `runtime_conformance_verified:
+false`. The original static linter remains in place; no expected golden
+output was regenerated or rewritten by CI.
+
+This increment adds:
+
+- `tests/fixtures/conformance/runtime-coverage-v1.json`: all 33 IDs in
+  normative order, anchored to the exact original Git blob content identity,
+  with declared `runtime-subset` or substantive `pending` status.
+- `crates/cryptopolicy/tests/normative_runtime.rs`: 8 direct Rust tests
+  that load the **actual original normative corpus** and execute current
+  policy evaluator or validation APIs with stable test fixtures.
+- `scripts/conformance_coverage.py`: rejects missing/reordered cases,
+  duplicate JSON keys, absent test symbols, unbound status promotions,
+  unexpected normative bytes and any claim of full verification.
+- CI invokes the Python crosswalk integrity suite and the real Rust
+  integration suite on every PR and main push.
+
+## Exactly what has runtime assertions
+
+| Cases | Contract behavior |
+|---|---|
+| CASE-002 | No matching Allow means Deny/default-denied |
+| CASE-003 | Explicit Deny defeats matching Allow |
+| CASE-004 | Missing classification on potentially applicable Deny => Indeterminate |
+| CASE-006 | Missing required key protection => Indeterminate |
+| CASE-011 | Invalid rule-level UTC interval => policy validation failure |
+| CASE-027 | Reordering matching Deny does not change decision/digest/reasons |
+| CASE-032 | Reverse rule ordering preserves the complete Deny result |
+| CASE-033 | Valid synthetic, caller-supplied observed/HSM fixture => Permit data record |
+
+The subset compares **actual outcome and presence of required controlling
+reason codes**, not full exact ordered reason-vector identity for every case.
+CASE-027 and CASE-032 additionally compare the complete deterministic
+decision, and CASE-033 pins its full current runtime reason vector.
+The `InvalidPolicy` expectation on CASE-011 is asserted against the
+runtime `ContractError::InvalidDocument` variant, not an invented
+exported error code.
+
+`Permit` remains only a **data record**. The library does not authenticate
+the issuer, evidence collector, claimed HSM assurance, TLS transcript,
+signature or any downstream operation; these tests must not be interpreted
+as a real access-control endorsement.
+
+## Pending cases and dependencies
+
+The other **25 cases remain explicitly pending**. Especially:
+
+- CASE-008/009/010: no signed, source-authenticated, scoped exception/waiver
+  engine yet; blocked by FOSS-443.
+- CASE-020/021: X.509/JOSE adapters have independent security tests, but
+  their typed adapter errors are not mapped into the original generic
+  normative error vocabulary.
+- CASE-029: named hybrid TLS constraints are recognized by FOSS-458, but
+  crosswalking a generic hybrid **policy document** into exact construction
+  enforcement is not complete.
+- CASE-028: actual downstream enforcement is outside the current Rust
+  metadata library. The existing consumer test proves non-Permit does not
+  authorize in that example, not comprehensive PEP enforcement.
+- CASE-030/031: strict schema rejection and issuer strings versus verified
+  policy authenticity require explicit error/trust boundary crosswalks.
+- Remaining compositions, inventory/assessment/provider snapshots and
+  privacy/redaction cases require scenario-exact runtime bindings.
+
+Adapter source-specific test suites already exist:
+
+| Source | Current executable suite |
+|---|---|
+| FIPS 203/204/205 algorithm catalog | `crates/pqc-kit/tests/catalog.rs` |
+| X.509 RFC 9881 / RFC 9935 | `crates/pqc-x509/tests/identities.rs` |
+| RFC 9964 JOSE/JWK ML-DSA | `crates/pqc-jose/tests/identities.rs` |
+| RFC 9964 COSE ML-DSA | `crates/pqc-cose/tests/identities.rs` |
+| RFC 10024 hybrid TLS | `crates/pqc-kit/tests/tls_hybrid.rs` |
+| Policy temporal boundaries | `crates/cryptopolicy/tests/temporal.rs` |
+
+Passing those suites does NOT automatically mark a specification case
+`runtime-subset` until the exact normative scenario and expected reason/
+error vocabulary are linked to real library outputs.
+
+## Reproduce
+
+    python3 scripts/security_contract.py --lint
+    python3 scripts/conformance_coverage.py
+    python3 -m unittest discover -s tests -p test_conformance_coverage.py -v
+    cargo test -p cryptopolicy --test normative_runtime --locked
+    cargo test --workspace --all-features --locked
+
+**Release status:** This is increment A of FOSS-459, not complete runtime
+conformance. The full 33-case result comparator must not be marked
+operationally verified until all 33 cases have proven runtime bindings,
+the missing exception/enforcement scopes are supplied, independent
+goldens are audited, and complete reason/error output is checked. Source
+crate manifests continue to say `publish = false`; FOSS-464/466 remain
+release authorization gates.
