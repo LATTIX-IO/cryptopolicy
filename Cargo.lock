@@ -104,6 +104,12 @@ dependencies = [
 [[package]]
 name = "pqc-x509"
 version = "0.1.0"
+dependencies = [
+ "pqc-kit",
+ "serde",
+ "serde_json",
+ "sha2",
+]
 
 [[package]]
 name = "proc-macro2"

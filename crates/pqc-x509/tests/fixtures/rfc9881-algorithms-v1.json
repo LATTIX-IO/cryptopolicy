@@ -1,0 +1,23 @@
+{
+  "schema_version": "1",
+  "source": "RFC 9881",
+  "location": "certificate_signature",
+  "parameters": "absent",
+  "entries": [
+    {
+      "profile_id": "ML-DSA-44",
+      "oid": "2.16.840.1.101.3.4.3.17",
+      "algorithm_identifier_der_hex": "300b0609608648016503040311"
+    },
+    {
+      "profile_id": "ML-DSA-65",
+      "oid": "2.16.840.1.101.3.4.3.18",
+      "algorithm_identifier_der_hex": "300b0609608648016503040312"
+    },
+    {
+      "profile_id": "ML-DSA-87",
+      "oid": "2.16.840.1.101.3.4.3.19",
+      "algorithm_identifier_der_hex": "300b0609608648016503040313"
+    }
+  ]
+}

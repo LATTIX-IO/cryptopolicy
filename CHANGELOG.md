@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-452: bounded RFC 9881 ML-DSA X.509 signature and RFC 9935 ML-KEM SPKI DER normalization with exact no-parameter OIDs, pinned pqc-kit profile identity, strict DER/tag/key-usage/critical-extension checks, provenance-only versioned reports, positive/malformed fixtures, mutation regressions and offline example. Not a certificate verifier or policy authority.
+
 - FOSS-449: strict versioned key-request/provider-capability preflight DTOs, pinned pqc-kit profile recognition, explicit required/forbidden key capabilities, separate source and HSM assurance verifier, age/expiry handling, fail-closed deterministic results, standalone fixtures and adversarial Rust tests. Compatibility is not policy authorization.
 
 - FOSS-447: strict AssessmentContext v1, provenance-preserving per-observation sources and typed parameters, external evidence-verifier boundary, partial coverage/conflict reporting, deterministic single-fact core decision aggregation and adversarial golden tests; no cryptomap dependency or implicit authorization upgrade.

@@ -1,0 +1,27 @@
+{
+  "schema_version": "1",
+  "source": "RFC 9935",
+  "location": "subject_public_key_info",
+  "parameters": "absent",
+  "public_key_encoding": "raw_bit_string_octets",
+  "entries": [
+    {
+      "profile_id": "ML-KEM-512",
+      "oid": "2.16.840.1.101.3.4.4.1",
+      "algorithm_identifier_der_hex": "300b0609608648016503040401",
+      "public_key_octets": 800
+    },
+    {
+      "profile_id": "ML-KEM-768",
+      "oid": "2.16.840.1.101.3.4.4.2",
+      "algorithm_identifier_der_hex": "300b0609608648016503040402",
+      "public_key_octets": 1184
+    },
+    {
+      "profile_id": "ML-KEM-1024",
+      "oid": "2.16.840.1.101.3.4.4.3",
+      "algorithm_identifier_der_hex": "300b0609608648016503040403",
+      "public_key_octets": 1568
+    }
+  ]
+}

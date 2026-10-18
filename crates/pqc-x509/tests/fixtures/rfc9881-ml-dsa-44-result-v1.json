@@ -1,0 +1,16 @@
+{
+  "schema_version": "1",
+  "source_id": "collector:x509:fixture",
+  "evidence_ref": "sha256:input:test-fixture",
+  "field": "certificate_signature",
+  "oid": "2.16.840.1.101.3.4.3.17",
+  "profile_id": "ML-DSA-44",
+  "parameters_present": false,
+  "public_key_octets": null,
+  "standards_profile": "RFC 9881",
+  "catalog_version": "1.0.0",
+  "catalog_sha256": "91cca1ed7fe8a0391045801108089bb38bee0b34fdff40e2c7e0fac4e87fb685",
+  "input_der_sha256": "e8517ca5036e47496b3e945c8ecc0cf9d613ac5292880b144ac554935d7a9f3c",
+  "signature_verified": false,
+  "certificate_validated": false
+}

@@ -1,0 +1,62 @@
+{
+  "schema_version": "1",
+  "source": "RFC 9881 / DER-X.690",
+  "field": "certificate_signature",
+  "cases": [
+    {
+      "id": "null_parameters",
+      "der_hex": "300d06096086480165030403110500",
+      "expected_error": "ParametersNotAbsent"
+    },
+    {
+      "id": "unknown_oid",
+      "der_hex": "300b0609608648016503040314",
+      "expected_error": "UnsupportedOid"
+    },
+    {
+      "id": "wrong_role_mlkem",
+      "der_hex": "300b0609608648016503040401",
+      "expected_error": "WrongRole"
+    },
+    {
+      "id": "indefinite_length",
+      "der_hex": "308006096086480165030403110000",
+      "expected_error": "InvalidDer(\"indefinite_or_oversized_length\")"
+    },
+    {
+      "id": "noncanonical_long_form",
+      "der_hex": "30810b0609608648016503040311",
+      "expected_error": "InvalidDer(\"noncanonical_length\")"
+    },
+    {
+      "id": "wrong_sequence_tag",
+      "der_hex": "310b0609608648016503040311",
+      "expected_error": "InvalidDer(\"wrong_tag\")"
+    },
+    {
+      "id": "truncated_oid_bytes",
+      "der_hex": "300b06096086480165030403",
+      "expected_error": "InvalidDer(\"truncated_value\")"
+    },
+    {
+      "id": "trailing_content",
+      "der_hex": "300b060960864801650304031100",
+      "expected_error": "InvalidDer(\"trailing_der\")"
+    },
+    {
+      "id": "truncated_base128",
+      "der_hex": "300b0609608648016503040391",
+      "expected_error": "InvalidDer(\"truncated_oid_subidentifier\")"
+    },
+    {
+      "id": "noncanonical_base128",
+      "der_hex": "300b0609808648016503040311",
+      "expected_error": "InvalidDer(\"noncanonical_oid_subidentifier\")"
+    },
+    {
+      "id": "unexpected_integer_parameter",
+      "der_hex": "300e0609608648016503040311020101",
+      "expected_error": "ParametersNotAbsent"
+    }
+  ]
+}

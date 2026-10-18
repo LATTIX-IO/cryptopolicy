@@ -1,0 +1,16 @@
+{
+  "schema_version": "1",
+  "source_id": "collector:x509:fixture",
+  "evidence_ref": "sha256:input:test-fixture",
+  "field": "subject_public_key_info",
+  "oid": "2.16.840.1.101.3.4.4.2",
+  "profile_id": "ML-KEM-768",
+  "parameters_present": false,
+  "public_key_octets": 1184,
+  "standards_profile": "RFC 9935",
+  "catalog_version": "1.0.0",
+  "catalog_sha256": "91cca1ed7fe8a0391045801108089bb38bee0b34fdff40e2c7e0fac4e87fb685",
+  "input_der_sha256": "2720bf8e01e2dda7375251cdc52aa9814f348bbe925ba0e1ee7a47b31bfad8fa",
+  "signature_verified": false,
+  "certificate_validated": false
+}
