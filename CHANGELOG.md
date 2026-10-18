@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-499/E0: strict exact-scope signed-reference exception DTO, bounded closed-schema parse/validation, explicit issued/effective/expiry and revocation status, deterministic correlation fingerprint, independent caller-owned source/approver/approval/revocation trust gate and default reject-all verifier. Reproducible fixture, synthetic example, adversarial security regression suite. No waiver, policy grant, signature verification or publication.
+
 - FOSS-493/A: five source-bound normative runtime tests for unknown vendor algorithm alias, installed dependency, partial inventory, configured TLS and source-authenticated but independently unverified HSM assurance. A separate fail-closed generic-hybrid-input regression is not counted as exact conformance. Conservative Indeterminate-only missing-evidence reason projections for actual assessment/provider reports. Crosswalk 19/33 runtime-linked, 14 pending; no new Permit, authentication or publication.
 
 - FOSS-492/A: six additional real normative runtime tests for invalid defaults/effects, precise temporal prohibition, pinned import cycles and resource budgets (14/33 total), with no fabricated PolicyConflict/UnsupportedSchema/issuer-authentication equivalence. Conformance crosswalk retains 19 pending cases.
