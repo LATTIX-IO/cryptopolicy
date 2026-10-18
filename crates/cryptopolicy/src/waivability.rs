@@ -10,7 +10,7 @@ use crate::{
     ExceptionDeviation, ExceptionReference, ExceptionScope, ExceptionSourceVerifier,
     ExceptionStatus, Limits, PolicyReference, PolicyWaiverAuthorityVerifier, PolicyWaiverGrant,
     ProfileId, RuleId, SchemaVersion, WaiverAdmissionDisposition, WaiverAdmissionReport,
-    WaiverCandidateRequest, evaluate_waiver_candidate_core,
+    WaiverCandidateRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
