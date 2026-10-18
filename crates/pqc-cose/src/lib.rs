@@ -86,7 +86,7 @@ pub enum CoseError {
     WrongPublicKeyLength,
     /// Input contains -2 (private seed) in public-key-only API.
     PrivateMaterialNotAccepted,
-    /// Key operations are not absent or the verify-only operation [2].
+    /// Key operations are not absent or the verify-only operation `[2]`.
     InvalidKeyUse,
     /// Source identifiers or optional key ID are invalid or incompatible.
     InvalidIdentifier,
