@@ -195,7 +195,10 @@ fn unbound_profile_identity_never_inherits_an_algorithm_only_waiver() {
     for profile in ["AES-256-GCM:profile-a", "AES-256-GCM:profile-b"] {
         context.facts[0].profile_id = Some(ProfileId::parse(profile).unwrap());
         let decision = evaluate(&graph, &e, &grant, &context, 150);
-        assert_eq!(decision.disposition, WaiverAdmissionDisposition::ScopeMismatch);
+        assert_eq!(
+            decision.disposition,
+            WaiverAdmissionDisposition::ScopeMismatch
+        );
         assert_eq!(decision.candidate_outcome, DecisionOutcome::Deny);
         assert!(decision.candidate_target_layer.is_none());
         assert_eq!(decision.original.outcome, DecisionOutcome::Deny);
