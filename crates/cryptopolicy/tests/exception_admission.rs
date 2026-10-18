@@ -146,7 +146,7 @@ fn evaluate(
             actual_scope: &e.scope,
             time: at(time),
             exception: e,
-            grant: grant,
+            grant,
             limits: &Limits::default(),
         },
         &exception_verifier,
@@ -260,7 +260,6 @@ fn revoked_suspended_expired_unverified_wrong_tenant_and_approval_are_blocked() 
         WaiverAdmissionDisposition::ExceptionNotReady
     );
     e = ready().1;
-    grant = grant_for(&e);
     e.expires_at = at(151);
     grant = grant_for(&e);
     let mut expired_context = context.clone();
@@ -362,9 +361,9 @@ fn deny_in_other_mandatory_layer_is_never_overridden() {
 
 #[test]
 fn missing_failed_or_irrelevant_compensation_never_elevates_original_deny() {
-    let (graph, mut e, mut grant, mut c) = ready();
+    let (graph, mut e, _, mut c) = ready();
     e.compensating_controls = vec![RuleId::parse("no-such-require-rule").unwrap()];
-    grant = grant_for(&e);
+    let mut grant = grant_for(&e);
     let report = evaluate(&graph, &e, &grant, &c, 150);
     assert_eq!(
         report.disposition,
