@@ -15,10 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let identity = normalize_ml_dsa_cose_key(&key, &protected, &source)?;
     assert!(!identity.signature_verified && !identity.key_validated);
     let time = EvaluationTime { unix_millis: 150 };
-    let context = identity.to_untrusted_context(
-        RequestId::parse("example:cose:1")?,
-        time,
-    )?;
+    let context = identity.to_untrusted_context(RequestId::parse("example:cose:1")?, time)?;
     assert!(!context.facts[0].verified);
     println!(
         "alg={} profile={} public_octets={} sha256={}",

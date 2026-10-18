@@ -80,25 +80,31 @@ fn evidence() -> CoseEvidenceSource {
 
 #[test]
 fn normative_rfc9964_mapping_with_pinned_golden_fingerprints() {
-    let fixture: Vec<Value> = serde_json::from_slice(include_bytes!(
-        "fixtures/rfc9964-cose-profiles-v1.json"
-    )).unwrap();
+    let fixture: Vec<Value> =
+        serde_json::from_slice(include_bytes!("fixtures/rfc9964-cose-profiles-v1.json")).unwrap();
     assert_eq!(fixture.len(), 3);
     for entry in fixture {
         let alg = entry["alg"].as_i64().unwrap();
         let name = entry["profile"].as_str().unwrap();
         let bytes = usize::try_from(entry["public_key_octets"].as_u64().unwrap()).unwrap();
-        let output = normalize_ml_dsa_cose_key(&key(alg, bytes), &header(alg), &evidence()).unwrap();
+        let output =
+            normalize_ml_dsa_cose_key(&key(alg, bytes), &header(alg), &evidence()).unwrap();
         assert_eq!(output.alg, alg);
         assert_eq!(output.profile_id, name);
         assert_eq!(output.kty, 7);
         assert_eq!(output.standards_profile, "RFC 9964");
         assert_eq!(output.public_key_octets, bytes);
-        assert_eq!(output.input_cbor_sha256, entry["synthetic_sha256"].as_str().unwrap());
+        assert_eq!(
+            output.input_cbor_sha256,
+            entry["synthetic_sha256"].as_str().unwrap()
+        );
         assert_eq!(output.catalog_version, "1.0.0");
         assert!(!output.signature_verified && !output.key_validated);
         let wire = serde_json::to_vec(&output).unwrap();
-        assert_eq!(CoseAlgorithmIdentity::parse_untrusted_json(&wire).unwrap(), output);
+        assert_eq!(
+            CoseAlgorithmIdentity::parse_untrusted_json(&wire).unwrap(),
+            output
+        );
     }
 }
 
@@ -126,7 +132,8 @@ fn algorithm_and_key_type_confusion_fails_closed() {
 fn private_seed_and_key_usage_confusion_rejected() {
     let h = header(-48);
     let with_seed = map(vec![
-        (1, int(7)), (3, int(-48)),
+        (1, int(7)),
+        (3, int(-48)),
         (-1, bstr(&vec![0; 1312])),
         (-2, bstr(&vec![0; 32])),
     ]);
@@ -136,7 +143,9 @@ fn private_seed_and_key_usage_confusion_rejected() {
     );
     for ops in [vec![int(1)], vec![int(3)], vec![int(2), int(1)], vec![]] {
         let k = map(vec![
-            (1, int(7)), (3, int(-48)), (4, array(ops)),
+            (1, int(7)),
+            (3, int(-48)),
+            (4, array(ops)),
             (-1, bstr(&vec![0; 1312])),
         ]);
         assert_eq!(
@@ -145,7 +154,9 @@ fn private_seed_and_key_usage_confusion_rejected() {
         );
     }
     let verified = map(vec![
-        (1, int(7)), (3, int(-48)), (4, array(vec![int(2)])),
+        (1, int(7)),
+        (3, int(-48)),
+        (4, array(vec![int(2)])),
         (-1, bstr(&vec![0; 1312])),
     ]);
     assert!(normalize_ml_dsa_cose_key(&verified, &h, &evidence()).is_ok());
@@ -165,7 +176,9 @@ fn critical_unknown_and_unprotected_algorithm_headers_fail_closed() {
     }
     assert_eq!(
         normalize_ml_dsa_cose_key(
-            &k, &map(vec![(1, int(-48)), (2, array(vec![]))]), &evidence()
+            &k,
+            &map(vec![(1, int(-48)), (2, array(vec![]))]),
+            &evidence()
         ),
         Err(CoseError::UnsupportedCriticalHeader)
     );
@@ -203,7 +216,9 @@ fn noncanonical_map_order_and_nonminimal_cbor_lengths_rejected() {
         Err(CoseError::NonCanonicalCbor)
     );
     // A 1312-byte string requires 0x59 (u16), not 0x5a (u32).
-    let mut long_bytes = vec![0xa3, 0x01, 0x07, 0x03, 0x38, 0x2f, 0x20, 0x5a, 0, 0, 0x05, 0x20];
+    let mut long_bytes = vec![
+        0xa3, 0x01, 0x07, 0x03, 0x38, 0x2f, 0x20, 0x5a, 0, 0, 0x05, 0x20,
+    ];
     long_bytes.extend(vec![0_u8; 1312]);
     assert_eq!(
         normalize_ml_dsa_cose_key(&long_bytes, &header(-48), &evidence()),
@@ -231,7 +246,12 @@ fn wrong_lengths_and_malformed_cbor_rejected() {
         normalize_ml_dsa_cose_key(&truncated, &header(-48), &evidence()),
         Err(CoseError::InvalidCbor)
     );
-    for malformed in [vec![0xbf, 0xff], vec![0xc0, 0xa0], vec![0xf6], vec![0x9f, 0xff]] {
+    for malformed in [
+        vec![0xbf, 0xff],
+        vec![0xc0, 0xa0],
+        vec![0xf6],
+        vec![0x9f, 0xff],
+    ] {
         assert!(normalize_ml_dsa_cose_key(&malformed, &header(-48), &evidence()).is_err());
     }
     let k = map(vec![(1, int(7)), (3, int(-48)), (-1, int(7))]);
@@ -244,7 +264,9 @@ fn wrong_lengths_and_malformed_cbor_rejected() {
 #[test]
 fn optional_kid_is_bounded_and_must_match() {
     let key_with_kid = map(vec![
-        (1, int(7)), (2, bstr(b"matching-key")), (3, int(-48)),
+        (1, int(7)),
+        (2, bstr(b"matching-key")),
+        (3, int(-48)),
         (-1, bstr(&vec![0; 1312])),
     ]);
     let ok_header = map(vec![(1, int(-48)), (4, bstr(b"matching-key"))]);
@@ -267,19 +289,27 @@ fn bounded_inputs_and_invalid_source_identifiers_fail() {
     let h = header(-48);
     assert_eq!(
         normalize_ml_dsa_cose_key_with_limits(
-            &k, &h, &evidence(), CoseLimits {
+            &k,
+            &h,
+            &evidence(),
+            CoseLimits {
                 cose_key_bytes: k.len() - 1,
                 protected_header_bytes: MAX_PROTECTED_CBOR_BYTES,
             }
-        ), Err(CoseError::SizeLimit)
+        ),
+        Err(CoseError::SizeLimit)
     );
     assert_eq!(
         normalize_ml_dsa_cose_key_with_limits(
-            &k, &h, &evidence(), CoseLimits {
+            &k,
+            &h,
+            &evidence(),
+            CoseLimits {
                 cose_key_bytes: MAX_COSE_KEY_BYTES + 1,
                 protected_header_bytes: MAX_PROTECTED_CBOR_BYTES,
             }
-        ), Err(CoseError::SizeLimit)
+        ),
+        Err(CoseError::SizeLimit)
     );
     let mut source = evidence();
     source.evidence_ref = "../../unsafe".to_owned();
@@ -325,14 +355,19 @@ fn externally_forged_reports_cannot_claim_verified_facts() {
 fn projection_never_launders_cbor_metadata_to_permit() {
     let result = normalize_ml_dsa_cose_key(&key(-48, 1312), &header(-48), &evidence()).unwrap();
     let time = EvaluationTime { unix_millis: 150 };
-    let projected =
-        result.to_untrusted_context(RequestId::parse("request:cose:1").unwrap(), time).unwrap();
+    let projected = result
+        .to_untrusted_context(RequestId::parse("request:cose:1").unwrap(), time)
+        .unwrap();
     assert!(!projected.facts[0].verified);
-    assert_eq!(projected.facts[0].origin, cryptopolicy::FactOrigin::Inferred);
+    assert_eq!(
+        projected.facts[0].origin,
+        cryptopolicy::FactOrigin::Inferred
+    );
     assert_eq!(projected.operation, cryptopolicy::CryptoOperation::Verify);
     let policy = PolicyDocument::parse_json(include_bytes!(
         "../../cryptopolicy/tests/fixtures/evaluator-policy-v1.json"
-    )).unwrap();
+    ))
+    .unwrap();
     let decision = evaluate(&policy, &projected, time).unwrap();
     assert_ne!(decision.outcome, DecisionOutcome::Permit);
 }

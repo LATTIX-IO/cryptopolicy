@@ -20,7 +20,10 @@ struct Decoder<'a> {
 impl<'a> Decoder<'a> {
     fn take(&mut self, len: usize) -> Result<&'a [u8], CoseError> {
         let end = self.offset.checked_add(len).ok_or(CoseError::InvalidCbor)?;
-        let part = self.bytes.get(self.offset..end).ok_or(CoseError::InvalidCbor)?;
+        let part = self
+            .bytes
+            .get(self.offset..end)
+            .ok_or(CoseError::InvalidCbor)?;
         self.offset = end;
         Ok(part)
     }

@@ -123,7 +123,9 @@ impl CoseEvidenceSource {
             if bytes.is_empty()
                 || bytes.len() > 128
                 || !bytes[0].is_ascii_alphanumeric()
-                || !bytes.iter().all(|b| b.is_ascii_alphanumeric() || b"-._:/".contains(b))
+                || !bytes
+                    .iter()
+                    .all(|b| b.is_ascii_alphanumeric() || b"-._:/".contains(b))
             {
                 return Err(CoseError::InvalidIdentifier);
             }
@@ -184,11 +186,7 @@ fn profile(code: i64) -> Result<(&'static str, usize), CoseError> {
 fn pinned_catalog(name: &str) -> Result<(String, String), CoseError> {
     let catalog = Catalog::embedded_v1().map_err(|_| CoseError::CatalogMismatch)?;
     catalog
-        .validate_usage(
-            name,
-            OperationClass::Verify,
-            UsageParameter::NamedSet(name),
-        )
+        .validate_usage(name, OperationClass::Verify, UsageParameter::NamedSet(name))
         .map_err(|_| CoseError::CatalogMismatch)?;
     Ok((
         catalog.snapshot().catalog_version.clone(),
@@ -211,8 +209,7 @@ impl CoseAlgorithmIdentity {
         if input.len() > MAX_REPORT_JSON_BYTES {
             return Err(CoseError::SizeLimit);
         }
-        let parsed: Self =
-            serde_json::from_slice(input).map_err(|_| CoseError::InvalidReport)?;
+        let parsed: Self = serde_json::from_slice(input).map_err(|_| CoseError::InvalidReport)?;
         CoseEvidenceSource {
             source_id: parsed.source_id.clone(),
             evidence_ref: parsed.evidence_ref.clone(),
