@@ -161,6 +161,12 @@ The `pqc-cose` crate strictly parses a canonical CBOR COSE_Key and separately ex
 
 Run `cargo run -p pqc-cose --example normalize_cose` and `cargo test -p pqc-cose --test identities --locked`. See [COSE normalization contract](docs/COSE_NORMALIZATION.md).
 
+## RFC 10024 finalized hybrid TLS 1.3 group identities (FOSS-458)
+
+The `pqc-kit::tls_hybrid` registry adds **only** three finalized hybrid TLS NamedGroups (X25519MLKEM768, SecP256r1MLKEM768 and SecP384r1MLKEM1024), each with exact RFC 10024 codepoints, classical+ML-KEM components, share ordering and lengths. This is separate from the immutable FOSS-445 catalog bytes; presence in either registry never authorizes a cryptographic operation. Configured groups cannot be mistaken for negotiated groups; draft Kyber codepoints remain explicitly obsoleted. The typed assessment can produce *structural metadata consistency* but never authenticated evidence or Permit.
+
+Run `cargo run -p pqc-kit --example tls_hybrid` and `cargo test -p pqc-kit --test tls_hybrid --locked`. See [hybrid TLS identity contract](docs/TLS_HYBRID_PROFILES.md).
+
 ## Crates
 
 - cryptopolicy
