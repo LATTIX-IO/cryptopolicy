@@ -3,8 +3,8 @@
 #![allow(clippy::unwrap_used)]
 
 use cryptopolicy::{
-    AdvancedSelector, AlgorithmId, ContractError, CryptoContext, CryptoOperation, DataSensitivity,
-    DecisionOutcome, EvaluationTime, PolicyDecision, PolicyDocument, ProfileId, ReasonCode,
+    AdvancedSelector, ContractError, CryptoContext, CryptoOperation, DataSensitivity,
+    DecisionOutcome, EvaluationTime, PolicyDecision, PolicyDocument, ReasonCode,
     RuleEffect, RuleId, RuleTemporal, evaluate,
 };
 use serde_json::Value;
