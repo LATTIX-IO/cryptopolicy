@@ -73,6 +73,11 @@ jobs:
           cargo generate-lockfile --manifest-path acceptance/fresh-consumer/Cargo.toml
           cargo run --manifest-path acceptance/fresh-consumer/Cargo.toml --locked
 
+      - name: Package-archive and isolated local-registry acceptance
+        run: |
+          python3 -m unittest discover -s tests -p 'test_package_acceptance.py' -v
+          python3 scripts/package_acceptance.py
+
       - name: Install supply-chain tools
         run: |
           cargo install --locked cargo-audit

@@ -172,6 +172,10 @@ Run:
 
 A separate Rust application under `acceptance/fresh-consumer` consumes an exact pinned Git revision without local workspace path dependencies, parses policy/context JSON, and checks Permit/Deny/Indeterminate decisions and stable decision decoding. This is **not** final packaged-crate acceptance; see [consumer acceptance](acceptance/fresh-consumer/README.md) and FOSS-464 release gates.
 
+## Packaged-crate candidate acceptance (FOSS-440)
+
+Run `python3 -m unittest discover -s tests -p test_package_acceptance.py -v` and `python3 scripts/package_acceptance.py` to test `.crate` archives via a temporary loopback-only Cargo sparse registry and version-only external consumer. Source manifests remain `publish = false`; only disposable staging copies can be packaged. Real registry ownership, SBOM attestations and independent publication approvals remain FOSS-464/466 blockers. See [acceptance contract](docs/PACKAGE_ACCEPTANCE.md).
+
 ## Publishing
 
 All five workspace packages are **unpublished bootstrap crates** with `publish = false`.
