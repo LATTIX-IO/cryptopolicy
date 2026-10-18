@@ -18,11 +18,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let deny = evaluate(&prohibited, &context, context.evaluation_time)?;
     assert_eq!(deny.outcome, DecisionOutcome::Deny);
 
-    let mut unverified = context.clone();
-    unverified.facts[0].verified = false;
-    unverified.facts[0].properties.as_mut().ok_or("missing fixture properties")?.source_quality =
-        Some(cryptopolicy::EvidenceQuality::Unverified);
-    let unknown = evaluate(&policy, &unverified, unverified.evaluation_time)?;
+    let mut incomplete = context.clone();
+    incomplete.facts[0].properties.as_mut().ok_or("missing fixture properties")?.key_exportable = None;
+    let unknown = evaluate(&policy, &incomplete, incomplete.evaluation_time)?;
     assert_eq!(unknown.outcome, DecisionOutcome::Indeterminate);
 
     for decision in [&permit, &deny, &unknown] {
