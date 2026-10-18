@@ -171,6 +171,10 @@ Run `cargo run -p pqc-kit --example tls_hybrid` and `cargo test -p pqc-kit --tes
 
 The original 33-case normative security contract remains **specification-only**. The [runtime conformance crosswalk](docs/CONFORMANCE_COVERAGE.md) explicitly accounts for all 33 cases, and binds 19 to real Rust evaluator/validation and provenance-safe assessment tests, leaving 14 pending with identified gaps. Assessment and provider evidence remain non-authorizing until authenticated externally. Both the crosswalk audit and runtime-bound cases are executed in CI. These checks assert actual outcomes and controlling reasons for the 8 cases; they do not claim a complete 33-case reason/error golden corpus. Run `python3 scripts/conformance_coverage.py` and `cargo test -p cryptopolicy --test normative_runtime --locked`.
 
+## Exact-scope exception reference (FOSS-499)
+
+The `cryptopolicy` crate now includes a bounded, strictly versioned, **untrusted** exception-reference DTO and external-verification interface. The default verifier rejects source/approval trust, and even a caller-verified reference is only *eligible for future independent admission*; it does not waive rules, override Deny, execute cryptography or grant Permit. The reference pins exact policy ID/version/digest, target rule, tenant, environment, operation, algorithm and key, with explicit time and compensating rule references. Run `cargo run -p cryptopolicy --example exception_reference`; see [exception trust contract](docs/EXCEPTION_REFERENCE.md). FOSS-500/501 implement future admission/audit separately.
+
 ## Crates
 
 - cryptopolicy
