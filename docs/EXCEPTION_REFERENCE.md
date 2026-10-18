@@ -6,7 +6,7 @@ An exception is a **request to deviate**, not authorization to deviate.
 The `cryptopolicy` library neither creates cryptographic signatures nor
 validates signers, key custody, approver delegation, revocation or policy
 enforcement. The new E0 API has **no** mechanism for overriding any policy
-rule, allowing an explicit Deny, or producing a `PolicyDecision::Permit`.
+rule, allowing an explicit Deny, or producing a `DecisionOutcome::Permit`.
 
 The v1 DTO has a strict, known-field, versioned JSON envelope containing:
 an exception ID, exact `PolicyReference` (policy ID, semantic version and
