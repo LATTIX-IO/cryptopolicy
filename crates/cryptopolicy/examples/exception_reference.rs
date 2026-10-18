@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(report.finding, ExceptionReferenceFinding::Unverified);
     println!(
         "exception={} fingerprint={} finding={:?}",
-        report.exception_id, report.exception_digest, report.finding
+        report.exception_id, report.exception_digest.as_str(), report.finding
     );
     println!("Unverified metadata grants no policy waiver, Permit or execution authority.");
     Ok(())
