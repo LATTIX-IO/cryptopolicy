@@ -5,19 +5,17 @@
 //! external trust attestations, replay protection or cryptographic approval.
 
 use crate::{
-    DecisionOutcome, EvaluationTime, EvidenceId, ExceptionBoundContext,
-    ExceptionReference, ExceptionReferenceFinding, ExceptionSourceVerifier,
-    Limits, PolicyDigest, PolicyReference, ReasonCode, RuleId, SchemaVersion,
-    UnverifiedExceptionReferences, WaiverAdmissionDisposition, WaiverAdmissionReport,
-    assess_exception_reference,
+    DecisionOutcome, EvaluationTime, EvidenceId, ExceptionBoundContext, ExceptionReference,
+    ExceptionReferenceFinding, ExceptionSourceVerifier, Limits, PolicyDigest, PolicyReference,
+    ReasonCode, RuleId, SchemaVersion, UnverifiedExceptionReferences, WaiverAdmissionDisposition,
+    WaiverAdmissionReport, assess_exception_reference,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeSet, fmt};
 
 /// Domain-separated, correlation-only receipt digest prefix.
-pub const EXCEPTION_BLOCK_RECEIPT_DOMAIN_V1: &[u8] =
-    b"cryptopolicy-exception-block-audit-v1\0";
+pub const EXCEPTION_BLOCK_RECEIPT_DOMAIN_V1: &[u8] = b"cryptopolicy-exception-block-audit-v1\0";
 
 /// Closed public audit error family; no free-form policy/source secrets.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -120,8 +118,8 @@ impl BlockedExceptionAuditReceipt {
     ///
     /// The digest is NOT an HMAC, signature, source proof or Permit.
     pub fn correlation_digest(&self) -> Result<PolicyDigest, ExceptionAuditError> {
-        let bytes = serde_json::to_vec(self)
-            .map_err(|_| ExceptionAuditError::ReceiptInconsistent)?;
+        let bytes =
+            serde_json::to_vec(self).map_err(|_| ExceptionAuditError::ReceiptInconsistent)?;
         if bytes.len() > crate::MAX_EXCEPTION_REFERENCE_JSON_BYTES {
             return Err(ExceptionAuditError::ResourceLimit);
         }
@@ -168,8 +166,12 @@ pub fn build_blocked_exception_audit_receipt(
     bound: &ExceptionBoundContext,
     limits: &Limits,
 ) -> Result<BlockedExceptionAuditReceipt, ExceptionAuditError> {
-    limits.validate().map_err(|_| ExceptionAuditError::ResourceLimit)?;
-    reference.validate(limits).map_err(|_| ExceptionAuditError::InvalidException)?;
+    limits
+        .validate()
+        .map_err(|_| ExceptionAuditError::ResourceLimit)?;
+    reference
+        .validate(limits)
+        .map_err(|_| ExceptionAuditError::InvalidException)?;
     if report.original.outcome != DecisionOutcome::Deny
         || report.candidate_outcome == DecisionOutcome::Permit
         || report.candidate_target_layer.is_some()
@@ -189,11 +191,16 @@ pub fn build_blocked_exception_audit_receipt(
     let reference_state =
         assess_exception_reference(reference, bound, &UnverifiedExceptionReferences)
             .map_err(|_| ExceptionAuditError::InvalidException)?;
-    let target = report.original.components.iter().find(|layer| {
-        layer.reference == reference.policy
-            && layer.decision.policy_digest == reference.policy.digest
-            && layer.decision.evaluated_at == bound.evaluation_time
-    }).ok_or(ExceptionAuditError::ReceiptInconsistent)?;
+    let target = report
+        .original
+        .components
+        .iter()
+        .find(|layer| {
+            layer.reference == reference.policy
+                && layer.decision.policy_digest == reference.policy.digest
+                && layer.decision.evaluated_at == bound.evaluation_time
+        })
+        .ok_or(ExceptionAuditError::ReceiptInconsistent)?;
     // This negative-only receipt must really be based on a matching Deny,
     // not invented "block" metadata or a no-rule/default policy.
     if !target.decision.reasons.iter().any(|reason| {
@@ -226,7 +233,8 @@ pub fn build_blocked_exception_audit_receipt(
         target_policy: reference.policy.clone(),
         target_rule: reference.target_rule.clone(),
         exception_id: reference.exception_id.clone(),
-        exception_digest: reference.correlation_digest()
+        exception_digest: reference
+            .correlation_digest()
             .map_err(|_| ExceptionAuditError::InvalidException)?,
         evaluated_at: bound.evaluation_time,
         original_outcome: report.original.outcome,
@@ -248,11 +256,13 @@ pub fn build_blocked_exception_audit_receipt(
         blocking_reasons: actual_reasons.into_iter().collect(),
         enforcement: BlockedExceptionEnforcement::Block,
     };
-    let bytes = serde_json::to_vec(&receipt)
-        .map_err(|_| ExceptionAuditError::ReceiptInconsistent)?;
+    let bytes =
+        serde_json::to_vec(&receipt).map_err(|_| ExceptionAuditError::ReceiptInconsistent)?;
     if bytes.len() > crate::MAX_EXCEPTION_REFERENCE_JSON_BYTES {
         return Err(ExceptionAuditError::ResourceLimit);
     }
-    limits.check_json(&bytes).map_err(|_| ExceptionAuditError::ResourceLimit)?;
+    limits
+        .check_json(&bytes)
+        .map_err(|_| ExceptionAuditError::ResourceLimit)?;
     Ok(receipt)
 }
