@@ -1,0 +1,29 @@
+[
+  {
+    "alg": -48,
+    "profile": "ML-DSA-44",
+    "kty": 7,
+    "public_key_octets": 1312,
+    "signature_octets": 2420,
+    "synthetic_sha256": "2a6b71596635bc2ce8fb2acac008be88f752988b3a794abd7080b1d94df3031f",
+    "source": "RFC 9964 Sections 3 and 8.1.1; FIPS 204 Table 2"
+  },
+  {
+    "alg": -49,
+    "profile": "ML-DSA-65",
+    "kty": 7,
+    "public_key_octets": 1952,
+    "signature_octets": 3309,
+    "synthetic_sha256": "2aa09344654b613cb4557dd8151e26bc642a3a8438e9ce1b7ee342d2dd9dec26",
+    "source": "RFC 9964 Sections 3 and 8.1.1; FIPS 204 Table 2"
+  },
+  {
+    "alg": -50,
+    "profile": "ML-DSA-87",
+    "kty": 7,
+    "public_key_octets": 2592,
+    "signature_octets": 4627,
+    "synthetic_sha256": "3dcd9286c341b198f3f856012b632f609f690a207e9dfa31a720d30e71a6f544",
+    "source": "RFC 9964 Sections 3 and 8.1.1; FIPS 204 Table 2"
+  }
+]

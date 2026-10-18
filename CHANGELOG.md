@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-457: bounded deterministic RFC 9964 COSE_Key + protected header parsing for ML-DSA-44/65/87. Exact -48/-49/-50 algorithm IDs, kty 7, public-key sizes, pinned catalog mapping, canonical CBOR length/order checks, duplicate/critical/unknown/private-label rejection, unverified context projection, independent golden vectors and adversarial mutation tests. No signature/key verification, CWT identity validation or publication.
+
 - FOSS-455: bounded RFC 9964 ML-DSA-44/65/87 AKP public JWK and protected JWS header normalization; strict alg/kty/key-length/canonical-base64url and critical-extension rejection, catalog identity, provenance fingerprint, unverified CryptoContext projection, adversarial vectors and executable example. No signature/key verification, private-key handling or authorization.
 
 - FOSS-452: bounded RFC 9881 ML-DSA X.509 signature and RFC 9935 ML-KEM SPKI DER normalization with exact no-parameter OIDs, pinned pqc-kit profile identity, strict DER/tag/key-usage/critical-extension checks, provenance-only versioned reports, positive/malformed fixtures, mutation regressions and offline example. Not a certificate verifier or policy authority.
