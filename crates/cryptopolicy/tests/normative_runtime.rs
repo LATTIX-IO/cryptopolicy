@@ -422,3 +422,159 @@ fn unknown_critical_policy_field_fails_closed_but_error_vocabulary_is_not_yet_ex
         Err(ContractError::InvalidJson(_))
     ));
 }
+
+
+// FOSS-493/A: real library assessments and typed, non-authorizing reason
+// projections for the exact missing-evidence vocabulary. These projections
+// are not policy authorization tokens, signatures or proof of source trust.
+
+fn assert_spec_indeterminate(id: &str, actual: DecisionOutcome, code: ReasonCode) {
+    let expected = spec_expected(id);
+    assert_eq!(expected["kind"], "Decision");
+    assert_eq!(expected["status"], "Indeterminate");
+    assert_eq!(expected["enforcement"], "block");
+    assert_eq!(actual, DecisionOutcome::Indeterminate);
+    let expected_reasons = expected["reason_codes"].as_array().unwrap();
+    let code_name = format!("{code:?}");
+    assert!(expected_reasons.iter().any(|r| r.as_str() == Some(code_name.as_str())));
+}
+
+#[test]
+fn case_014_unknown_vendor_alias_is_indeterminate() {
+    use cryptopolicy::AlgorithmId;
+
+    let unknown = AlgorithmId::parse("AES-256-GCM-vendor-unknown").unwrap();
+    let mut policy = fixture_policy();
+    let allow = policy.rules.iter_mut().find(|r| r.effect == RuleEffect::Allow).unwrap();
+    allow.selector.algorithm_id = Some(unknown.clone());
+    for requirement in &mut allow.requirements {
+        if let cryptopolicy::Requirement::Algorithm(algorithm) = requirement {
+            *algorithm = unknown.clone();
+        }
+    }
+    let mut c = fixture_context();
+    c.facts[0].algorithm_id = Some(unknown);
+    let d = decide(&policy, &c);
+    assert_decision("CASE-014", &d, DecisionOutcome::Indeterminate);
+    assert!(d.reasons.iter().any(|r| r.code == ReasonCode::UnsupportedProfile));
+}
+
+#[test]
+fn case_016_installed_dependency_is_not_executed_crypto() {
+    use cryptopolicy::{
+        AssessmentContext, AssessmentReason, ObservationKind, UnverifiedEvidence,
+        assessment_missing_required_attribute, assess,
+    };
+    let context = AssessmentContext::parse_json(include_bytes!(
+        "fixtures/assessment-dependency-v1.json"
+    )).unwrap();
+    assert_eq!(context.observations.len(), 1);
+    assert_eq!(context.observations[0].kind, ObservationKind::InstalledDependency);
+    assert!(!context.observations[0].kind.is_operational());
+    let report = assess(&fixture_policy(), &context, context.evaluation_time, &UnverifiedEvidence).unwrap();
+    assert_eq!(report.outcome, DecisionOutcome::Indeterminate);
+    assert!(report.reasons.contains(&AssessmentReason::NoOperationalObservation));
+    let projection = assessment_missing_required_attribute(&report);
+    assert_eq!(projection, Some(ReasonCode::MissingRequiredAttribute));
+    assert_spec_indeterminate("CASE-016", report.outcome, projection.unwrap());
+
+    let mut forged = report.clone();
+    forged.outcome = DecisionOutcome::Permit;
+    assert_eq!(assessment_missing_required_attribute(&forged), None);
+}
+
+#[test]
+fn case_017_partial_inventory_with_no_observations_is_incomplete() {
+    use cryptopolicy::{
+        AssessmentContext, AssessmentCoverage, AssessmentReason, UnverifiedEvidence,
+        assessment_missing_required_attribute, assess,
+    };
+    let mut context = AssessmentContext::parse_json(include_bytes!(
+        "fixtures/assessment-partial-v1.json"
+    )).unwrap();
+    context.observations.clear();
+    context.uninspected_sources.clear();
+    assert_eq!(context.coverage, AssessmentCoverage::Partial);
+    assert!(context.observations.is_empty());
+    let report = assess(&fixture_policy(), &context, context.evaluation_time, &UnverifiedEvidence).unwrap();
+    assert_eq!(report.outcome, DecisionOutcome::Indeterminate);
+    assert!(report.reasons.contains(&AssessmentReason::CoverageIncomplete));
+    assert!(report.reasons.contains(&AssessmentReason::NoOperationalObservation));
+    let projection = assessment_missing_required_attribute(&report);
+    assert_eq!(projection, Some(ReasonCode::MissingRequiredAttribute));
+    assert_spec_indeterminate("CASE-017", report.outcome, projection.unwrap());
+}
+
+#[test]
+fn case_018_configured_tls_suite_is_not_a_negotiated_session() {
+    use cryptopolicy::{
+        AssessmentContext, AssessmentReason, ObservationKind, ProfileId, UnverifiedEvidence,
+        assessment_missing_required_attribute, assess,
+    };
+    let mut context = AssessmentContext::parse_json(include_bytes!(
+        "fixtures/assessment-configured-v1.json"
+    )).unwrap();
+    assert_eq!(context.observations.len(), 1);
+    context.observations[0].profile_id =
+        Some(ProfileId::parse("TLS_AES_256_GCM_SHA384").unwrap());
+    assert_eq!(context.observations[0].kind, ObservationKind::Configuration);
+    assert!(!context.observations[0].kind.is_operational());
+    let report = assess(&fixture_policy(), &context, context.evaluation_time, &UnverifiedEvidence).unwrap();
+    assert_eq!(report.outcome, DecisionOutcome::Indeterminate);
+    assert!(report.reasons.contains(&AssessmentReason::NoOperationalObservation));
+    let projection = assessment_missing_required_attribute(&report);
+    assert_eq!(projection, Some(ReasonCode::MissingRequiredAttribute));
+    assert_spec_indeterminate("CASE-018", report.outcome, projection.unwrap());
+}
+
+#[test]
+fn case_019_hsm_provider_claim_without_attestation_is_not_verified() {
+    use cryptopolicy::{
+        AssuranceClaim, CapabilityReason, KeyRequest, ProviderCapabilitySnapshot,
+        UnverifiedProviderClaims, assess_key_capabilities,
+        capability_missing_required_attribute,
+    };
+    let request = KeyRequest::parse_json(include_bytes!("fixtures/request-v1.json")).unwrap();
+    let mut snapshot = ProviderCapabilitySnapshot::parse_json(include_bytes!(
+        "fixtures/provider-supported-v1.json"
+    )).unwrap();
+    assert_eq!(snapshot.claims.len(), 1);
+    snapshot.claims[0].assurance = Some(AssuranceClaim::ProviderAsserted);
+    snapshot.claims[0].assurance_ref = None;
+    let report = assess_key_capabilities(&request, &snapshot, &UnverifiedProviderClaims).unwrap();
+    assert_eq!(report.outcome, DecisionOutcome::Indeterminate);
+    assert!(report.reasons.contains(&CapabilityReason::UnauthenticatedSource)
+        || report.reasons.contains(&CapabilityReason::AssuranceNotVerified));
+    assert!(!report.findings[0].source_authenticated);
+    assert!(!report.findings[0].assurance_authenticated);
+    let projection = capability_missing_required_attribute(&report);
+    assert_eq!(projection, Some(ReasonCode::MissingRequiredAttribute));
+    assert_spec_indeterminate("CASE-019", report.outcome, projection.unwrap());
+
+    let mut forged = report.clone();
+    forged.outcome = DecisionOutcome::Deny;
+    assert_eq!(capability_missing_required_attribute(&forged), None);
+}
+
+#[test]
+fn case_029_generic_hybrid_flag_without_a_named_construction_is_invalid() {
+    let mut source = serde_json::to_value(fixture_policy()).unwrap();
+    source["profile"] = serde_json::json!({"hybrid":true,"construction":null});
+    assert!(matches!(
+        PolicyDocument::parse_json(&serde_json::to_vec(&source).unwrap()),
+        Err(ContractError::InvalidJson(_))
+    ));
+
+    // Even when the author chooses the declared named_hybrid requirement
+    // discriminator, an absent exact profile value cannot validate.
+    let mut malformed = serde_json::to_value(fixture_policy()).unwrap();
+    malformed["rules"][0]["requirements"]
+        .as_array_mut().unwrap().push(
+            serde_json::json!({"kind":"named_hybrid","value":null})
+        );
+    assert!(matches!(
+        PolicyDocument::parse_json(&serde_json::to_vec(&malformed).unwrap()),
+        Err(ContractError::InvalidJson(_))
+    ));
+    assert_spec_error("CASE-029", "InvalidPolicy");
+}
