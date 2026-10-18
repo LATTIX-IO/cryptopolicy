@@ -20,6 +20,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut unverified = context.clone();
     unverified.facts[0].verified = false;
+    unverified.facts[0].properties.as_mut().ok_or("missing fixture properties")?.source_quality =
+        Some(cryptopolicy::EvidenceQuality::Unverified);
     let unknown = evaluate(&policy, &unverified, unverified.evaluation_time)?;
     assert_eq!(unknown.outcome, DecisionOutcome::Indeterminate);
 
