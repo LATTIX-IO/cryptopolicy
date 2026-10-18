@@ -1,0 +1,36 @@
+{
+  "schema_version": "1",
+  "exception_id": "exception:alpha:1",
+  "policy": {
+    "policy_id": "org:evaluator-preview",
+    "version": "1.0.0",
+    "digest": "5eebc2f80c0fc21d7b2d065edb6f2bf095dedd546f10974078bd9c9e868af43f"
+  },
+  "target_rule": "r-allow-aes",
+  "owner": "tenant:security:owner",
+  "approver": "tenant:security:approver",
+  "approval_ref": "approval:alpha:1",
+  "source_ref": "source:alpha:1",
+  "scope": {
+    "tenant_id": "tenant:alpha",
+    "environment": "prod",
+    "operation": "encrypt",
+    "algorithm_id": "AES-256-GCM",
+    "key_ref": "key:alpha:1"
+  },
+  "deviation": "rule_requirement",
+  "compensating_controls": [
+    "r-require-protection"
+  ],
+  "justification": "Time-bounded review pending independent policy admission",
+  "status": "active",
+  "issued_at": {
+    "unix_millis": 100
+  },
+  "effective_at": {
+    "unix_millis": 150
+  },
+  "expires_at": {
+    "unix_millis": 300
+  }
+}
