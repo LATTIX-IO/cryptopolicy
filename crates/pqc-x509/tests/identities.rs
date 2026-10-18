@@ -522,6 +522,33 @@ fn versioned_dto_output_is_reproducible_after_round_trip() {
     assert_eq!(decoded, first);
 }
 #[test]
+fn untrusted_result_json_rejects_profile_catalog_and_original_evidence_spoofing() {
+    let d = signature(0x11);
+    let output = norm_signature(&d, &d).unwrap();
+    let valid = serde_json::to_value(&output).unwrap();
+    for (field, forged) in [
+        ("profile_id", serde_json::json!("ML-DSA-87")),
+        ("oid", serde_json::json!("2.16.840.1.101.3.4.4.1")),
+        ("standards_profile", serde_json::json!("RFC 9935")),
+        ("catalog_version", serde_json::json!("1.0.1")),
+        ("catalog_sha256", serde_json::json!("f".repeat(64))),
+        ("source_id", serde_json::json!("contains spaces")),
+        ("evidence_ref", serde_json::json!("")),
+        ("public_key_octets", serde_json::json!(800)),
+        ("input_der_sha256", serde_json::json!("not-a-digest")),
+    ] {
+        let mut changed = valid.clone();
+        changed[field] = forged;
+        assert!(
+            X509AlgorithmIdentity::parse_untrusted_json(
+                &serde_json::to_vec(&changed).unwrap()
+            ).is_err(),
+            "forged field {field} was not rejected"
+        );
+    }
+}
+
+#[test]
 fn oversized_json_result_is_bounded() {
     let over = vec![b' '; MAX_REPORT_JSON_BYTES + 1];
     assert_eq!(
