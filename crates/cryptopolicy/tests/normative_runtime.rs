@@ -239,6 +239,7 @@ fn assert_spec_error(id: &str, expected_code: &str) {
 fn case_001_missing_explicit_default_effect_rejected() {
     let mut source = serde_json::to_value(fixture_policy()).unwrap();
     source.as_object_mut().unwrap().remove("default_effect");
+    source["rules"] = serde_json::json!([]);
     let bytes = serde_json::to_vec(&source).unwrap();
     let error = PolicyDocument::parse_json(&bytes).unwrap_err();
     assert!(
@@ -259,7 +260,7 @@ fn case_005_invalid_effect_type_cannot_produce_a_decision() {
 
 #[test]
 fn case_012_legacy_rsa_prohibition_is_inclusive_at_cutover() {
-    use cryptopolicy::AlgorithmId;
+    use cryptopolicy::{AlgorithmId, ProfileId};
 
     let mut policy = fixture_policy();
     policy.created_at = at(0);
@@ -268,7 +269,8 @@ fn case_012_legacy_rsa_prohibition_is_inclusive_at_cutover() {
     let mut deny = hard_deny("foss-492-legacy-rsa-cutover");
     deny.selector.match_all = false;
     deny.selector.operation = Some(CryptoOperation::Verify);
-    deny.selector.algorithm_id = Some(AlgorithmId::parse("RSA-legacy").unwrap());
+    deny.selector.algorithm_id = None;
+    deny.selector.profile_id = Some(ProfileId::parse("RSA-legacy").unwrap());
     deny.temporal = Some(RuleTemporal {
         effective_from: None,
         expires_at: None,
@@ -280,6 +282,7 @@ fn case_012_legacy_rsa_prohibition_is_inclusive_at_cutover() {
     let mut context = fixture_context();
     context.operation = CryptoOperation::Verify;
     context.facts[0].algorithm_id = Some(AlgorithmId::parse("RSA-legacy").unwrap());
+    context.facts[0].profile_id = Some(ProfileId::parse("RSA-legacy").unwrap());
 
     context.evaluation_time = at(399);
     let before = decide(&policy, &context);
@@ -309,24 +312,34 @@ fn case_012_legacy_rsa_prohibition_is_inclusive_at_cutover() {
 #[test]
 fn case_022_cyclic_pinned_policy_imports_fail_before_decision() {
     use cryptopolicy::{
-        CompositionError, Limits, PolicyNode, PolicyReference, PolicySet, SchemaVersion,
+        CompositionError, Limits, PolicyId, PolicyNode, PolicyReference, PolicySet, SchemaVersion,
         compile_policy_set,
     };
-    let document = fixture_policy();
-    let reference = PolicyReference::from_document(&document).unwrap();
+    let document_a = fixture_policy();
+    let mut document_b = fixture_policy();
+    document_b.policy_id = PolicyId::parse("foss-492-policy-b").unwrap();
+    let reference_a = PolicyReference::from_document(&document_a).unwrap();
+    let reference_b = PolicyReference::from_document(&document_b).unwrap();
     let set = PolicySet {
         schema_version: SchemaVersion::V1,
-        baseline: reference.clone(),
+        baseline: reference_a.clone(),
         overlays: vec![],
     };
-    let node = PolicyNode {
+    let node_a = PolicyNode {
         schema_version: SchemaVersion::V1,
-        document,
-        imports: vec![reference.clone()],
+        document: document_a,
+        imports: vec![reference_b.clone()],
+    };
+    let node_b = PolicyNode {
+        schema_version: SchemaVersion::V1,
+        document: document_b,
+        imports: vec![reference_a.clone()],
     };
     let resolver = |r: &PolicyReference| {
-        Ok::<Option<PolicyNode>, CompositionError>(if *r == reference {
-            Some(node.clone())
+        Ok::<Option<PolicyNode>, CompositionError>(if *r == reference_a {
+            Some(node_a.clone())
+        } else if *r == reference_b {
+            Some(node_b.clone())
         } else {
             None
         })
@@ -341,10 +354,10 @@ fn case_024_oversized_policy_input_exceeds_bounded_parser_budget() {
     use cryptopolicy::Limits;
     let bytes = serde_json::to_vec(&fixture_policy()).unwrap();
     let limits = Limits {
-        max_json_bytes: 128,
+        max_json_bytes: bytes.len() - 1,
         ..Limits::default()
     };
-    assert!(bytes.len() > limits.max_json_bytes);
+    assert_eq!(bytes.len(), limits.max_json_bytes + 1);
     let failure = PolicyDocument::parse_json_with_limits(&bytes, &limits).unwrap_err();
     assert_eq!(failure, ContractError::PayloadTooLarge);
     assert_spec_error("CASE-024", "ResourceLimitExceeded");
