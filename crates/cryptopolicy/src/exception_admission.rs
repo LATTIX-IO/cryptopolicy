@@ -49,12 +49,22 @@ pub struct PolicyWaiverGrant {
 impl PolicyWaiverGrant {
     /// Strict resource-bounded validation, not owner authentication.
     pub fn validate(&self, limits: &Limits) -> Result<(), ContractError> {
+        self.validate_reviewed(limits, false)
+    }
+
+    /// Additional RuleRequirement mode is valid ONLY for externally reviewed
+    /// FOSS-502 waivability registry admission, not the legacy E1 API.
+    pub(crate) fn validate_reviewed(
+        &self, limits: &Limits, allow_requirement: bool,
+    ) -> Result<(), ContractError> {
         limits.validate()?;
         self.scope.validate()?;
         if self.authorized_at >= self.expires_at {
             return Err(ContractError::InvalidDocument("waiver_grant_time"));
         }
-        if self.deviation != ExceptionDeviation::RuleDeny {
+        if self.deviation != ExceptionDeviation::RuleDeny
+            && !(allow_requirement && self.deviation == ExceptionDeviation::RuleRequirement)
+        {
             return Err(ContractError::InvalidDocument(
                 "unsupported_waiver_deviation",
             ));
@@ -168,6 +178,14 @@ pub enum WaiverAdmissionDisposition {
     GrantNotAuthorized,
     /// Required compensation rules are absent, inapplicable or not satisfied.
     CompensationNotSatisfied,
+    /// No exact matching denied/indeterminate Require target was present.
+    NoMatchingMandatoryRule,
+    /// The owner registry failed an exact-match, live-approval or replay check.
+    RegistryNotAuthorized,
+    /// No explicitly approved waivable rule matched the exact scoped request.
+    RuleNotWaivable,
+    /// The actual key/profile binding was not independently authenticated.
+    KeyBindingUnverified,
     /// A strictly scoped *simulated* decision was calculated.
     ///
     /// This does not imply a Permit or any enforcement authority.
@@ -243,6 +261,23 @@ pub fn evaluate_deny_waiver_candidate<
     exception_verifier: &E,
     owner_verifier: &A,
 ) -> Result<WaiverAdmissionReport, CompositionError> {
+    evaluate_waiver_candidate_core(request, exception_verifier, owner_verifier, None, false)
+}
+
+/// Shared offline candidate evaluator; the extra powers are restricted to the
+/// externally verified FOSS-502 owner registry and key/profile trust boundary.
+/// The public E1 entrypoint above always denies profile-bearing contexts and
+/// RuleRequirement deviations, preserving its earlier conservative behavior.
+pub(crate) fn evaluate_waiver_candidate_core<
+    E: ExceptionSourceVerifier,
+    A: PolicyWaiverAuthorityVerifier,
+>(
+    request: WaiverCandidateRequest<'_>,
+    exception_verifier: &E,
+    owner_verifier: &A,
+    bound_profile: Option<&crate::ProfileId>,
+    allow_requirement: bool,
+) -> Result<WaiverAdmissionReport, CompositionError> {
     let WaiverCandidateRequest {
         effective,
         context,
@@ -254,7 +289,7 @@ pub fn evaluate_deny_waiver_candidate<
     } = request;
     limits.validate()?;
     exception.validate(limits)?;
-    grant.validate(limits)?;
+    grant.validate_reviewed(limits, allow_requirement)?;
     actual_scope.validate()?;
     let original = effective.evaluate(context, time, limits)?;
     let fallback = |disposition| WaiverAdmissionReport {
@@ -274,10 +309,9 @@ pub fn evaluate_deny_waiver_candidate<
         || context.environment.as_deref() != Some(actual_scope.environment.as_str())
         || context.facts.len() != 1
         || context.facts[0].algorithm_id.as_ref() != Some(&actual_scope.algorithm_id)
-        // E0's v1 exception scope does not authenticate a specific profile.
-        // A claimed profile must never silently inherit a broader algorithm waiver.
-        // A verified exact-profile binding is a separate FOSS-502 contract.
-        || context.facts[0].profile_id.is_some()
+        // Legacy E1 only allows None. FOSS-502 requires its additional
+        // authenticated exact key/profile binding before supplying Some.
+        || context.facts[0].profile_id.as_ref() != bound_profile
         || exception.scope != *actual_scope
     {
         return Ok(fallback(WaiverAdmissionDisposition::ScopeMismatch));
@@ -295,18 +329,33 @@ pub fn evaluate_deny_waiver_candidate<
         .rules
         .iter()
         .find(|rule| rule.rule_id == exception.target_rule);
-    if !targeted_rule.is_some_and(|rule| rule.effect == RuleEffect::Deny) {
-        return Ok(fallback(WaiverAdmissionDisposition::NoMatchingExplicitDeny));
+    let (effect, reasons, absent) = match exception.deviation {
+        ExceptionDeviation::RuleDeny => (
+            RuleEffect::Deny,
+            &[ReasonCode::ExplicitDeny][..],
+            WaiverAdmissionDisposition::NoMatchingExplicitDeny,
+        ),
+        ExceptionDeviation::RuleRequirement if allow_requirement => (
+            RuleEffect::Require,
+            &[ReasonCode::RequirementNotSatisfied, ReasonCode::MissingRequiredAttribute][..],
+            WaiverAdmissionDisposition::NoMatchingMandatoryRule,
+        ),
+        ExceptionDeviation::RuleRequirement => {
+            return Ok(fallback(WaiverAdmissionDisposition::GrantNotAuthorized));
+        }
+    };
+    if !targeted_rule.is_some_and(|rule| rule.effect == effect) {
+        return Ok(fallback(absent));
     }
-    let originally_denied_by_target = original.components.iter().any(|layer| {
+    let originally_blocked_by_target = original.components.iter().any(|layer| {
         layer.reference == exception.policy
             && layer.decision.reasons.iter().any(|reason| {
-                reason.code == ReasonCode::ExplicitDeny
+                reasons.contains(&reason.code)
                     && reason.rule_id.as_ref() == Some(&exception.target_rule)
             })
     });
-    if !originally_denied_by_target {
-        return Ok(fallback(WaiverAdmissionDisposition::NoMatchingExplicitDeny));
+    if !originally_blocked_by_target {
+        return Ok(fallback(absent));
     }
 
     let bound = ExceptionBoundContext {
