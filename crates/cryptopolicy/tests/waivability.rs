@@ -250,7 +250,7 @@ fn prepared_deny() -> (
 }
 
 #[test]
-fn exact_profile_bound_deny_candidate_needs_four_independent_trust_gates() {
+fn verified_registry_and_key_cannot_bypass_unsupported_named_profile_evaluator() {
     let (graph, e, grant, registry, binding, c) = prepared_deny();
     // Old E1 cannot waive profile-bearing facts at all.
     let old = evaluate(&graph, &e, &grant, &c, 150);
@@ -259,16 +259,11 @@ fn exact_profile_bound_deny_candidate_needs_four_independent_trust_gates() {
     let result = reviewed(&graph, &e, &grant, &registry, &binding, &c);
     assert_eq!(
         result.disposition,
-        WaiverAdmissionDisposition::CandidateEvaluated
+        WaiverAdmissionDisposition::ProfileEvaluatorUnsupported
     );
     assert_eq!(result.original.outcome, DecisionOutcome::Deny);
-    assert_eq!(result.candidate_outcome, DecisionOutcome::Permit);
-    assert!(
-        result
-            .candidate_target_layer
-            .as_ref()
-            .is_some_and(|d| { d.policy_digest != e.policy.digest })
-    );
+    assert_eq!(result.candidate_outcome, DecisionOutcome::Deny);
+    assert!(result.candidate_target_layer.is_none());
     assert_eq!(
         graph.evaluate(&c, at(150), &Limits::default()).unwrap(),
         result.original
@@ -474,16 +469,18 @@ fn explicitly_waivable_failed_require_is_simulated_only_when_compensation_satisf
     let assessed = reviewed(&graph, &e, &grant, &registry, &binding, &c);
     assert_eq!(
         assessed.disposition,
-        WaiverAdmissionDisposition::CandidateEvaluated
+        WaiverAdmissionDisposition::ProfileEvaluatorUnsupported
     );
-    assert_eq!(assessed.candidate_outcome, DecisionOutcome::Permit);
+    assert_eq!(assessed.candidate_outcome, DecisionOutcome::Deny);
+    assert!(assessed.candidate_target_layer.is_none());
     assert_eq!(assessed.original, original);
     assert_eq!(
         graph.evaluate(&c, at(150), &Limits::default()).unwrap(),
         original
     );
 
-    // Missing compensation means no candidate; the original Deny remains.
+    // Missing evidence also cannot manufacture a candidate; no compensator
+    // satisfaction is claimed while the profile evaluator is unsupported.
     c.facts[0].properties.as_mut().unwrap().source_quality = None;
     let negative = reviewed(&graph, &e, &grant, &registry, &binding, &c);
     assert_ne!(negative.candidate_outcome, DecisionOutcome::Permit);
@@ -506,7 +503,7 @@ fn other_mandatory_policy_denial_still_dominates_reviewed_waiver() {
     let d = reviewed(&graph, &e, &grant, &r, &b, &c);
     assert_eq!(
         d.disposition,
-        WaiverAdmissionDisposition::CandidateEvaluated
+        WaiverAdmissionDisposition::ProfileEvaluatorUnsupported
     );
     assert_eq!(d.candidate_outcome, DecisionOutcome::Deny);
     assert_eq!(d.original.outcome, DecisionOutcome::Deny);
