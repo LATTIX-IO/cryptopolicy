@@ -5,7 +5,7 @@
 //! external trust attestations, replay protection or cryptographic approval.
 
 use crate::{
-    ContractError, DecisionOutcome, EvaluationTime, EvidenceId, ExceptionBoundContext,
+    DecisionOutcome, EvaluationTime, EvidenceId, ExceptionBoundContext,
     ExceptionReference, ExceptionReferenceFinding, ExceptionSourceVerifier,
     Limits, PolicyDigest, PolicyReference, ReasonCode, RuleId, SchemaVersion,
     UnverifiedExceptionReferences, WaiverAdmissionDisposition, WaiverAdmissionReport,
@@ -58,6 +58,26 @@ pub enum BlockedExceptionEnforcement {
     Block,
 }
 
+/// Strictly non-authorizing E0 finding stored in a bounded audit receipt.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BlockedReferenceFinding {
+    /// Original reference was revoked.
+    Revoked,
+    /// Original reference was suspended.
+    Suspended,
+    /// Target policy/rule did not match.
+    WrongTarget,
+    /// Claimed tenant or cryptographic scope did not match actual request.
+    OutOfScope,
+    /// Inclusive activation time had not been reached.
+    NotEffective,
+    /// Exclusive expiry cutoff was reached.
+    Expired,
+    /// Source/approval cannot be authenticated by the safe default verifier.
+    Unverified,
+}
+
 /// Immutable-by-construction, bounded, structured denied-waiver receipt.
 ///
 /// It cannot contain a signature, justification text, key bytes, raw source
@@ -86,7 +106,7 @@ pub struct BlockedExceptionAuditReceipt {
     /// Actual typed E1 candidate rejection, not a waiver grant.
     pub disposition: WaiverAdmissionDisposition,
     /// Structural E0 reference state, with safe no-proof default.
-    pub reference_finding: ExceptionReferenceFinding,
+    pub reference_finding: BlockedReferenceFinding,
     /// Names of required compensating rules, not evidence of satisfaction.
     pub compensating_rules: Vec<RuleId>,
     /// Controlling reasons collected from ACTUAL original policy decisions.
@@ -212,7 +232,18 @@ pub fn build_blocked_exception_audit_receipt(
         original_outcome: report.original.outcome,
         candidate_outcome: report.candidate_outcome,
         disposition: report.disposition,
-        reference_finding: reference_state.finding,
+        reference_finding: match reference_state.finding {
+            ExceptionReferenceFinding::Revoked => BlockedReferenceFinding::Revoked,
+            ExceptionReferenceFinding::Suspended => BlockedReferenceFinding::Suspended,
+            ExceptionReferenceFinding::WrongTarget => BlockedReferenceFinding::WrongTarget,
+            ExceptionReferenceFinding::OutOfScope => BlockedReferenceFinding::OutOfScope,
+            ExceptionReferenceFinding::NotEffective => BlockedReferenceFinding::NotEffective,
+            ExceptionReferenceFinding::Expired => BlockedReferenceFinding::Expired,
+            ExceptionReferenceFinding::Unverified => BlockedReferenceFinding::Unverified,
+            ExceptionReferenceFinding::ReferenceReadyForPolicyAdmission => {
+                return Err(ExceptionAuditError::PositiveDecisionUnsupported);
+            }
+        },
         compensating_rules: reference.compensating_controls.clone(),
         blocking_reasons: actual_reasons.into_iter().collect(),
         enforcement: BlockedExceptionEnforcement::Block,
