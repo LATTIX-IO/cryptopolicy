@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-493/A: six source-bound runtime tests for unknown vendor algorithm alias, installed dependency, partial inventory, configured TLS, unauthenticated HSM capability and invalid unnamed hybrid construction. Added conservative, Indeterminate-only missing-evidence reason projections for real assessment/provider reports. Conformance crosswalk now 20/33 runtime-linked, 13 pending; no new Permit, authentication or publication.
+
 - FOSS-492/A: six additional real normative runtime tests for invalid defaults/effects, precise temporal prohibition, pinned import cycles and resource budgets (14/33 total), with no fabricated PolicyConflict/UnsupportedSchema/issuer-authentication equivalence. Conformance crosswalk retains 19 pending cases.
 
 - FOSS-459/A: honest normative-to-runtime conformance crosswalk for all 33 security-contract cases, eight directly bound deterministic evaluator/validation tests, explicitly pending 25 cases and typed gap inventory, fail-closed crosswalk verifier and CI step. Full runtime conformance remains unverified; no normative expected results or security contract maturity claim changed.

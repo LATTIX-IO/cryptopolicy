@@ -112,7 +112,8 @@ def validate(manifest: dict, normative_bytes: bytes, rust_source: str) -> dict:
             ensure('"' + ident + '"' in found[0],
                    f"{ident} test does not name its own normative fixture")
             ensure(("assert_decision(" in found[0] or "spec_expected(" in found[0] or
-                    "assert_spec_error(" in found[0]),
+                    "assert_spec_error(" in found[0] or
+                    "assert_spec_indeterminate(" in found[0]),
                    f"{ident} has no normative outcome assertion")
             tested.append(ident)
         elif state == "pending":

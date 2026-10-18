@@ -73,8 +73,8 @@
     },
     {
       "id": "CASE-014",
-      "status": "pending",
-      "reason": "Catalog classification and evaluator identity crosswalk not yet directly bound"
+      "status": "runtime-subset",
+      "test": "case_014_unknown_vendor_alias_is_indeterminate"
     },
     {
       "id": "CASE-015",
@@ -83,23 +83,23 @@
     },
     {
       "id": "CASE-016",
-      "status": "pending",
-      "reason": "Evidence provenance/provider observations need exact contract crosswalk"
+      "status": "runtime-subset",
+      "test": "case_016_installed_dependency_is_not_executed_crypto"
     },
     {
       "id": "CASE-017",
-      "status": "pending",
-      "reason": "Evidence provenance/provider observations need exact contract crosswalk"
+      "status": "runtime-subset",
+      "test": "case_017_partial_inventory_with_no_observations_is_incomplete"
     },
     {
       "id": "CASE-018",
-      "status": "pending",
-      "reason": "Evidence provenance/provider observations need exact contract crosswalk"
+      "status": "runtime-subset",
+      "test": "case_018_configured_tls_suite_is_not_a_negotiated_session"
     },
     {
       "id": "CASE-019",
-      "status": "pending",
-      "reason": "Evidence provenance/provider observations need exact contract crosswalk"
+      "status": "runtime-subset",
+      "test": "case_019_hsm_provider_claim_without_attestation_is_not_verified"
     },
     {
       "id": "CASE-020",
@@ -148,8 +148,8 @@
     },
     {
       "id": "CASE-029",
-      "status": "pending",
-      "reason": "Requested resource, redaction or hybrid-policy semantics not yet bound exactly"
+      "status": "runtime-subset",
+      "test": "case_029_generic_hybrid_flag_without_a_named_construction_is_invalid"
     },
     {
       "id": "CASE-030",
