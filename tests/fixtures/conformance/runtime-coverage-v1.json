@@ -1,0 +1,175 @@
+{
+  "schema_version": "cryptopolicy.runtime-coverage.v1",
+  "normative_corpus": "tests/fixtures/security/contract-v1.json",
+  "normative_git_blob_sha1": "b9299837ae89bb8e60023a0149a91b18a1ef7bc9",
+  "complete_normative_conformance": false,
+  "runtime_tests": "crates/cryptopolicy/tests/normative_runtime.rs",
+  "check_kind": "runtime-outcome-and-required-reasons-subset",
+  "cases": [
+    {
+      "id": "CASE-001",
+      "status": "pending",
+      "reason": "Runtime error vocabulary or external issuer-authentication mapping not yet proven"
+    },
+    {
+      "id": "CASE-002",
+      "status": "runtime-subset",
+      "test": "case_002_unmatched_default_deny"
+    },
+    {
+      "id": "CASE-003",
+      "status": "runtime-subset",
+      "test": "case_003_explicit_deny_overrides_allow"
+    },
+    {
+      "id": "CASE-004",
+      "status": "runtime-subset",
+      "test": "case_004_missing_classification_in_potential_deny_is_indeterminate"
+    },
+    {
+      "id": "CASE-005",
+      "status": "pending",
+      "reason": "Runtime error vocabulary or external issuer-authentication mapping not yet proven"
+    },
+    {
+      "id": "CASE-006",
+      "status": "runtime-subset",
+      "test": "case_006_missing_hsm_protection_is_indeterminate"
+    },
+    {
+      "id": "CASE-007",
+      "status": "pending",
+      "reason": "Canonical resolver composition errors need direct specification adapter"
+    },
+    {
+      "id": "CASE-008",
+      "status": "pending",
+      "reason": "FOSS-443 signed exceptions not implemented"
+    },
+    {
+      "id": "CASE-009",
+      "status": "pending",
+      "reason": "FOSS-443 tenant-scoped signed exceptions not implemented"
+    },
+    {
+      "id": "CASE-010",
+      "status": "pending",
+      "reason": "FOSS-443 approval validation not implemented"
+    },
+    {
+      "id": "CASE-011",
+      "status": "runtime-subset",
+      "test": "case_011_invalid_rule_interval_is_rejected"
+    },
+    {
+      "id": "CASE-012",
+      "status": "pending",
+      "reason": "Cutover tested generically; required named legacy profile fixture not yet exact"
+    },
+    {
+      "id": "CASE-013",
+      "status": "pending",
+      "reason": "Catalog classification and evaluator identity crosswalk not yet directly bound"
+    },
+    {
+      "id": "CASE-014",
+      "status": "pending",
+      "reason": "Catalog classification and evaluator identity crosswalk not yet directly bound"
+    },
+    {
+      "id": "CASE-015",
+      "status": "pending",
+      "reason": "Catalog classification and evaluator identity crosswalk not yet directly bound"
+    },
+    {
+      "id": "CASE-016",
+      "status": "pending",
+      "reason": "Evidence provenance/provider observations need exact contract crosswalk"
+    },
+    {
+      "id": "CASE-017",
+      "status": "pending",
+      "reason": "Evidence provenance/provider observations need exact contract crosswalk"
+    },
+    {
+      "id": "CASE-018",
+      "status": "pending",
+      "reason": "Evidence provenance/provider observations need exact contract crosswalk"
+    },
+    {
+      "id": "CASE-019",
+      "status": "pending",
+      "reason": "Evidence provenance/provider observations need exact contract crosswalk"
+    },
+    {
+      "id": "CASE-020",
+      "status": "pending",
+      "reason": "X509/JOSE-specific error mapping to normative adapter vocabulary missing"
+    },
+    {
+      "id": "CASE-021",
+      "status": "pending",
+      "reason": "X509/JOSE-specific error mapping to normative adapter vocabulary missing"
+    },
+    {
+      "id": "CASE-022",
+      "status": "pending",
+      "reason": "Canonical resolver composition errors need direct specification adapter"
+    },
+    {
+      "id": "CASE-023",
+      "status": "pending",
+      "reason": "Canonical resolver composition errors need direct specification adapter"
+    },
+    {
+      "id": "CASE-024",
+      "status": "pending",
+      "reason": "Requested resource, redaction or hybrid-policy semantics not yet bound exactly"
+    },
+    {
+      "id": "CASE-025",
+      "status": "pending",
+      "reason": "Canonical resolver composition errors need direct specification adapter"
+    },
+    {
+      "id": "CASE-026",
+      "status": "pending",
+      "reason": "Requested resource, redaction or hybrid-policy semantics not yet bound exactly"
+    },
+    {
+      "id": "CASE-027",
+      "status": "runtime-subset",
+      "test": "case_027_reordered_deny_is_semantically_identical"
+    },
+    {
+      "id": "CASE-028",
+      "status": "pending",
+      "reason": "Downstream enforcement contract is external and not integrated"
+    },
+    {
+      "id": "CASE-029",
+      "status": "pending",
+      "reason": "Requested resource, redaction or hybrid-policy semantics not yet bound exactly"
+    },
+    {
+      "id": "CASE-030",
+      "status": "pending",
+      "reason": "Runtime error vocabulary or external issuer-authentication mapping not yet proven"
+    },
+    {
+      "id": "CASE-031",
+      "status": "pending",
+      "reason": "Runtime error vocabulary or external issuer-authentication mapping not yet proven"
+    },
+    {
+      "id": "CASE-032",
+      "status": "runtime-subset",
+      "test": "case_032_reversed_rule_file_order_preserves_deny"
+    },
+    {
+      "id": "CASE-033",
+      "status": "runtime-subset",
+      "test": "case_033_complete_fixture_positive_control_is_permit"
+    }
+  ]
+}

@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-459/A: honest normative-to-runtime conformance crosswalk for all 33 security-contract cases, eight directly bound deterministic evaluator/validation tests, explicitly pending 25 cases and typed gap inventory, fail-closed crosswalk verifier and CI step. Full runtime conformance remains unverified; no normative expected results or security contract maturity claim changed.
+
 - FOSS-458: immutable RFC 10024 TLS hybrid group registry (4587/4588/4589) with exact classical/ML-KEM component mapping and share sizes/orders, explicit retired Kyber drafts, configured-vs-negotiated evidence, separate constituent/hybrid constraints and adversarial downgrade checks. No TLS handshake, key validation or policy Permit.
 
 - FOSS-457: bounded deterministic RFC 9964 COSE_Key + protected header parsing for ML-DSA-44/65/87. Exact -48/-49/-50 algorithm IDs, kty 7, public-key sizes, pinned catalog mapping, canonical CBOR length/order checks, duplicate/critical/unknown/private-label rejection, unverified context projection, independent golden vectors and adversarial mutation tests. No signature/key verification, CWT identity validation or publication.
