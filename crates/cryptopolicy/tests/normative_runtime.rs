@@ -222,3 +222,182 @@ fn claimed_coverage_is_not_an_independent_trust_attestation() {
     p.rules.reverse();
     assert_ne!(decide(&p, &context).outcome, DecisionOutcome::Permit);
 }
+
+
+// FOSS-492: direct normative error/temporal/import runtime checks.
+// The published specification uses ABSTRACT error names. This suite checks the
+// actual strongly typed Rust error first; it does not claim an exact runtime
+// vocabulary mapping for unimplemented policy conflict / trust surfaces.
+
+fn assert_spec_error(id: &str, expected_code: &str) {
+    let expected = spec_expected(id);
+    assert_eq!(expected["kind"], "Error", "{id}: not a normative error");
+    assert_eq!(expected["error_code"], expected_code);
+    assert_eq!(expected["enforcement"], "block");
+}
+
+#[test]
+fn case_001_missing_explicit_default_effect_rejected() {
+    let mut source = serde_json::to_value(fixture_policy()).unwrap();
+    source.as_object_mut().unwrap().remove("default_effect");
+    let bytes = serde_json::to_vec(&source).unwrap();
+    let error = PolicyDocument::parse_json(&bytes).unwrap_err();
+    assert!(
+        matches!(error, ContractError::InvalidJson(_)),
+        "missing required default effect must fail parsing: {error:?}"
+    );
+    assert_spec_error("CASE-001", "InvalidPolicy");
+}
+
+#[test]
+fn case_005_invalid_effect_type_cannot_produce_a_decision() {
+    let mut source = serde_json::to_value(fixture_policy()).unwrap();
+    source["rules"][0]["effect"] = serde_json::json!("permit_all");
+    let error = PolicyDocument::parse_json(&serde_json::to_vec(&source).unwrap()).unwrap_err();
+    assert!(matches!(error, ContractError::InvalidJson(_)));
+    assert_spec_error("CASE-005", "InvalidPolicy");
+}
+
+#[test]
+fn case_012_legacy_rsa_prohibition_is_inclusive_at_cutover() {
+    use cryptopolicy::AlgorithmId;
+
+    let mut policy = fixture_policy();
+    policy.created_at = at(0);
+    policy.effective_at = None;
+    policy.expires_at = None;
+    let mut deny = hard_deny("foss-492-legacy-rsa-cutover");
+    deny.selector.match_all = false;
+    deny.selector.operation = Some(CryptoOperation::Verify);
+    deny.selector.algorithm_id = Some(AlgorithmId::parse("RSA-legacy").unwrap());
+    deny.temporal = Some(RuleTemporal {
+        effective_from: None,
+        expires_at: None,
+        deprecated_from: None,
+        required_from: None,
+        prohibited_from: Some(at(400)),
+    });
+    policy.rules.push(deny);
+    let mut context = fixture_context();
+    context.operation = CryptoOperation::Verify;
+    context.facts[0].algorithm_id = Some(AlgorithmId::parse("RSA-legacy").unwrap());
+
+    context.evaluation_time = at(399);
+    let before = decide(&policy, &context);
+    assert!(
+        !before.reasons.iter().any(|r| r.code == ReasonCode::ExplicitDeny),
+        "a time-gated prohibition must not apply before activation"
+    );
+    for moment in [400, 401, 800] {
+        context.evaluation_time = at(moment);
+        let decision = decide(&policy, &context);
+        assert_decision("CASE-012", &decision, DecisionOutcome::Deny);
+        assert!(decision.reasons.iter().any(|r| {
+            r.code == ReasonCode::ExplicitDeny
+                && r.rule_id.as_ref().is_some_and(|id| {
+                    id.as_str() == "foss-492-legacy-rsa-cutover"
+                })
+        }));
+        let before_permutation = decision.clone();
+        policy.rules.reverse();
+        assert_eq!(decide(&policy, &context), before_permutation);
+    }
+}
+
+#[test]
+fn case_022_cyclic_pinned_policy_imports_fail_before_decision() {
+    use cryptopolicy::{
+        CompositionError, Limits, PolicyNode, PolicyReference, PolicySet, SchemaVersion,
+        compile_policy_set,
+    };
+    let document = fixture_policy();
+    let reference = PolicyReference::from_document(&document).unwrap();
+    let set = PolicySet {
+        schema_version: SchemaVersion::V1,
+        baseline: reference.clone(),
+        overlays: vec![],
+    };
+    let node = PolicyNode {
+        schema_version: SchemaVersion::V1,
+        document,
+        imports: vec![reference.clone()],
+    };
+    let resolver = |r: &PolicyReference| {
+        Ok::<Option<PolicyNode>, CompositionError>(
+            if *r == reference { Some(node.clone()) } else { None },
+        )
+    };
+    let failure = compile_policy_set(&set, &resolver, &Limits::default()).unwrap_err();
+    assert_eq!(failure, CompositionError::CycleDetected);
+    assert_spec_error("CASE-022", "ImportCycle");
+}
+
+#[test]
+fn case_024_oversized_policy_input_exceeds_bounded_parser_budget() {
+    use cryptopolicy::Limits;
+    let bytes = serde_json::to_vec(&fixture_policy()).unwrap();
+    let limits = Limits {
+        max_json_bytes: 128,
+        ..Limits::default()
+    };
+    assert!(bytes.len() > limits.max_json_bytes);
+    let failure = PolicyDocument::parse_json_with_limits(&bytes, &limits).unwrap_err();
+    assert_eq!(failure, ContractError::PayloadTooLarge);
+    assert_spec_error("CASE-024", "ResourceLimitExceeded");
+}
+
+#[test]
+fn case_025_overdeep_import_graph_fails_before_effective_policy() {
+    use cryptopolicy::{
+        CompositionError, Limits, PolicyId, PolicyNode, PolicyReference, PolicySet, SchemaVersion,
+        compile_policy_set,
+    };
+    let policies: Vec<_> = (0..3)
+        .map(|i| {
+            let mut policy = fixture_policy();
+            policy.policy_id = PolicyId::parse(&format!("foss-492-node-{i}")).unwrap();
+            policy
+        })
+        .collect();
+    let references: Vec<_> = policies.iter()
+        .map(|p| PolicyReference::from_document(p).unwrap())
+        .collect();
+    let nodes: Vec<_> = policies.into_iter().enumerate()
+        .map(|(i, document)| PolicyNode {
+            schema_version: SchemaVersion::V1,
+            document,
+            imports: references.get(i + 1).cloned().into_iter().collect(),
+        })
+        .collect();
+    let set = PolicySet {
+        schema_version: SchemaVersion::V1,
+        baseline: references[0].clone(),
+        overlays: vec![],
+    };
+    let limits = Limits {
+        max_import_depth: 1,
+        ..Limits::default()
+    };
+    let resolver = |r: &PolicyReference| {
+        Ok::<Option<PolicyNode>, CompositionError>(
+            nodes.iter()
+                .find(|node| node.document.policy_id == r.policy_id)
+                .cloned(),
+        )
+    };
+    let failure = compile_policy_set(&set, &resolver, &limits).unwrap_err();
+    assert_eq!(failure, CompositionError::ResourceLimit("import_depth"));
+    assert_spec_error("CASE-025", "ResourceLimitExceeded");
+}
+
+#[test]
+fn unknown_critical_policy_field_fails_closed_but_error_vocabulary_is_not_yet_exact() {
+    // CASE-030 expects UnsupportedSchema. The runtime currently returns
+    // InvalidJson for unknown fields, so CASE-030 remains deliberately pending.
+    let mut source = serde_json::to_value(fixture_policy()).unwrap();
+    source["override_deny_silently"] = serde_json::json!(true);
+    assert!(matches!(
+        PolicyDocument::parse_json(&serde_json::to_vec(&source).unwrap()),
+        Err(ContractError::InvalidJson(_))
+    ));
+}
