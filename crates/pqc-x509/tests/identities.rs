@@ -54,6 +54,58 @@ fn golden(name: &str) -> serde_json::Value {
     };
     serde_json::from_str(input).unwrap()
 }
+fn hex_der(input: &str) -> Vec<u8> {
+    assert_eq!(input.len() % 2, 0);
+    input.as_bytes().chunks_exact(2).map(|part| {
+        u8::from_str_radix(std::str::from_utf8(part).unwrap(), 16).unwrap()
+    }).collect()
+}
+
+#[test]
+fn published_rfc_fixture_tables_are_consumed_as_independent_exact_oid_vectors() {
+    let dsa: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/rfc9881-algorithms-v1.json")).unwrap();
+    let kem: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/rfc9935-algorithms-v1.json")).unwrap();
+    assert_eq!(dsa["schema_version"], "1");
+    assert_eq!(kem["schema_version"], "1");
+    let dsa_items = dsa["entries"].as_array().unwrap();
+    let kem_items = kem["entries"].as_array().unwrap();
+    assert_eq!(dsa_items.len(), 3);
+    assert_eq!(kem_items.len(), 3);
+    for entry in dsa_items {
+        let der = hex_der(entry["algorithm_identifier_der_hex"].as_str().unwrap());
+        let observed = norm_signature(&der, &der).unwrap();
+        assert_eq!(observed.profile_id, entry["profile_id"].as_str().unwrap());
+        assert_eq!(observed.oid, entry["oid"].as_str().unwrap());
+        assert!(!observed.parameters_present);
+    }
+    for entry in kem_items {
+        let der = hex_der(entry["algorithm_identifier_der_hex"].as_str().unwrap());
+        let key_bytes = entry["public_key_octets"].as_u64().unwrap() as usize;
+        let observed = norm_spki(&spki(&der, key_bytes)).unwrap();
+        assert_eq!(observed.profile_id, entry["profile_id"].as_str().unwrap());
+        assert_eq!(observed.oid, entry["oid"].as_str().unwrap());
+        assert_eq!(observed.public_key_octets, Some(key_bytes));
+    }
+}
+
+#[test]
+fn checked_in_malformed_der_vectors_keep_stable_failure_codes() {
+    let corpus: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/rfc9881-malformed-der-v1.json")).unwrap();
+    assert_eq!(corpus["schema_version"], "1");
+    let cases = corpus["cases"].as_array().unwrap();
+    assert!(cases.len() >= 8);
+    for record in cases {
+        let label = record["id"].as_str().unwrap();
+        let raw = hex_der(record["der_hex"].as_str().unwrap());
+        let expected = record["expected_error"].as_str().unwrap();
+        let err = norm_signature(&raw, &raw).unwrap_err();
+        assert_eq!(format!("{err:?}"), expected, "case {label}");
+    }
+}
+
 #[test]
 fn all_three_rfc9881_mldsa_signature_oid_profiles_are_exact() {
     for (last, id, oid) in [
