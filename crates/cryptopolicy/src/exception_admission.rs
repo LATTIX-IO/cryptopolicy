@@ -300,7 +300,9 @@ pub fn evaluate_deny_waiver_candidate<E: ExceptionSourceVerifier, A: PolicyWaive
     // Every compensating rule is mandatory, separately matched and checked.
     for id in &grant.compensating_controls {
         if !target.document.rules.iter().any(|rule| {
-            rule.rule_id == *id && rule.effect == RuleEffect::Require
+            rule.rule_id == *id
+                && rule.effect == RuleEffect::Require
+                && !rule.requirements.is_empty()
         }) {
             return Ok(fallback(WaiverAdmissionDisposition::CompensationNotSatisfied));
         }

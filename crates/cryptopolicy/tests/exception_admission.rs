@@ -184,8 +184,12 @@ fn revoked_suspended_expired_unverified_wrong_tenant_and_approval_are_blocked() 
                WaiverAdmissionDisposition::ExceptionNotReady);
     e = ready().1;
     grant = grant_for(&e);
-    let expired = evaluate(&graph, &e, &grant, &context, 300);
-    // At an expired evaluation context, the E0 gate is fail closed.
+    e.expires_at = at(151);
+    grant = grant_for(&e);
+    let mut expired_context = context.clone();
+    expired_context.evaluation_time = at(151);
+    let expired = evaluate(&graph, &e, &grant, &expired_context, 151);
+    // At exact E0 expiry, an otherwise active policy still rejects the waiver.
     assert_eq!(expired.disposition, WaiverAdmissionDisposition::ExceptionNotReady);
     assert_ne!(expired.candidate_outcome, DecisionOutcome::Permit);
     e.scope.tenant_id = PolicyId::parse("tenant:other").unwrap();
