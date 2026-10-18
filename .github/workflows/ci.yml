@@ -36,6 +36,11 @@ jobs:
           python3 scripts/security_contract.py --lint
           python3 -m unittest discover -s tests -p 'test_security_contract.py' -v
 
+      - name: Verify partial normative-to-runtime conformance crosswalk
+        run: |
+          python3 scripts/conformance_coverage.py
+          python3 -m unittest discover -s tests -p 'test_conformance_coverage.py' -v
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable
         with:
@@ -56,6 +61,9 @@ jobs:
 
       - name: Test
         run: cargo test --workspace --all-features --locked
+
+      - name: Direct runtime checks against checked-in normative cases
+        run: cargo test -p cryptopolicy --test normative_runtime --locked
 
       - name: Documentation
         env:
