@@ -260,6 +260,7 @@ fn exact_profile_bound_deny_candidate_needs_four_independent_trust_gates() {
 #[test]
 fn default_rejecting_registry_or_key_verifier_never_yields_candidate() {
     let (graph, e, grant, registry, binding, c) = prepared_deny();
+    let limits = Limits::default();
     let mk_request = || ReviewedWaiverRequest {
         request: WaiverCandidateRequest {
             effective: &graph,
@@ -268,7 +269,7 @@ fn default_rejecting_registry_or_key_verifier_never_yields_candidate() {
             time: at(150),
             exception: &e,
             grant: &grant,
-            limits: &Limits::default(),
+            limits: &limits,
         },
         registry: &registry, key_binding: &binding,
     };
@@ -378,9 +379,15 @@ fn explicitly_waivable_failed_require_is_simulated_only_when_compensation_satisf
         reason.rule_id.as_ref().is_some_and(|id| id.as_str() == "r-waivable-require")
             && reason.code == ReasonCode::RequirementNotSatisfied
     }));
-    // The legacy E1 API still rejects the unapproved Require waiver.
-    assert_eq!(evaluate(&graph, &e, &grant, &c, 150).disposition,
-               WaiverAdmissionDisposition::ScopeMismatch);
+    // The legacy E1 API still rejects RuleRequirement before any simulation.
+    let error = evaluate_deny_waiver_candidate(
+        WaiverCandidateRequest {
+            effective: &graph, context: &c, actual_scope: &e.scope, time: at(150),
+            exception: &e, grant: &grant, limits: &Limits::default(),
+        },
+        &exception_verifier, &owner_verifier,
+    );
+    assert!(error.is_err());
     let assessed = reviewed(&graph, &e, &grant, &registry, &binding, &c);
     assert_eq!(assessed.disposition, WaiverAdmissionDisposition::CandidateEvaluated);
     assert_eq!(assessed.candidate_outcome, DecisionOutcome::Permit);
