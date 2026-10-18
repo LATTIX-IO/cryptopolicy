@@ -4,8 +4,8 @@
 
 use cryptopolicy::{
     AdvancedSelector, ContractError, CryptoContext, CryptoOperation, DataSensitivity,
-    DecisionOutcome, EvaluationTime, PolicyDecision, PolicyDocument, ReasonCode,
-    RuleEffect, RuleId, RuleTemporal, evaluate,
+    DecisionOutcome, EvaluationTime, PolicyDecision, PolicyDocument, ReasonCode, RuleEffect,
+    RuleId, RuleTemporal, evaluate,
 };
 use serde_json::Value;
 
@@ -15,10 +15,13 @@ const CONTEXT: &[u8] = include_bytes!("fixtures/evaluator-context-v1.json");
 
 fn spec_expected(id: &str) -> Value {
     let corpus: Value = serde_json::from_slice(CORPUS).unwrap();
-    corpus["cases"].as_array().unwrap().iter()
+    corpus["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
         .find(|c| c["id"].as_str() == Some(id))
-        .unwrap_or_else(|| panic!("missing normative fixture: {id}"))
-        ["expected"].clone()
+        .unwrap_or_else(|| panic!("missing normative fixture: {id}"))["expected"]
+        .clone()
 }
 
 fn fixture_policy() -> PolicyDocument {
@@ -28,7 +31,9 @@ fn fixture_context() -> CryptoContext {
     CryptoContext::parse_json(CONTEXT).unwrap()
 }
 fn at(millis: i64) -> EvaluationTime {
-    EvaluationTime { unix_millis: millis }
+    EvaluationTime {
+        unix_millis: millis,
+    }
 }
 fn decide(policy: &PolicyDocument, context: &CryptoContext) -> PolicyDecision {
     evaluate(policy, context, context.evaluation_time).unwrap()
@@ -36,23 +41,39 @@ fn decide(policy: &PolicyDocument, context: &CryptoContext) -> PolicyDecision {
 
 fn assert_decision(id: &str, decision: &PolicyDecision, outcome: DecisionOutcome) {
     let expected = spec_expected(id);
-    assert_eq!(expected["kind"], "Decision", "fixture must be normative Decision: {id}");
+    assert_eq!(
+        expected["kind"], "Decision",
+        "fixture must be normative Decision: {id}"
+    );
     let status = match outcome {
         DecisionOutcome::Permit => "Permit",
         DecisionOutcome::Deny => "Deny",
         DecisionOutcome::Indeterminate => "Indeterminate",
     };
     assert_eq!(decision.outcome, outcome, "runtime result differs: {id}");
-    assert_eq!(expected["status"], status, "normative outcome differs: {id}");
+    assert_eq!(
+        expected["status"], status,
+        "normative outcome differs: {id}"
+    );
     assert_eq!(
         expected["enforcement"],
-        if outcome == DecisionOutcome::Permit { "allow" } else { "block" },
+        if outcome == DecisionOutcome::Permit {
+            "allow"
+        } else {
+            "block"
+        },
         "downstream enforcement envelope not normative: {id}"
     );
-    let actual_reasons: Vec<_> = decision.reasons.iter().map(|r| format!("{:?}", r.code)).collect();
+    let actual_reasons: Vec<_> = decision
+        .reasons
+        .iter()
+        .map(|r| format!("{:?}", r.code))
+        .collect();
     for expected_code in expected["reason_codes"].as_array().unwrap() {
         assert!(
-            actual_reasons.iter().any(|code| Some(code.as_str()) == expected_code.as_str()),
+            actual_reasons
+                .iter()
+                .any(|code| Some(code.as_str()) == expected_code.as_str()),
             "{id}: normative required reason {expected_code} absent from actual {actual_reasons:?}"
         );
     }
@@ -62,8 +83,12 @@ fn assert_decision(id: &str, decision: &PolicyDecision, outcome: DecisionOutcome
 }
 
 fn hard_deny(id: &str) -> cryptopolicy::PolicyRule {
-    let mut rule = fixture_policy().rules.iter()
-        .find(|r| r.effect == RuleEffect::Warn).unwrap().clone();
+    let mut rule = fixture_policy()
+        .rules
+        .iter()
+        .find(|r| r.effect == RuleEffect::Warn)
+        .unwrap()
+        .clone();
     rule.rule_id = RuleId::parse(id).unwrap();
     rule.effect = RuleEffect::Deny;
     rule.selector.match_all = true;
@@ -91,7 +116,11 @@ fn case_003_explicit_deny_overrides_allow() {
     p.rules.push(hard_deny("runtime-case-003"));
     let d = decide(&p, &fixture_context());
     assert_decision("CASE-003", &d, DecisionOutcome::Deny);
-    assert!(!d.reasons.iter().any(|r| r.code == ReasonCode::ExplicitAllow));
+    assert!(
+        !d.reasons
+            .iter()
+            .any(|r| r.code == ReasonCode::ExplicitAllow)
+    );
 }
 
 #[test]
@@ -122,14 +151,24 @@ fn case_006_missing_hsm_protection_is_indeterminate() {
 #[test]
 fn case_011_invalid_rule_interval_is_rejected() {
     let mut p = fixture_policy();
-    let rule = p.rules.iter_mut().find(|r| r.effect == RuleEffect::Allow).unwrap();
+    let rule = p
+        .rules
+        .iter_mut()
+        .find(|r| r.effect == RuleEffect::Allow)
+        .unwrap();
     rule.temporal = Some(RuleTemporal {
-        effective_from: Some(at(200)), expires_at: Some(at(150)),
-        deprecated_from: None, required_from: None, prohibited_from: None,
+        effective_from: Some(at(200)),
+        expires_at: Some(at(150)),
+        deprecated_from: None,
+        required_from: None,
+        prohibited_from: None,
     });
     assert_eq!(spec_expected("CASE-011")["kind"], "Error");
     assert_eq!(spec_expected("CASE-011")["error_code"], "InvalidPolicy");
-    assert!(matches!(p.validate(), Err(ContractError::InvalidDocument(_))));
+    assert!(matches!(
+        p.validate(),
+        Err(ContractError::InvalidDocument(_))
+    ));
 }
 
 #[test]
@@ -140,7 +179,10 @@ fn case_027_reordered_deny_is_semantically_identical() {
     p.rules.reverse();
     let result = decide(&p, &fixture_context());
     assert_decision("CASE-027", &result, DecisionOutcome::Deny);
-    assert_eq!(result, expected, "permutation must preserve reasons and policy digest");
+    assert_eq!(
+        result, expected,
+        "permutation must preserve reasons and policy digest"
+    );
 }
 
 #[test]
