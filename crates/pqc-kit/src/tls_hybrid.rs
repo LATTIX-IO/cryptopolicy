@@ -53,7 +53,7 @@ pub struct TlsHybridGroup {
 /// Three exact RFC 10024 published group registrations, sorted by codepoint.
 /// This is a NEW construction registry; immutable FOSS-445 catalog bytes
 /// and their pinned digest must not be changed by introducing these groups.
-pub const RFC10024_HYBRID_GROUPS: [TlsHybridGroup; 3] = [
+pub static RFC10024_HYBRID_GROUPS: [TlsHybridGroup; 3] = [
     TlsHybridGroup {
         codepoint: 4587, name: "SecP256r1MLKEM768",
         classical_component: "secp256r1", kem_component: "ML-KEM-768",
