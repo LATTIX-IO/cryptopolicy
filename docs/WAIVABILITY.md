@@ -13,8 +13,10 @@ designated a particular **rule and named profile as waivable**. The E1/A
 `evaluate_deny_waiver_candidate` intentionally refuses any request whose
 cryptographic fact carries a profile ID.
 
-FOSS-502 introduces `evaluate_reviewed_waiver_candidate`, which requires
-four caller-owned trust checks rather than simply reading asserted metadata:
+FOSS-502/A introduces `evaluate_reviewed_waiver_candidate`, which verifies
+four caller-owned trust boundaries before an explicitly **fail-closed**
+`ProfileEvaluatorUnsupported` result. The actual profile-aware decision
+engine is separately tracked as FOSS-503, not smuggled into this review gate:
 
 1. **E0 approval provenance:** `ExceptionSourceVerifier` authenticates
    source, independent approver delegation, evidence and revocation.
@@ -54,24 +56,27 @@ At a single injected `EvaluationTime`, the evaluator requires:
   algorithm/profile; no fuzzy profile aliases or unbound profile promotion.
 - Current Active registry and exact time-bounded owner approval.
 - All registry authentication, owner delegation, revocation and replay flags.
-- An actually matched named Deny or failed/unknown mandatory Require in the
-  original target layer, subject to exact registry waivability.
-- Independently satisfied nonempty compensating Require rules.
+- Exactly identified waivable Deny or Require rule and compensation scope,
+  but **no hypothetical removal is performed by FOSS-502/A** because the
+  existing pure evaluator does not yet recognize authenticated named profiles.
+- Independent compensator satisfaction is reserved for FOSS-503; the
+  registry's named compensators are validated but not promoted to proof.
 - Conjunctive preservation of every other baseline, overlay and import
   policy: Deny dominates Indeterminate, which dominates candidate Permit.
 
-Only one *cloned* targeted policy is used for simulation. Its derived digest
-is distinct from the source policy, and the original aggregate decision and
-digest are never overwritten. The original FOSS-500/A legacy entrypoint
-remains unchanged in its externally observable behavior.
+**No cloned-target simulation is invoked in FOSS-502/A.** The existing
+`requires_unavailable_profile` guard makes every named-profile Permit
+unavailable; the reviewed path explicitly returns `ProfileEvaluatorUnsupported`
+with the original Deny/Indeterminate, no candidate target decision and no
+waiver. FOSS-503 will implement the authenticated catalog-aware evaluator.
+The original FOSS-500/A entrypoint remains unchanged.
 
 ## Intentional limitations
 
-RuleRequirement deviations are supported **only** via the reviewed registry
-entrypoint and only for a specifically blocked mandatory Require rule.
-Unknown/missing requirements are never silently treated as satisfied:
-the original blocking reason must identify that exact rule, other Require
-rules continue to apply and independent compensation must pass. The API
+RuleRequirement deviations may be *registered* only in the owner-reviewed
+registry, but cannot yet be simulated or authorized. FOSS-503 must prove
+the original blocked exact mandatory rule and independent compensation
+with a catalog-aware, source-authenticated profile evaluator first. The API
 does not attest the policy issuer itself; the external registry/approval
 verifiers must validate the original owner delegation and policy source.
 No signature or KMS integration is embedded into the Rust library.
@@ -89,8 +94,9 @@ false compensation, historical replay, and unrelated baseline Deny.
     cargo test --workspace --all-features --locked
     cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
-FOSS-501 will introduce immutable audit receipts and exact normative
-CASE-008/009/010 runtime evidence. This increment **does not** modify the
+FOSS-501 will introduce immutable negative-case audit receipts and exact
+normative CASE-008/009/010 runtime evidence. Successful authorized-profile
+waiver simulation remains gated by FOSS-503. This increment **does not** modify the
 original 33-case normative corpus or promote any case prematurely. Crate
 manifests remain `publish=false` and publishing governance FOSS-464/466
 is unchanged.
