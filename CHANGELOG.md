@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-500/A: purely simulated, exact-scope targeted Deny-waiver admission against immutable compiled policies, gated by independently verified E0 exception reference plus policy-owner grant, exact tenant/environment/operation/key binding and nonempty `Require` compensators. Every unrelated mandatory Deny and Indeterminate remains effective; candidate digest differs from pinned source. Default owner verifier denies. No auth tokens, live PEP, signing, conformance promotion or publishing.
+
 - FOSS-499/E0: strict exact-scope signed-reference exception DTO, bounded closed-schema parse/validation, explicit issued/effective/expiry and revocation status, deterministic correlation fingerprint, independent caller-owned source/approver/approval/revocation trust gate and default reject-all verifier. Reproducible fixture, synthetic example, adversarial security regression suite. No waiver, policy grant, signature verification or publication.
 
 - FOSS-493/A: five source-bound normative runtime tests for unknown vendor algorithm alias, installed dependency, partial inventory, configured TLS and source-authenticated but independently unverified HSM assurance. A separate fail-closed generic-hybrid-input regression is not counted as exact conformance. Conservative Indeterminate-only missing-evidence reason projections for actual assessment/provider reports. Crosswalk 19/33 runtime-linked, 14 pending; no new Permit, authentication or publication.
