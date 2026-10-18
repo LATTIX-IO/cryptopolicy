@@ -641,3 +641,178 @@ fn malformed_unnamed_hybrid_shapes_fail_closed_without_claiming_case_029() {
     // CASE-029 is not counted by FOSS-493/A: the schema has no generic
     // hybrid policy DTO and so cannot yet prove the exact normative scenario.
 }
+
+
+// FOSS-501/A: three exact negative-path security cases with real policy
+// execution, typed E0 approval validation, and immutable blocked receipts.
+// Synthetic test policy and UTC fixtures carry NO production signing claims.
+
+fn legacy_rsa_denial_fixture() -> (
+    cryptopolicy::EffectivePolicy,
+    cryptopolicy::CryptoContext,
+    cryptopolicy::ExceptionReference,
+    cryptopolicy::PolicyWaiverGrant,
+) {
+    use cryptopolicy::{
+        AlgorithmId, CompositionError, EvidenceId, ExceptionDeviation,
+        ExceptionReference, PolicyNode, PolicyReference, PolicySet, PolicyWaiverGrant,
+        SchemaVersion, compile_policy_set,
+    };
+    let mut policy = fixture_policy();
+    policy.effective_at = None;
+    policy.expires_at = None;
+    let mut rule = hard_deny("r-normative-rsa-deny");
+    rule.selector.match_all = false;
+    rule.selector.operation = Some(CryptoOperation::Verify);
+    rule.selector.algorithm_id = Some(AlgorithmId::parse("RSA-legacy").unwrap());
+    policy.rules.push(rule);
+    let reference = PolicyReference::from_document(&policy).unwrap();
+    let node = PolicyNode {
+        schema_version: SchemaVersion::V1,
+        document: policy,
+        imports: vec![],
+    };
+    let set = PolicySet {
+        schema_version: SchemaVersion::V1,
+        baseline: reference.clone(),
+        overlays: vec![],
+    };
+    let resolver = |r: &PolicyReference| {
+        Ok::<Option<PolicyNode>, CompositionError>(
+            if *r == reference { Some(node.clone()) } else { None },
+        )
+    };
+    let effective = compile_policy_set(&set, &resolver, &cryptopolicy::Limits::default()).unwrap();
+    let mut context = fixture_context();
+    context.operation = CryptoOperation::Verify;
+    context.evaluation_time = at(1_792_108_800_000); // 2026-10-16T00:00:00Z
+    context.facts[0].algorithm_id = Some(AlgorithmId::parse("RSA-legacy").unwrap());
+    let mut exception = ExceptionReference::parse_json(include_bytes!(
+        "fixtures/exception-reference-v1.json"
+    )).unwrap();
+    exception.policy = reference.clone();
+    exception.target_rule = RuleId::parse("r-normative-rsa-deny").unwrap();
+    exception.scope.operation = CryptoOperation::Verify;
+    exception.scope.algorithm_id = AlgorithmId::parse("RSA-legacy").unwrap();
+    exception.deviation = ExceptionDeviation::RuleDeny;
+    exception.issued_at = at(1_735_689_600_000); // 2025-01-01
+    exception.effective_at = at(1_735_689_600_000);
+    exception.expires_at = at(1_798_761_600_000); // 2027-01-01
+    let grant = PolicyWaiverGrant {
+        schema_version: SchemaVersion::V1,
+        policy: reference,
+        target_rule: exception.target_rule.clone(),
+        exception_id: exception.exception_id.clone(),
+        exception_digest: exception.correlation_digest().unwrap(),
+        policy_authority_ref: EvidenceId::parse("owner:approval:synthetic").unwrap(),
+        deviation: ExceptionDeviation::RuleDeny,
+        scope: exception.scope.clone(),
+        compensating_controls: exception.compensating_controls.clone(),
+        authorized_at: at(1_735_689_600_000),
+        expires_at: at(1_798_761_600_000),
+    };
+    (effective, context, exception, grant)
+}
+fn audited_negative(
+    graph: &cryptopolicy::EffectivePolicy,
+    context: &CryptoContext,
+    exception: &cryptopolicy::ExceptionReference,
+    grant: &cryptopolicy::PolicyWaiverGrant,
+    actual_scope: &cryptopolicy::ExceptionScope,
+) -> cryptopolicy::BlockedExceptionAuditReceipt {
+    use cryptopolicy::{
+        ExceptionBoundContext, Limits, UnverifiedExceptionReferences,
+        UnverifiedPolicyWaiverAuthority, WaiverCandidateRequest,
+        build_blocked_exception_audit_receipt, evaluate_deny_waiver_candidate,
+    };
+    let report = evaluate_deny_waiver_candidate(
+        WaiverCandidateRequest {
+            effective: graph, context, actual_scope,
+            time: context.evaluation_time,
+            exception, grant, limits: &Limits::default(),
+        },
+        &UnverifiedExceptionReferences, &UnverifiedPolicyWaiverAuthority,
+    ).unwrap();
+    let bound = ExceptionBoundContext {
+        policy: exception.policy.clone(),
+        target_rule: exception.target_rule.clone(),
+        scope: actual_scope.clone(),
+        evaluation_time: context.evaluation_time,
+    };
+    build_blocked_exception_audit_receipt(
+        &report, exception, &bound, &Limits::default()
+    ).unwrap()
+}
+
+#[test]
+fn case_008_expired_exception_preserves_legacy_rsa_explicit_deny() {
+    use cryptopolicy::{
+        BlockedExceptionEnforcement, ExceptionReferenceFinding,
+    };
+    let (graph, context, mut exception, mut grant) = legacy_rsa_denial_fixture();
+    exception.expires_at = at(1_767_225_600_000); // 2026-01-01T00:00:00Z
+    grant.exception_digest = exception.correlation_digest().unwrap();
+    let receipt = audited_negative(&graph, &context, &exception, &grant, &exception.scope);
+    let original = graph.evaluate(&context, context.evaluation_time,
+                                  &cryptopolicy::Limits::default()).unwrap();
+    assert_decision("CASE-008", &original.components[0].decision, DecisionOutcome::Deny);
+    assert_eq!(receipt.reference_finding, ExceptionReferenceFinding::Expired);
+    assert_eq!(receipt.enforcement, BlockedExceptionEnforcement::Block);
+    assert_eq!(receipt.original_outcome, DecisionOutcome::Deny);
+    assert_eq!(receipt.candidate_outcome, DecisionOutcome::Deny);
+    assert!(receipt.blocking_reasons.iter().any(|r| {
+        r.code == ReasonCode::ExplicitDeny
+            && r.rule_id.as_ref() == Some(&exception.target_rule)
+    }));
+    assert_eq!(receipt.correlation_digest().unwrap(), receipt.correlation_digest().unwrap());
+}
+
+#[test]
+fn case_009_other_tenant_exception_cannot_waive_explicit_deny() {
+    use cryptopolicy::{
+        BlockedExceptionEnforcement, ExceptionReferenceFinding, PolicyId,
+    };
+    let (graph, context, exception, grant) = legacy_rsa_denial_fixture();
+    let mut requested_scope = exception.scope.clone();
+    requested_scope.tenant_id = PolicyId::parse("tenant-b").unwrap();
+    let receipt = audited_negative(&graph, &context, &exception, &grant, &requested_scope);
+    let original = graph.evaluate(&context, context.evaluation_time,
+                                  &cryptopolicy::Limits::default()).unwrap();
+    assert_decision("CASE-009", &original.components[0].decision, DecisionOutcome::Deny);
+    assert_eq!(receipt.reference_finding, ExceptionReferenceFinding::OutOfScope);
+    assert_eq!(receipt.enforcement, BlockedExceptionEnforcement::Block);
+    assert_eq!(receipt.candidate_outcome, DecisionOutcome::Deny);
+    assert!(receipt.blocking_reasons.iter().any(|r| r.code == ReasonCode::ExplicitDeny));
+}
+
+#[test]
+fn case_010_unverified_approver_missing_evidence_is_typed_invalid_exception() {
+    use cryptopolicy::{
+        ExceptionAuditError, ExceptionBoundContext, Limits,
+        UnverifiedExceptionReferences, validate_verified_exception_reference,
+    };
+    let (_, context, exception, _) = legacy_rsa_denial_fixture();
+    let mut input = serde_json::to_value(&exception).unwrap();
+    input["approver"] = serde_json::json!("unverified-string");
+    input["approval_ref"] = serde_json::Value::Null;
+    let bound = ExceptionBoundContext {
+        policy: exception.policy.clone(),
+        target_rule: exception.target_rule.clone(),
+        scope: exception.scope.clone(),
+        evaluation_time: context.evaluation_time,
+    };
+    let outcome = validate_verified_exception_reference(
+        &serde_json::to_vec(&input).unwrap(), &bound,
+        &UnverifiedExceptionReferences, &Limits::default(),
+    );
+    assert_eq!(outcome, Err(ExceptionAuditError::InvalidException));
+    assert_spec_error("CASE-010", "InvalidException");
+
+    // An apparently valid identifier without independent approval also fails.
+    input["approval_ref"] = serde_json::json!("approval:unverified");
+    let result = validate_verified_exception_reference(
+        &serde_json::to_vec(&input).unwrap(), &bound,
+        &UnverifiedExceptionReferences, &Limits::default(),
+    );
+    assert_eq!(result, Err(ExceptionAuditError::InvalidException));
+}
