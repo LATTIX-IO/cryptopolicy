@@ -577,8 +577,9 @@ fn case_018_configured_tls_suite_is_not_a_negotiated_session() {
 #[test]
 fn case_019_hsm_provider_claim_without_attestation_is_not_verified() {
     use cryptopolicy::{
-        AssuranceClaim, CapabilityReason, KeyRequest, ProviderCapabilitySnapshot,
-        UnverifiedProviderClaims, assess_key_capabilities, capability_missing_required_attribute,
+        AssuranceClaim, CapabilityReason, KeyRequest, ProviderCapabilityClaim,
+        ProviderCapabilitySnapshot, ProviderVerification, assess_key_capabilities,
+        capability_missing_required_attribute,
     };
     let request = KeyRequest::parse_json(include_bytes!("fixtures/request-v1.json")).unwrap();
     let mut snapshot = ProviderCapabilitySnapshot::parse_json(include_bytes!(
@@ -588,17 +589,21 @@ fn case_019_hsm_provider_claim_without_attestation_is_not_verified() {
     assert_eq!(snapshot.claims.len(), 1);
     snapshot.claims[0].assurance = Some(AssuranceClaim::ProviderAsserted);
     snapshot.claims[0].assurance_ref = None;
-    let report = assess_key_capabilities(&request, &snapshot, &UnverifiedProviderClaims).unwrap();
+    // Exercise the missing independent HSM attestation AFTER the source
+    // authentication gate. A test verifier is not production proof.
+    let authenticated_source_without_assurance =
+        |_: &KeyRequest, _: &ProviderCapabilitySnapshot, _: &ProviderCapabilityClaim| {
+            Ok(ProviderVerification {
+                source_authenticated: true,
+                assurance_authenticated: false,
+            })
+        };
+    let report = assess_key_capabilities(
+        &request, &snapshot, &authenticated_source_without_assurance
+    ).unwrap();
     assert_eq!(report.outcome, DecisionOutcome::Indeterminate);
-    assert!(
-        report
-            .reasons
-            .contains(&CapabilityReason::UnauthenticatedSource)
-            || report
-                .reasons
-                .contains(&CapabilityReason::AssuranceNotVerified)
-    );
-    assert!(!report.findings[0].source_authenticated);
+    assert!(report.reasons.contains(&CapabilityReason::AssuranceNotVerified));
+    assert!(report.findings[0].source_authenticated);
     assert!(!report.findings[0].assurance_authenticated);
     let projection = capability_missing_required_attribute(&report);
     assert_eq!(projection, Some(ReasonCode::MissingRequiredAttribute));
@@ -610,7 +615,7 @@ fn case_019_hsm_provider_claim_without_attestation_is_not_verified() {
 }
 
 #[test]
-fn case_029_generic_hybrid_flag_without_a_named_construction_is_invalid() {
+fn malformed_unnamed_hybrid_shapes_fail_closed_without_claiming_case_029() {
     let mut source = serde_json::to_value(fixture_policy()).unwrap();
     source["profile"] = serde_json::json!({"hybrid":true,"construction":null});
     assert!(matches!(
@@ -629,5 +634,6 @@ fn case_029_generic_hybrid_flag_without_a_named_construction_is_invalid() {
         PolicyDocument::parse_json(&serde_json::to_vec(&malformed).unwrap()),
         Err(ContractError::InvalidJson(_))
     ));
-    assert_spec_error("CASE-029", "InvalidPolicy");
+    // CASE-029 is not counted by FOSS-493/A: the schema has no generic
+    // hybrid policy DTO and so cannot yet prove the exact normative scenario.
 }
