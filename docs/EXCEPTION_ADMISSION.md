@@ -30,7 +30,10 @@ approval. No unsigned owner/approver field or digest authenticates itself.
 2. Evaluate the *unchanged* compiled policy graph against the exact injected
    timestamp. The result is preserved verbatim in the report.
 3. Require exact equality for request operation, environment, algorithm,
-   single fact and explicitly supplied tenant/key scope. Original context
+   single fact and explicitly supplied tenant/key scope. Until FOSS-502 adds an
+   independently verified exact-profile binding, any non-null cryptographic
+   profile is rejected as `ScopeMismatch`, rather than inheriting an
+   algorithm-only waiver. Original context
    intentionally does not include a trusted key owner: the consumer MUST bind
    `ExceptionScope.key_ref` to its actual target key externally.
 4. Locate the exact pinned policy node and verify that its targeted rule is
