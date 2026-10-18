@@ -168,6 +168,10 @@ Run:
     cargo clippy --workspace --all-targets --all-features -- -D warnings
     cargo test --workspace --all-features
 
+## External-consumer preview acceptance (FOSS-440)
+
+A separate Rust application under `acceptance/fresh-consumer` consumes an exact pinned Git revision without local workspace path dependencies, parses policy/context JSON, and checks Permit/Deny/Indeterminate decisions and stable decision decoding. This is **not** final packaged-crate acceptance; see [consumer acceptance](acceptance/fresh-consumer/README.md) and FOSS-464 release gates.
+
 ## Publishing
 
 All five workspace packages are **unpublished bootstrap crates** with `publish = false`.
