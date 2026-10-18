@@ -151,6 +151,10 @@ Run cargo run -p pqc-x509 --example normalize_x509 and
 cargo test -p pqc-x509 --test identities --locked.
 See [X.509 normalization](docs/X509_NORMALIZATION.md).
 
+## RFC 9964 ML-DSA JOSE/JWK public identity (FOSS-455)
+
+The `pqc-jose` crate normalizes only exact public AKP JWK ML-DSA-44/65/87 identities with separately extracted matching JWS protected-header JSON. Bounded strict JSON, canonical base64url, exact public-key sizes and a pinned catalog prevent algorithm confusion. No signature/key verification or PolicyDecision is performed; projection is always inferred and unverified. Run `cargo run -p pqc-jose --example normalize_jose` and `cargo test -p pqc-jose --test identities --locked`. See [the JOSE contract](docs/JOSE_NORMALIZATION.md).
+
 ## Crates
 
 - cryptopolicy

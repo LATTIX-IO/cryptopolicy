@@ -91,6 +91,13 @@ version = "0.1.0"
 [[package]]
 name = "pqc-jose"
 version = "0.1.0"
+dependencies = [
+ "cryptopolicy",
+ "pqc-kit",
+ "serde",
+ "serde_json",
+ "sha2",
+]
 
 [[package]]
 name = "pqc-kit"
