@@ -29,6 +29,7 @@ fn sample() -> PolicyDocument {
                     advanced: None,
                 },
                 requirements: vec![Requirement::NonExportable],
+                temporal: None,
             },
             PolicyRule {
                 rule_id: RuleId::parse("rule-a").unwrap(),
@@ -45,6 +46,7 @@ fn sample() -> PolicyDocument {
                     Requirement::MinSecurityCategory(3),
                     Requirement::Algorithm(AlgorithmId::parse("ML-KEM-1024").unwrap()),
                 ],
+                temporal: None,
             },
         ],
         metadata: vec![

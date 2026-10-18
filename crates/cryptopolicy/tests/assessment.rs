@@ -476,6 +476,7 @@ fn expired_and_globally_denied_policies_apply_even_without_evidence() {
             advanced: None,
         },
         requirements: vec![],
+        temporal: None,
     });
     let d = assess(&hard, &c, c.evaluation_time, &trust).unwrap();
     assert_eq!(d.outcome, DecisionOutcome::Deny);

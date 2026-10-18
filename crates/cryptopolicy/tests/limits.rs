@@ -83,6 +83,7 @@ fn policy_rule_count_at_limit_and_over_limit() {
             advanced: None,
         },
         requirements: vec![],
+        temporal: None,
     };
     value.rules.push(rule.clone());
     let limits = Limits {
@@ -122,6 +123,7 @@ fn per_rule_requirements_and_metadata_limits() {
             Requirement::NonExportable,
             Requirement::MinSecurityCategory(3),
         ],
+        temporal: None,
     });
     assert_eq!(
         doc.validate_with_limits(&limits),

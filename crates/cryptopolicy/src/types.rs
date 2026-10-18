@@ -308,6 +308,8 @@ pub enum ReasonCode {
     PolicyNotEffective,
     /// Policy has reached its exclusive expiration boundary.
     PolicyExpired,
+    /// An advisory deprecation warning, never a grant or exception.
+    DeprecationWarning,
 }
 
 /// SHA-256 fingerprint of canonical policy JSON; not a signature.

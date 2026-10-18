@@ -31,6 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             advanced: None,
         },
         requirements: vec![],
+        temporal: None,
     });
     let blocked = evaluate(&denied_policy, &context, context.evaluation_time)?;
     assert_eq!(blocked.outcome, DecisionOutcome::Deny);
