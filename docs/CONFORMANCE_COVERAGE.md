@@ -13,7 +13,7 @@ This increment and the FOSS-492 core extension add:
 - `tests/fixtures/conformance/runtime-coverage-v1.json`: all 33 IDs in
   normative order, anchored to the exact original Git blob content identity,
   with declared `runtime-subset` or substantive `pending` status.
-- `crates/cryptopolicy/tests/normative_runtime.rs`: 20 direct Rust tests
+- `crates/cryptopolicy/tests/normative_runtime.rs`: 19 direct Rust tests
   that load the **actual original normative corpus** and execute current
   policy evaluator or validation APIs with stable test fixtures.
 - `scripts/conformance_coverage.py`: rejects missing/reordered cases,
@@ -44,7 +44,6 @@ This increment and the FOSS-492 core extension add:
 | CASE-017 | Partial coverage and empty observations => Indeterminate (missing evidence) |
 | CASE-018 | Configured TLS suite without negotiated session => Indeterminate (non-operational) |
 | CASE-019 | HSM provider self-claim without independent attestation => Indeterminate |
-| CASE-029 | Generic hybrid flag and null named-construction requirement are rejected |
 
 The subset compares **actual outcome and presence of required controlling
 reason codes**, not full exact ordered reason-vector identity for every case.
@@ -61,7 +60,7 @@ as a real access-control endorsement.
 
 ## Pending cases and dependencies
 
-The other **13 cases remain explicitly pending**. Especially:
+The other **14 cases remain explicitly pending**. Especially:
 
 - CASE-008/009/010: no signed, source-authenticated, scoped exception/waiver
   engine yet; blocked by FOSS-443.
@@ -114,10 +113,12 @@ release authorization gates.
 
 CASE-007 and CASE-023 require **compile-time** PolicyConflict for attempted baseline weakening or contradictory exact profile constraints. The current composition model is a conjunction of independently evaluated layers; it prevents unauthorized use but does not always return that normative *error family* at compilation. CASE-030 expects UnsupportedSchema for unknown critical fields, while serde currently returns InvalidJson (fail closed, different error code). CASE-031 expects InvalidPolicy for untrusted issuer authentication; the policy DTO parses unverified issuer strings and leaves actual provenance authentication outside its API. None of these four may be marked runtime-subset without an explicit source-verified API and reason/error crosswalk. These are retained for FOSS-492/B.
 
-Current binding total after FOSS-493/A: **20/33**; remaining **13**. Normative file and `runtime_conformance_verified=false` remain untouched. Actual Rust error variants are checked before mapping expected abstract normative error families; this is not a statement that the runtime already serializes the abstract codes.
+Current binding total after FOSS-493/A: **19/33**; remaining **14**. Normative file and `runtime_conformance_verified=false` remain untouched. Actual Rust error variants are checked before mapping expected abstract normative error families; this is not a statement that the runtime already serializes the abstract codes.
 
 ### FOSS-493 source-evidence conformance distinctions
 
-CASE-014, CASE-016, CASE-017, CASE-018, CASE-019 and CASE-029 are directly runtime-linked under FOSS-493/A. Where the assessment/provider APIs have more specific reason types than the original normative corpus, the production `cryptopolicy::normative_projection` functions conservatively map *only* an Indeterminate result plus explicitly missing evidence/coverage/assurance to `ReasonCode::MissingRequiredAttribute`. These functions never return a Permit or authenticate sources. The tests validate both actual report status and the typed non-authorizing projection, not simply an expected fixture echo.
+CASE-014, CASE-016, CASE-017, CASE-018 and CASE-019 are directly runtime-linked under FOSS-493/A. Where the assessment/provider APIs have more specific reason types than the original normative corpus, the production `cryptopolicy::normative_projection` functions conservatively map *only* an Indeterminate result plus explicitly missing evidence/coverage/assurance to `ReasonCode::MissingRequiredAttribute`. These functions never return a Permit or authenticate sources. The tests validate both actual report status and the typed non-authorizing projection, not simply an expected fixture echo.
 
-The remaining FOSS-493 cases **CASE-013, CASE-015, CASE-020 and CASE-021** are deliberately pending. CASE-013 needs exact SecurityCategoryInsufficient semantics distinct from a catalog downgrade marker. CASE-015 names a draft-composite experimental construction that is not present in the currently pinned standards catalog, so mapping some other experimental profile would be false equivalence. CASE-020/021 require exact normative error vocabulary projection tied to real X.509/JOSE parsers and source-specific critical metadata. Follow-on FOSS-493/B must deliver these without changing the original normative goldens or inventing validation authority.
+The remaining FOSS-493 cases **CASE-013, CASE-015, CASE-020, CASE-021 and CASE-029** are deliberately pending. CASE-013 needs exact SecurityCategoryInsufficient semantics distinct from a catalog downgrade marker. CASE-015 names a draft-composite experimental construction that is not present in the currently pinned standards catalog, so mapping some other experimental profile would be false equivalence. CASE-020/021 require exact normative error vocabulary projection tied to real X.509/JOSE parsers and source-specific critical metadata. CASE-029's generic hybrid flag has no typed policy-construction admission DTO; generic JSON rejection cannot prove the specific normative contract. Follow-on FOSS-493/B must deliver these without changing the original normative goldens or inventing validation authority.
+
+Automated review identified that the earlier CASE-019 test stopped at source authentication and could not exercise missing attestation. The revised test independently authenticates a synthetic source binding but withholds HSM assurance verification; the actual capability report must return Indeterminate with AssuranceNotVerified. The generic hybrid malformed-input regression remains executed but is **not** claimed as CASE-029 conformance.

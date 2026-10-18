@@ -169,7 +169,7 @@ Run `cargo run -p pqc-kit --example tls_hybrid` and `cargo test -p pqc-kit --tes
 
 ## Normative runtime conformance — incremental bridge (FOSS-459)
 
-The original 33-case normative security contract remains **specification-only**. The [runtime conformance crosswalk](docs/CONFORMANCE_COVERAGE.md) explicitly accounts for all 33 cases, and binds 20 to real Rust evaluator/validation and provenance-safe assessment tests, leaving 13 pending with identified gaps. Assessment and provider evidence remain non-authorizing until authenticated externally. Both the crosswalk audit and runtime-bound cases are executed in CI. These checks assert actual outcomes and controlling reasons for the 8 cases; they do not claim a complete 33-case reason/error golden corpus. Run `python3 scripts/conformance_coverage.py` and `cargo test -p cryptopolicy --test normative_runtime --locked`.
+The original 33-case normative security contract remains **specification-only**. The [runtime conformance crosswalk](docs/CONFORMANCE_COVERAGE.md) explicitly accounts for all 33 cases, and binds 19 to real Rust evaluator/validation and provenance-safe assessment tests, leaving 14 pending with identified gaps. Assessment and provider evidence remain non-authorizing until authenticated externally. Both the crosswalk audit and runtime-bound cases are executed in CI. These checks assert actual outcomes and controlling reasons for the 8 cases; they do not claim a complete 33-case reason/error golden corpus. Run `python3 scripts/conformance_coverage.py` and `cargo test -p cryptopolicy --test normative_runtime --locked`.
 
 ## Crates
 
