@@ -138,6 +138,19 @@ cargo test -p cryptopolicy --test capability --locked. See
 [the key capability contract](docs/KEY_CAPABILITY.md). No Keymesh crate is
 required and no publishing is enabled.
 
+## X.509 PQC identity normalization (FOSS-452)
+
+The standalone pqc-x509 crate maps exact RFC 9881 ML-DSA certificate
+signature identifiers and RFC 9935 ML-KEM SPKI DER to pinned FOSS-445
+profiles. Strict bounded DER rejects unknown OIDs, parameters, BER encoding,
+mismatched TBS/outer signatures, incorrect ML-KEM public-key lengths, and
+uninspected or invalid critical/key-usage states. This is not a certificate
+validator or PolicyDecision.
+
+Run cargo run -p pqc-x509 --example normalize_x509 and
+cargo test -p pqc-x509 --test identities --locked.
+See [X.509 normalization](docs/X509_NORMALIZATION.md).
+
 ## Crates
 
 - cryptopolicy

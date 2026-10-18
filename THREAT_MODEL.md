@@ -160,3 +160,16 @@ The assessment adapter preserves direct/negotiated, configured, dependency, infe
 ## FOSS-449 Keymesh-style provider assurance boundary
 
 The provider capability assessment contract distinguishes advertised algorithm/key capabilities from observed crypto use and from an authenticated PolicyDecision. Exact provider, catalog identity, parameters, key origin/exportability, HSM protection and evidence timestamps are mandatory whenever required by policy. Caller-provided independently authenticated source and assurance verification gates are distinct; provider claims are never self-trusting. Unreviewed algorithms, explicit authenticated downgrade/forbidden capability Deny; missing, stale, unknown, unauthenticated or conflicting claims remain nonauthorizing. No private key material, provider I/O, registry release or automatic authorization is included. FOSS-459 and FOSS-466 remain separate conformance/publishing gates.
+
+## FOSS-452 X.509 parser and evidence trust boundary
+
+pqc-x509 accepts only narrow semantic DER fields extracted by an independent
+security-reviewed RFC 5280 parser. It does not validate complete certificates,
+authenticate the caller's critical-extension/keyUsage claims, verify issuers
+or signatures, or enforce cryptopolicy decisions. Its bounded entrypoints
+reject malformed/noncanonical BER/DER, unknown/wrong-role OIDs, parameters
+including explicit NULL, signature field disagreement, wrong ML-KEM SPKI raw
+key lengths, unknown/uninspected critical extensions and improper keyUsage.
+Output is original source/evidence-tagged UNVERIFIED metadata including
+catalog ID/digest and input DER hash, never a policy Permit or validation
+of mathematical key correctness. FOSS-459 and FOSS-466 remain separate.
