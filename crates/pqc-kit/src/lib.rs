@@ -563,3 +563,6 @@ fn hex_digest(bytes: &[u8]) -> String {
         .map(|byte| format!("{byte:02x}"))
         .collect()
 }
+
+/// Finalized RFC 10024 TLS hybrid group identity and transition metadata.
+pub mod tls_hybrid;
