@@ -747,7 +747,7 @@ fn audited_negative(
 #[test]
 fn case_008_expired_exception_preserves_legacy_rsa_explicit_deny() {
     use cryptopolicy::{
-        BlockedExceptionEnforcement, ExceptionReferenceFinding,
+        BlockedExceptionEnforcement, BlockedReferenceFinding,
     };
     let (graph, context, mut exception, mut grant) = legacy_rsa_denial_fixture();
     exception.expires_at = at(1_767_225_600_000); // 2026-01-01T00:00:00Z
@@ -756,7 +756,7 @@ fn case_008_expired_exception_preserves_legacy_rsa_explicit_deny() {
     let original = graph.evaluate(&context, context.evaluation_time,
                                   &cryptopolicy::Limits::default()).unwrap();
     assert_decision("CASE-008", &original.components[0].decision, DecisionOutcome::Deny);
-    assert_eq!(receipt.reference_finding, ExceptionReferenceFinding::Expired);
+    assert_eq!(receipt.reference_finding, BlockedReferenceFinding::Expired);
     assert_eq!(receipt.enforcement, BlockedExceptionEnforcement::Block);
     assert_eq!(receipt.original_outcome, DecisionOutcome::Deny);
     assert_eq!(receipt.candidate_outcome, DecisionOutcome::Deny);
@@ -770,7 +770,7 @@ fn case_008_expired_exception_preserves_legacy_rsa_explicit_deny() {
 #[test]
 fn case_009_other_tenant_exception_cannot_waive_explicit_deny() {
     use cryptopolicy::{
-        BlockedExceptionEnforcement, ExceptionReferenceFinding, PolicyId,
+        BlockedExceptionEnforcement, BlockedReferenceFinding, PolicyId,
     };
     let (graph, context, exception, grant) = legacy_rsa_denial_fixture();
     let mut requested_scope = exception.scope.clone();
@@ -779,7 +779,7 @@ fn case_009_other_tenant_exception_cannot_waive_explicit_deny() {
     let original = graph.evaluate(&context, context.evaluation_time,
                                   &cryptopolicy::Limits::default()).unwrap();
     assert_decision("CASE-009", &original.components[0].decision, DecisionOutcome::Deny);
-    assert_eq!(receipt.reference_finding, ExceptionReferenceFinding::OutOfScope);
+    assert_eq!(receipt.reference_finding, BlockedReferenceFinding::OutOfScope);
     assert_eq!(receipt.enforcement, BlockedExceptionEnforcement::Block);
     assert_eq!(receipt.candidate_outcome, DecisionOutcome::Deny);
     assert!(receipt.blocking_reasons.iter().any(|r| r.code == ReasonCode::ExplicitDeny));
