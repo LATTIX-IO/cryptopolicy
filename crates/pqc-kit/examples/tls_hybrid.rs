@@ -1,7 +1,7 @@
 //! Inspect a synthetic TLS group negotiation without authenticating transcripts.
 use pqc_kit::tls_hybrid::{
-    RFC10024_HYBRID_GROUPS, TlsEvidenceOrigin, TlsHybridObservation,
-    TlsTransitionRequirement, assess_tls_hybrid, classify_tls_group,
+    RFC10024_HYBRID_GROUPS, TlsEvidenceOrigin, TlsHybridObservation, TlsTransitionRequirement,
+    assess_tls_hybrid, classify_tls_group,
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -20,7 +20,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &observation,
         &TlsTransitionRequirement::ExactHybridGroup(group.codepoint),
     )?;
-    println!("group={:?} finding={:?}", classify_tls_group(group.codepoint), assessment.finding);
-    println!("Structural consistency is NOT cryptographic proof, handshake verification or Permit.");
+    println!(
+        "group={:?} finding={:?}",
+        classify_tls_group(group.codepoint),
+        assessment.finding
+    );
+    println!(
+        "Structural consistency is NOT cryptographic proof, handshake verification or Permit."
+    );
     Ok(())
 }

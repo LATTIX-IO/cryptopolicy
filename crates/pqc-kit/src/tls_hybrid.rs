@@ -55,31 +55,49 @@ pub struct TlsHybridGroup {
 /// and their pinned digest must not be changed by introducing these groups.
 pub static RFC10024_HYBRID_GROUPS: [TlsHybridGroup; 3] = [
     TlsHybridGroup {
-        codepoint: 4587, name: "SecP256r1MLKEM768",
-        classical_component: "secp256r1", kem_component: "ML-KEM-768",
+        codepoint: 4587,
+        name: "SecP256r1MLKEM768",
+        classical_component: "secp256r1",
+        kem_component: "ML-KEM-768",
         share_order: HybridShareOrder::EcdheThenKem,
-        classical_public_octets: 65, kem_public_octets: 1184,
-        kem_ciphertext_octets: 1088, client_share_octets: 1249,
-        server_share_octets: 1153, shared_secret_octets: 64,
-        iana_recommended: false, standard: "RFC 10024",
+        classical_public_octets: 65,
+        kem_public_octets: 1184,
+        kem_ciphertext_octets: 1088,
+        client_share_octets: 1249,
+        server_share_octets: 1153,
+        shared_secret_octets: 64,
+        iana_recommended: false,
+        standard: "RFC 10024",
     },
     TlsHybridGroup {
-        codepoint: 4588, name: "X25519MLKEM768",
-        classical_component: "X25519", kem_component: "ML-KEM-768",
+        codepoint: 4588,
+        name: "X25519MLKEM768",
+        classical_component: "X25519",
+        kem_component: "ML-KEM-768",
         share_order: HybridShareOrder::KemThenEcdhe,
-        classical_public_octets: 32, kem_public_octets: 1184,
-        kem_ciphertext_octets: 1088, client_share_octets: 1216,
-        server_share_octets: 1120, shared_secret_octets: 64,
-        iana_recommended: true, standard: "RFC 10024",
+        classical_public_octets: 32,
+        kem_public_octets: 1184,
+        kem_ciphertext_octets: 1088,
+        client_share_octets: 1216,
+        server_share_octets: 1120,
+        shared_secret_octets: 64,
+        iana_recommended: true,
+        standard: "RFC 10024",
     },
     TlsHybridGroup {
-        codepoint: 4589, name: "SecP384r1MLKEM1024",
-        classical_component: "secp384r1", kem_component: "ML-KEM-1024",
+        codepoint: 4589,
+        name: "SecP384r1MLKEM1024",
+        classical_component: "secp384r1",
+        kem_component: "ML-KEM-1024",
         share_order: HybridShareOrder::EcdheThenKem,
-        classical_public_octets: 97, kem_public_octets: 1568,
-        kem_ciphertext_octets: 1568, client_share_octets: 1665,
-        server_share_octets: 1665, shared_secret_octets: 80,
-        iana_recommended: false, standard: "RFC 10024",
+        classical_public_octets: 97,
+        kem_public_octets: 1568,
+        kem_ciphertext_octets: 1568,
+        client_share_octets: 1665,
+        server_share_octets: 1665,
+        shared_secret_octets: 80,
+        iana_recommended: false,
+        standard: "RFC 10024",
     },
 ];
 
@@ -106,10 +124,12 @@ pub fn classify_tls_group(codepoint: u16) -> TlsGroupClass {
         4588 => TlsGroupClass::Finalized(&RFC10024_HYBRID_GROUPS[1]),
         4589 => TlsGroupClass::Finalized(&RFC10024_HYBRID_GROUPS[2]),
         25497 => TlsGroupClass::ObsoletedDraft {
-            codepoint, name: "X25519Kyber768Draft00",
+            codepoint,
+            name: "X25519Kyber768Draft00",
         },
         25498 => TlsGroupClass::ObsoletedDraft {
-            codepoint, name: "SecP256r1Kyber768Draft00",
+            codepoint,
+            name: "SecP256r1Kyber768Draft00",
         },
         _ => TlsGroupClass::Unknown(codepoint),
     }
@@ -117,7 +137,9 @@ pub fn classify_tls_group(codepoint: u16) -> TlsGroupClass {
 
 /// Exact name lookup; no parsing-only aliases, case folding or fuzzy mapping.
 pub fn named_tls_hybrid(name: &str) -> Option<&'static TlsHybridGroup> {
-    RFC10024_HYBRID_GROUPS.iter().find(|group| group.name == name)
+    RFC10024_HYBRID_GROUPS
+        .iter()
+        .find(|group| group.name == name)
 }
 
 /// Provenance quality of a reported TLS configuration or negotiation.
@@ -224,8 +246,12 @@ impl std::error::Error for TlsHybridError {}
 
 fn valid_handle(value: &str) -> bool {
     let bytes = value.as_bytes();
-    !bytes.is_empty() && bytes.len() <= 128 && bytes[0].is_ascii_alphanumeric()
-        && bytes.iter().all(|b| b.is_ascii_alphanumeric() || b"-._:/".contains(b))
+    !bytes.is_empty()
+        && bytes.len() <= 128
+        && bytes[0].is_ascii_alphanumeric()
+        && bytes
+            .iter()
+            .all(|b| b.is_ascii_alphanumeric() || b"-._:/".contains(b))
 }
 
 /// Validate a finalized group's PQ component against immutable pqc-kit v1.
@@ -267,7 +293,9 @@ pub fn assess_tls_hybrid(
         origin: evidence.origin,
         negotiated_group: evidence.negotiated_group,
     };
-    let Some(codepoint) = evidence.negotiated_group else { return Ok(result); };
+    let Some(codepoint) = evidence.negotiated_group else {
+        return Ok(result);
+    };
     let profile = match classify_tls_group(codepoint) {
         TlsGroupClass::Finalized(profile) => profile,
         TlsGroupClass::ObsoletedDraft { .. } => {
@@ -280,7 +308,11 @@ pub fn assess_tls_hybrid(
         }
     };
     result.group = Some(*profile);
-    result.finding = if evidence.claimed_name.as_deref().is_some_and(|n| n != profile.name) {
+    result.finding = if evidence
+        .claimed_name
+        .as_deref()
+        .is_some_and(|n| n != profile.name)
+    {
         TlsHybridFinding::NameMismatch
     } else if !offered.contains(&codepoint) {
         TlsHybridFinding::UnofferedGroup
@@ -302,7 +334,8 @@ pub fn assess_tls_hybrid(
                 TlsHybridFinding::StructurallyConsistentHybrid
             }
             TlsTransitionRequirement::PqcComponentOnly(required)
-                if required == profile.kem_component => {
+                if required == profile.kem_component =>
+            {
                 TlsHybridFinding::ComponentOnlyMatch
             }
             _ => TlsHybridFinding::RequirementMismatch,
