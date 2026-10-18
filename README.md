@@ -173,6 +173,10 @@ The original 33-case normative security contract remains **specification-only**.
 
 FOSS-500/A now provides a **non-authorizing, simulated exact Deny waiver candidate** gated by two independent caller-owned verifiers and mandatory `Require` compensation. It preserves every other baseline/overlay layer and keeps the original policy digest. A candidate Permit is not an authenticated or enforceable authorization. See [waiver admission](docs/EXCEPTION_ADMISSION.md). `RuleRequirement` deviations and signed audit remain deferred to subsequent issues.
 
+## Reviewed policy-owner waivability (FOSS-502)
+
+The `cryptopolicy` crate now includes a strictly bounded, externally authenticated **waivability registry** and exact key/profile binding for offline waiver-candidate assessment. Separate caller-owned verifiers must authenticate the source approval, policy-owner grant, current registry/replay state, and actual key/profile ownership. An explicitly owner-waivable failed mandatory `Require` may be simulated with independently satisfied compensating controls, without changing any other policy layer. Neither a registry match nor a hypothetical candidate Permit constitutes enforcement authorization. See [waivability security contract](docs/WAIVABILITY.md). The original 33-case normative conformance corpus remains unchanged.
+
 ## Exact-scope exception reference (FOSS-499)
 
 The `cryptopolicy` crate now includes a bounded, strictly versioned, **untrusted** exception-reference DTO and external-verification interface. The default verifier rejects source/approval trust, and even a caller-verified reference is only *eligible for future independent admission*; it does not waive rules, override Deny, execute cryptography or grant Permit. The reference pins exact policy ID/version/digest, target rule, tenant, environment, operation, algorithm and key, with explicit time and compensating rule references. Run `cargo run -p cryptopolicy --example exception_reference`; see [exception trust contract](docs/EXCEPTION_REFERENCE.md). FOSS-500/501 implement future admission/audit separately.
