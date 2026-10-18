@@ -8,9 +8,9 @@
 use crate::{
     CompositionError, ContractError, CryptoContext, DecisionOutcome, EffectiveDecision,
     EffectivePolicy, EvaluationTime, EvidenceId, ExceptionBoundContext, ExceptionDeviation,
-    ExceptionReference, ExceptionReferenceFinding, ExceptionScope, ExceptionSourceVerifier,
-    Limits, PolicyDecision, PolicyDigest, PolicyReference, ReasonCode, RuleEffect, RuleId,
-    SchemaVersion, assess_exception_reference, evaluate_with_limits,
+    ExceptionReference, ExceptionReferenceFinding, ExceptionScope, ExceptionSourceVerifier, Limits,
+    PolicyDecision, PolicyDigest, PolicyReference, ReasonCode, RuleEffect, RuleId, SchemaVersion,
+    assess_exception_reference, evaluate_with_limits,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -55,7 +55,9 @@ impl PolicyWaiverGrant {
             return Err(ContractError::InvalidDocument("waiver_grant_time"));
         }
         if self.deviation != ExceptionDeviation::RuleDeny {
-            return Err(ContractError::InvalidDocument("unsupported_waiver_deviation"));
+            return Err(ContractError::InvalidDocument(
+                "unsupported_waiver_deviation",
+            ));
         }
         if self.compensating_controls.is_empty()
             || self.compensating_controls.len() > crate::MAX_EXCEPTION_COMPENSATING_CONTROLS
@@ -72,12 +74,14 @@ impl PolicyWaiverGrant {
                 return Err(ContractError::DuplicateIdentifier);
             }
             if previous.is_some_and(|last: &RuleId| last >= id) {
-                return Err(ContractError::InvalidDocument("unordered_waiver_compensators"));
+                return Err(ContractError::InvalidDocument(
+                    "unordered_waiver_compensators",
+                ));
             }
             previous = Some(id);
         }
-        let bytes = serde_json::to_vec(self)
-            .map_err(|e| ContractError::InvalidJson(e.to_string()))?;
+        let bytes =
+            serde_json::to_vec(self).map_err(|e| ContractError::InvalidJson(e.to_string()))?;
         if bytes.len() > crate::MAX_EXCEPTION_REFERENCE_JSON_BYTES {
             return Err(ContractError::PayloadTooLarge);
         }
@@ -85,16 +89,13 @@ impl PolicyWaiverGrant {
     }
 
     /// Parse and validate a closed, bounded grant. Unknown keys fail closed.
-    pub fn parse_json_with_limits(
-        bytes: &[u8],
-        limits: &Limits,
-    ) -> Result<Self, ContractError> {
+    pub fn parse_json_with_limits(bytes: &[u8], limits: &Limits) -> Result<Self, ContractError> {
         limits.check_json(bytes)?;
         if bytes.len() > crate::MAX_EXCEPTION_REFERENCE_JSON_BYTES {
             return Err(ContractError::PayloadTooLarge);
         }
-        let grant: Self = serde_json::from_slice(bytes)
-            .map_err(|e| ContractError::InvalidJson(e.to_string()))?;
+        let grant: Self =
+            serde_json::from_slice(bytes).map_err(|e| ContractError::InvalidJson(e.to_string()))?;
         grant.validate(limits)?;
         Ok(grant)
     }
@@ -212,7 +213,10 @@ pub struct WaiverAdmissionReport {
 /// remove unrelated Deny/Require, or bypass policy expiry/activation. An
 /// unrecognized deviation (including RuleRequirement) is rejected at validation.
 /// External callers MUST independently bind the key_ref to the actual key.
-pub fn evaluate_deny_waiver_candidate<E: ExceptionSourceVerifier, A: PolicyWaiverAuthorityVerifier>(
+pub fn evaluate_deny_waiver_candidate<
+    E: ExceptionSourceVerifier,
+    A: PolicyWaiverAuthorityVerifier,
+>(
     effective: &EffectivePolicy,
     context: &CryptoContext,
     actual_scope: &ExceptionScope,
@@ -257,7 +261,11 @@ pub fn evaluate_deny_waiver_candidate<E: ExceptionSourceVerifier, A: PolicyWaive
     let Some(target) = target else {
         return Ok(fallback(WaiverAdmissionDisposition::NoMatchingExplicitDeny));
     };
-    let targeted_rule = target.document.rules.iter().find(|rule| rule.rule_id == exception.target_rule);
+    let targeted_rule = target
+        .document
+        .rules
+        .iter()
+        .find(|rule| rule.rule_id == exception.target_rule);
     if !targeted_rule.is_some_and(|rule| rule.effect == RuleEffect::Deny) {
         return Ok(fallback(WaiverAdmissionDisposition::NoMatchingExplicitDeny));
     }
@@ -304,24 +312,29 @@ pub fn evaluate_deny_waiver_candidate<E: ExceptionSourceVerifier, A: PolicyWaive
                 && rule.effect == RuleEffect::Require
                 && !rule.requirements.is_empty()
         }) {
-            return Ok(fallback(WaiverAdmissionDisposition::CompensationNotSatisfied));
+            return Ok(fallback(
+                WaiverAdmissionDisposition::CompensationNotSatisfied,
+            ));
         }
     }
 
     // Clone-only targeted rule removal for a non-authorizing what-if decision.
     // Source policy identity/digest and other layers remain untouched.
     let mut hypothetical = target.document.clone();
-    hypothetical.rules.retain(|rule| rule.rule_id != exception.target_rule);
+    hypothetical
+        .rules
+        .retain(|rule| rule.rule_id != exception.target_rule);
     let candidate = evaluate_with_limits(&hypothetical, context, time, limits)?;
 
     let compensators_satisfied = grant.compensating_controls.iter().all(|id| {
         candidate.reasons.iter().any(|reason| {
-            reason.rule_id.as_ref() == Some(id)
-                && reason.code == ReasonCode::RequirementSatisfied
+            reason.rule_id.as_ref() == Some(id) && reason.code == ReasonCode::RequirementSatisfied
         })
     });
     if !compensators_satisfied {
-        return Ok(fallback(WaiverAdmissionDisposition::CompensationNotSatisfied));
+        return Ok(fallback(
+            WaiverAdmissionDisposition::CompensationNotSatisfied,
+        ));
     }
 
     // Conjunctive original layers, with ONLY the exact affected layer changed.
