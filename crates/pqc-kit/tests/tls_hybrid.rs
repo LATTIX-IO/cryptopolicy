@@ -1,4 +1,5 @@
 //! Exact RFC 10024 registration, negotiation boundary and downgrade tests.
+#![allow(clippy::unwrap_used)]
 use pqc_kit::tls_hybrid::{
     HybridShareOrder, RFC10024_HYBRID_GROUPS, TlsEvidenceOrigin, TlsGroupClass, TlsHybridError,
     TlsHybridFinding, TlsHybridObservation, TlsTransitionRequirement, assess_tls_hybrid,
