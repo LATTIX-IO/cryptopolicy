@@ -9,3 +9,6 @@ publish = false
 [dependencies]
 cryptopolicy = { git = "https://github.com/LATTIX-IO/cryptopolicy.git", rev = "e8fcdacd32aedb13c3b667f63bd126c85805e3d6" }
 serde_json = "1.0.145"
+
+# Deliberately separate Cargo workspace for clean external-consumer semantics.
+[workspace]
