@@ -8,8 +8,8 @@
   "cases": [
     {
       "id": "CASE-001",
-      "status": "pending",
-      "reason": "Runtime error vocabulary or external issuer-authentication mapping not yet proven"
+      "status": "runtime-subset",
+      "test": "case_001_missing_explicit_default_effect_rejected"
     },
     {
       "id": "CASE-002",
@@ -28,8 +28,8 @@
     },
     {
       "id": "CASE-005",
-      "status": "pending",
-      "reason": "Runtime error vocabulary or external issuer-authentication mapping not yet proven"
+      "status": "runtime-subset",
+      "test": "case_005_invalid_effect_type_cannot_produce_a_decision"
     },
     {
       "id": "CASE-006",
@@ -63,8 +63,8 @@
     },
     {
       "id": "CASE-012",
-      "status": "pending",
-      "reason": "Cutover tested generically; required named legacy profile fixture not yet exact"
+      "status": "runtime-subset",
+      "test": "case_012_legacy_rsa_prohibition_is_inclusive_at_cutover"
     },
     {
       "id": "CASE-013",
@@ -113,8 +113,8 @@
     },
     {
       "id": "CASE-022",
-      "status": "pending",
-      "reason": "Canonical resolver composition errors need direct specification adapter"
+      "status": "runtime-subset",
+      "test": "case_022_cyclic_pinned_policy_imports_fail_before_decision"
     },
     {
       "id": "CASE-023",
@@ -123,13 +123,13 @@
     },
     {
       "id": "CASE-024",
-      "status": "pending",
-      "reason": "Requested resource, redaction or hybrid-policy semantics not yet bound exactly"
+      "status": "runtime-subset",
+      "test": "case_024_oversized_policy_input_exceeds_bounded_parser_budget"
     },
     {
       "id": "CASE-025",
-      "status": "pending",
-      "reason": "Canonical resolver composition errors need direct specification adapter"
+      "status": "runtime-subset",
+      "test": "case_025_overdeep_import_graph_fails_before_effective_policy"
     },
     {
       "id": "CASE-026",

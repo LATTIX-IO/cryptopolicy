@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-492/A: six additional real normative runtime tests for invalid defaults/effects, precise temporal prohibition, pinned import cycles and resource budgets (14/33 total), with no fabricated PolicyConflict/UnsupportedSchema/issuer-authentication equivalence. Conformance crosswalk retains 19 pending cases.
+
 - FOSS-459/A: honest normative-to-runtime conformance crosswalk for all 33 security-contract cases, eight directly bound deterministic evaluator/validation tests, explicitly pending 25 cases and typed gap inventory, fail-closed crosswalk verifier and CI step. Full runtime conformance remains unverified; no normative expected results or security contract maturity claim changed.
 
 - FOSS-458: immutable RFC 10024 TLS hybrid group registry (4587/4588/4589) with exact classical/ML-KEM component mapping and share sizes/orders, explicit retired Kyber drafts, configured-vs-negotiated evidence, separate constituent/hybrid constraints and adversarial downgrade checks. No TLS handshake, key validation or policy Permit.
