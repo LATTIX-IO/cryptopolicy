@@ -20,6 +20,7 @@ fn rule(effect: RuleEffect, id: &str) -> PolicyRule {
             advanced: None,
         },
         requirements: Vec::new(),
+        temporal: None,
     }
 }
 
@@ -123,6 +124,7 @@ fn reject_unrestricted_allow_and_empty_require_rule() {
             advanced: None,
         },
         requirements: vec![],
+        temporal: None,
     });
     p.rules.push(PolicyRule {
         rule_id: RuleId::parse("r-empty-require").unwrap(),
@@ -136,6 +138,7 @@ fn reject_unrestricted_allow_and_empty_require_rule() {
             advanced: None,
         },
         requirements: vec![],
+        temporal: None,
     });
     let report = p.static_validate().unwrap();
     assert!(!report.is_valid());

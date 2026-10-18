@@ -70,6 +70,7 @@ fn deny(id: &str) -> PolicyRule {
             advanced: None,
         },
         requirements: vec![],
+        temporal: None,
     }
 }
 

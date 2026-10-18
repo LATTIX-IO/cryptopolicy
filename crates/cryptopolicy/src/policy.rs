@@ -105,6 +105,77 @@ pub enum Requirement {
     MinimumKeyBits(u32),
 }
 
+/// Explicit rule-level UTC time constraints; these do not authenticate inputs.
+///
+/// Absent constraints retain legacy evaluation and canonical serialization.
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RuleTemporal {
+    /// Inclusive rule activation, for all rule effects.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effective_from: Option<EvaluationTime>,
+    /// Exclusive rule expiry, for all rule effects.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expires_at: Option<EvaluationTime>,
+    /// Inclusive deprecation warning, only on Warn rules.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub deprecated_from: Option<EvaluationTime>,
+    /// Inclusive mandatory-requirement activation, only on Require rules.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub required_from: Option<EvaluationTime>,
+    /// Inclusive prohibition activation, only on Deny rules.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub prohibited_from: Option<EvaluationTime>,
+}
+
+impl RuleTemporal {
+    fn validate_for(&self, effect: RuleEffect) -> Result<(), ContractError> {
+        if self.effective_from.is_none()
+            && self.expires_at.is_none()
+            && self.deprecated_from.is_none()
+            && self.required_from.is_none()
+            && self.prohibited_from.is_none()
+        {
+            return Err(ContractError::InvalidDocument("empty rule temporal constraint"));
+        }
+        if (self.deprecated_from.is_some() && effect != RuleEffect::Warn)
+            || (self.required_from.is_some() && effect != RuleEffect::Require)
+            || (self.prohibited_from.is_some() && effect != RuleEffect::Deny)
+        {
+            return Err(ContractError::InvalidDocument(
+                "temporal field incompatible with rule effect",
+            ));
+        }
+        let trigger = match effect {
+            RuleEffect::Warn => self.deprecated_from,
+            RuleEffect::Require => self.required_from,
+            RuleEffect::Deny => self.prohibited_from,
+            RuleEffect::Allow => None,
+        };
+        let start = [self.effective_from, trigger].into_iter().flatten().max();
+        if let (Some(end), Some(start)) = (self.expires_at, start) {
+            if end <= start {
+                return Err(ContractError::InvalidDocument("invalid rule temporal interval"));
+            }
+        }
+        Ok(())
+    }
+
+    pub(crate) fn active_at(&self, effect: RuleEffect, time: EvaluationTime) -> bool {
+        if self.effective_from.is_some_and(|start| time < start)
+            || self.expires_at.is_some_and(|end| time >= end)
+        {
+            return false;
+        }
+        match effect {
+            RuleEffect::Allow => true,
+            RuleEffect::Require => self.required_from.is_none_or(|start| time >= start),
+            RuleEffect::Deny => self.prohibited_from.is_none_or(|start| time >= start),
+            RuleEffect::Warn => self.deprecated_from.is_none_or(|start| time >= start),
+        }
+    }
+}
+
 /// One typed rule. Its serialized position must not determine deny precedence.
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -117,6 +188,9 @@ pub struct PolicyRule {
     pub selector: RuleSelector,
     /// List of mandatory constraints.
     pub requirements: Vec<Requirement>,
+    /// Optional schedule; None preserves the existing v1 serialized policy digest.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub temporal: Option<RuleTemporal>,
 }
 
 /// A metadata key/value that is not an authorization assertion.
@@ -324,6 +398,9 @@ impl PolicyDocument {
         }
         let mut rules = BTreeSet::new();
         for rule in &self.rules {
+            if let Some(window) = &rule.temporal {
+                window.validate_for(rule.effect)?;
+            }
             if !rules.insert(&rule.rule_id) {
                 return Err(ContractError::DuplicateIdentifier);
             }

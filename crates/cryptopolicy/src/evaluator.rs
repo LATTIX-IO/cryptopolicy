@@ -278,8 +278,12 @@ pub fn evaluate_with_limits(
     let mut allow_satisfied = BTreeSet::new();
     let mut require_satisfied = BTreeSet::new();
     let mut unvalidated_profile = BTreeSet::new();
+    let mut deprecated = BTreeSet::new();
 
     for rule in &policy.rules {
+        if rule.temporal.as_ref().is_some_and(|window| !window.active_at(rule.effect, explicit_time)) {
+            continue;
+        }
         match target_selector(&rule.selector, context, fact) {
             Truth::No => continue,
             Truth::Unknown => {
@@ -297,7 +301,11 @@ pub fn evaluate_with_limits(
                 // An attached requirement cannot make a matching Deny conditional.
                 denied.insert(rule.rule_id.clone());
             }
-            RuleEffect::Warn => {}
+            RuleEffect::Warn => {
+                if rule.temporal.as_ref().is_some_and(|window| window.deprecated_from.is_some()) {
+                    deprecated.insert(rule.rule_id.clone());
+                }
+            }
             RuleEffect::Require => match check_requirements(rule, fact) {
                 Truth::No => {
                     requirement_failed.insert(rule.rule_id.clone());
@@ -391,6 +399,9 @@ pub fn evaluate_with_limits(
         }
         DecisionOutcome::Deny
     };
+    for id in deprecated {
+        reasons.insert((Some(id), ReasonCode::DeprecationWarning));
+    }
     build_decision(
         policy,
         context,
