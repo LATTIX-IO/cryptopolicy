@@ -334,13 +334,11 @@ pub fn evaluate_reviewed_waiver_candidate<
     {
         return Ok(reject(WaiverAdmissionDisposition::RegistryNotAuthorized));
     }
-    // FOSS-500/A remains conservative (no profile), while the advanced path
-    // explicitly supplies a *verified* exact profile and allows Require rules.
-    crate::exception_admission::evaluate_waiver_candidate_core(
-        request,
-        exception_verifier,
-        owner_verifier,
-        Some(&key_binding.profile_id),
-        true,
-    )
+    // The base evaluator's requires_unavailable_profile() deliberately treats
+    // ALL profile-bearing facts as unsupported for a Permit. External registry
+    // and key attestations cannot override an unsupported algorithm profile
+    // or manufacture a RequirementSatisfied reason. Keep this explicit and
+    // fail-closed until the separately reviewed profile evaluator exists.
+    let _ = (exception_verifier, owner_verifier);
+    Ok(reject(WaiverAdmissionDisposition::ProfileEvaluatorUnsupported))
 }
