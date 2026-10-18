@@ -190,6 +190,26 @@ fn exact_waiver_is_only_a_distinct_non_authorizing_candidate() {
 }
 
 #[test]
+fn unbound_profile_identity_never_inherits_an_algorithm_only_waiver() {
+    let (graph, e, grant, mut context) = ready();
+    for profile in ["AES-256-GCM:profile-a", "AES-256-GCM:profile-b"] {
+        context.facts[0].profile_id = Some(ProfileId::parse(profile).unwrap());
+        let decision = evaluate(&graph, &e, &grant, &context, 150);
+        assert_eq!(decision.disposition, WaiverAdmissionDisposition::ScopeMismatch);
+        assert_eq!(decision.candidate_outcome, DecisionOutcome::Deny);
+        assert!(decision.candidate_target_layer.is_none());
+        assert_eq!(decision.original.outcome, DecisionOutcome::Deny);
+    }
+    // A profile-less request is the only currently supported case. The
+    // forthcoming FOSS-502 binding will require an actual trusted profile.
+    context.facts[0].profile_id = None;
+    assert_eq!(
+        evaluate(&graph, &e, &grant, &context, 150).disposition,
+        WaiverAdmissionDisposition::CandidateEvaluated
+    );
+}
+
+#[test]
 fn safe_defaults_and_missing_independent_trust_never_produce_candidate_permit() {
     let (graph, e, grant, context) = ready();
     let report = evaluate_deny_waiver_candidate(
