@@ -68,6 +68,11 @@ jobs:
           cargo +1.85.0 check --workspace --all-targets --all-features --locked
           cargo +1.85.0 test --workspace --all-features --locked
 
+      - name: Clean external consumer from pinned Git revision
+        run: |
+          cargo generate-lockfile --manifest-path acceptance/fresh-consumer/Cargo.toml
+          cargo run --manifest-path acceptance/fresh-consumer/Cargo.toml --locked
+
       - name: Install supply-chain tools
         run: |
           cargo install --locked cargo-audit

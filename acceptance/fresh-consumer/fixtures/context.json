@@ -1,0 +1,28 @@
+{
+  "schema_version": "1",
+  "request_id": "req:allow",
+  "operation": "encrypt",
+  "evaluation_time": {
+    "unix_millis": 150
+  },
+  "environment": "prod",
+  "facts": [
+    {
+      "fact_id": "fact:1",
+      "origin": "observed",
+      "algorithm_id": "AES-256-GCM",
+      "profile_id": null,
+      "evidence_ref": "attest:1",
+      "verified": true,
+      "properties": {
+        "security_category": 5,
+        "key_size_bits": 256,
+        "data_sensitivity": "confidential",
+        "provider_id": "provider:alpha",
+        "key_protection": "hardware_security_module",
+        "key_exportable": false,
+        "source_quality": "externally_verified"
+      }
+    }
+  ]
+}

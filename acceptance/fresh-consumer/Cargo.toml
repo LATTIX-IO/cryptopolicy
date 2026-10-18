@@ -1,0 +1,11 @@
+[package]
+name = "cryptopolicy-external-consumer"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+# Pinned remote revision: no local workspace path dependency, no registry publication.
+[dependencies]
+cryptopolicy = { git = "https://github.com/LATTIX-IO/cryptopolicy.git", rev = "e8fcdacd32aedb13c3b667f63bd126c85805e3d6" }
+serde_json = "1.0.145"
