@@ -281,7 +281,11 @@ pub fn evaluate_with_limits(
     let mut deprecated = BTreeSet::new();
 
     for rule in &policy.rules {
-        if rule.temporal.as_ref().is_some_and(|window| !window.active_at(rule.effect, explicit_time)) {
+        if rule
+            .temporal
+            .as_ref()
+            .is_some_and(|window| !window.active_at(rule.effect, explicit_time))
+        {
             continue;
         }
         match target_selector(&rule.selector, context, fact) {
@@ -302,7 +306,11 @@ pub fn evaluate_with_limits(
                 denied.insert(rule.rule_id.clone());
             }
             RuleEffect::Warn => {
-                if rule.temporal.as_ref().is_some_and(|window| window.deprecated_from.is_some()) {
+                if rule
+                    .temporal
+                    .as_ref()
+                    .is_some_and(|window| window.deprecated_from.is_some())
+                {
                     deprecated.insert(rule.rule_id.clone());
                 }
             }
