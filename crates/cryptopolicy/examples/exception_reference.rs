@@ -15,8 +15,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         scope: reference.scope.clone(),
         evaluation_time: reference.effective_at,
     };
-    let report =
-        assess_exception_reference(&reference, &context, &UnverifiedExceptionReferences)?;
+    let report = assess_exception_reference(&reference, &context, &UnverifiedExceptionReferences)?;
     assert_eq!(report.finding, ExceptionReferenceFinding::Unverified);
     println!(
         "exception={} fingerprint={} finding={:?}",

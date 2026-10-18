@@ -4,8 +4,8 @@
 //! is performed. A separately authenticated caller is responsible for proof.
 
 use crate::{
-    AlgorithmId, ContractError, CryptoOperation, EvaluationTime, EvidenceId, Limits,
-    PolicyDigest, PolicyId, PolicyReference, RuleId, SchemaVersion,
+    AlgorithmId, ContractError, CryptoOperation, EvaluationTime, EvidenceId, Limits, PolicyDigest,
+    PolicyId, PolicyReference, RuleId, SchemaVersion,
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -47,7 +47,9 @@ impl ExceptionScope {
                 .iter()
                 .all(|c| c.is_ascii_alphanumeric() || b"-._:/".contains(c))
         {
-            return Err(ContractError::InvalidDocument("exception_scope_environment"));
+            return Err(ContractError::InvalidDocument(
+                "exception_scope_environment",
+            ));
         }
         Ok(())
     }
@@ -124,10 +126,7 @@ impl ExceptionReference {
     }
 
     /// Parse using bounded JSON preflight; unknown/duplicate fields fail closed.
-    pub fn parse_json_with_limits(
-        input: &[u8],
-        limits: &Limits,
-    ) -> Result<Self, ContractError> {
+    pub fn parse_json_with_limits(input: &[u8], limits: &Limits) -> Result<Self, ContractError> {
         limits.check_json(input)?;
         if input.len() > MAX_EXCEPTION_REFERENCE_JSON_BYTES {
             return Err(ContractError::PayloadTooLarge);
@@ -146,7 +145,9 @@ impl ExceptionReference {
             return Err(ContractError::InvalidDocument("exception_self_approval"));
         }
         if self.issued_at > self.effective_at || self.effective_at >= self.expires_at {
-            return Err(ContractError::InvalidDocument("exception_invalid_time_window"));
+            return Err(ContractError::InvalidDocument(
+                "exception_invalid_time_window",
+            ));
         }
         if self.justification.trim().is_empty()
             || self.justification.len() > 512
@@ -164,7 +165,9 @@ impl ExceptionReference {
         let mut seen = BTreeSet::new();
         for rule in &self.compensating_controls {
             if rule == &self.target_rule {
-                return Err(ContractError::InvalidDocument("exception_self_compensation"));
+                return Err(ContractError::InvalidDocument(
+                    "exception_self_compensation",
+                ));
             }
             if !seen.insert(rule) {
                 return Err(ContractError::DuplicateIdentifier);
@@ -336,9 +339,7 @@ pub fn assess_exception_reference<V: ExceptionSourceVerifier>(
         ExceptionReferenceFinding::Revoked
     } else if reference.status == ExceptionStatus::Suspended {
         ExceptionReferenceFinding::Suspended
-    } else if reference.policy != context.policy
-        || reference.target_rule != context.target_rule
-    {
+    } else if reference.policy != context.policy || reference.target_rule != context.target_rule {
         ExceptionReferenceFinding::WrongTarget
     } else if reference.scope != context.scope {
         ExceptionReferenceFinding::OutOfScope

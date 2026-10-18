@@ -5,8 +5,7 @@ use cryptopolicy::*;
 use serde_json::{Value, json};
 
 fn reference() -> ExceptionReference {
-    ExceptionReference::parse_json(include_bytes!("fixtures/exception-reference-v1.json"))
-        .unwrap()
+    ExceptionReference::parse_json(include_bytes!("fixtures/exception-reference-v1.json")).unwrap()
 }
 fn context(reference: &ExceptionReference, time: i64) -> ExceptionBoundContext {
     ExceptionBoundContext {
@@ -31,20 +30,15 @@ fn external_test_verifier(
         revocation_checked: true,
     })
 }
-fn status(
-    reference: &ExceptionReference,
-    time: i64,
-) -> ExceptionReferenceFinding {
+fn status(reference: &ExceptionReference, time: i64) -> ExceptionReferenceFinding {
     let c = context(reference, time);
     assess_exception_reference(reference, &c, &external_test_verifier)
         .unwrap()
         .finding
 }
 fn mutate(mutator: impl FnOnce(&mut Value)) -> Result<ExceptionReference, ContractError> {
-    let mut json: Value = serde_json::from_slice(include_bytes!(
-        "fixtures/exception-reference-v1.json"
-    ))
-    .unwrap();
+    let mut json: Value =
+        serde_json::from_slice(include_bytes!("fixtures/exception-reference-v1.json")).unwrap();
     mutator(&mut json);
     ExceptionReference::parse_json(&serde_json::to_vec(&json).unwrap())
 }
@@ -54,7 +48,10 @@ fn strict_fixture_binds_actual_canonical_policy_and_roundtrips() {
     let source = reference();
     let policy =
         PolicyDocument::parse_json(include_bytes!("fixtures/evaluator-policy-v1.json")).unwrap();
-    assert_eq!(source.policy, PolicyReference::from_document(&policy).unwrap());
+    assert_eq!(
+        source.policy,
+        PolicyReference::from_document(&policy).unwrap()
+    );
     let canonical = serde_json::to_vec(&source).unwrap();
     assert_eq!(ExceptionReference::parse_json(&canonical).unwrap(), source);
     assert_eq!(source.compensating_controls.len(), 1);
@@ -93,8 +90,14 @@ fn synthetic_fully_verified_reference_is_only_ready_for_future_policy_admission(
 fn exact_inclusive_activation_and_exclusive_expiration() {
     let e = reference();
     assert_eq!(status(&e, 149), ExceptionReferenceFinding::NotEffective);
-    assert_eq!(status(&e, 150), ExceptionReferenceFinding::ReferenceReadyForPolicyAdmission);
-    assert_eq!(status(&e, 299), ExceptionReferenceFinding::ReferenceReadyForPolicyAdmission);
+    assert_eq!(
+        status(&e, 150),
+        ExceptionReferenceFinding::ReferenceReadyForPolicyAdmission
+    );
+    assert_eq!(
+        status(&e, 299),
+        ExceptionReferenceFinding::ReferenceReadyForPolicyAdmission
+    );
     assert_eq!(status(&e, 300), ExceptionReferenceFinding::Expired);
     assert_eq!(status(&e, 301), ExceptionReferenceFinding::Expired);
 }
@@ -109,11 +112,17 @@ fn revoked_or_suspended_never_invokes_verifier() {
     };
     for (new_status, expected) in [
         (ExceptionStatus::Revoked, ExceptionReferenceFinding::Revoked),
-        (ExceptionStatus::Suspended, ExceptionReferenceFinding::Suspended),
+        (
+            ExceptionStatus::Suspended,
+            ExceptionReferenceFinding::Suspended,
+        ),
     ] {
         e.status = new_status;
         let c = context(&e, 200);
-        assert_eq!(assess_exception_reference(&e, &c, &bomb).unwrap().finding, expected);
+        assert_eq!(
+            assess_exception_reference(&e, &c, &bomb).unwrap().finding,
+            expected
+        );
     }
 }
 
@@ -123,43 +132,57 @@ fn exact_policy_rule_tenant_environment_operation_algorithm_and_key() {
     let mut c = context(&e, 200);
     c.policy.digest = PolicyDigest::try_from("0".repeat(64)).unwrap();
     assert_eq!(
-        assess_exception_reference(&e, &c, &external_test_verifier).unwrap().finding,
+        assess_exception_reference(&e, &c, &external_test_verifier)
+            .unwrap()
+            .finding,
         ExceptionReferenceFinding::WrongTarget
     );
     c = context(&e, 200);
     c.target_rule = RuleId::parse("other-target").unwrap();
     assert_eq!(
-        assess_exception_reference(&e, &c, &external_test_verifier).unwrap().finding,
+        assess_exception_reference(&e, &c, &external_test_verifier)
+            .unwrap()
+            .finding,
         ExceptionReferenceFinding::WrongTarget
     );
     c = context(&e, 200);
     c.scope.tenant_id = PolicyId::parse("tenant:other").unwrap();
     assert_eq!(
-        assess_exception_reference(&e, &c, &external_test_verifier).unwrap().finding,
+        assess_exception_reference(&e, &c, &external_test_verifier)
+            .unwrap()
+            .finding,
         ExceptionReferenceFinding::OutOfScope
     );
     c = context(&e, 200);
     c.scope.environment = "staging".into();
     assert_eq!(
-        assess_exception_reference(&e, &c, &external_test_verifier).unwrap().finding,
+        assess_exception_reference(&e, &c, &external_test_verifier)
+            .unwrap()
+            .finding,
         ExceptionReferenceFinding::OutOfScope
     );
     c = context(&e, 200);
     c.scope.operation = CryptoOperation::Decrypt;
     assert_eq!(
-        assess_exception_reference(&e, &c, &external_test_verifier).unwrap().finding,
+        assess_exception_reference(&e, &c, &external_test_verifier)
+            .unwrap()
+            .finding,
         ExceptionReferenceFinding::OutOfScope
     );
     c = context(&e, 200);
     c.scope.algorithm_id = AlgorithmId::parse("AES-128-GCM").unwrap();
     assert_eq!(
-        assess_exception_reference(&e, &c, &external_test_verifier).unwrap().finding,
+        assess_exception_reference(&e, &c, &external_test_verifier)
+            .unwrap()
+            .finding,
         ExceptionReferenceFinding::OutOfScope
     );
     c = context(&e, 200);
     c.scope.key_ref = EvidenceId::parse("key:other").unwrap();
     assert_eq!(
-        assess_exception_reference(&e, &c, &external_test_verifier).unwrap().finding,
+        assess_exception_reference(&e, &c, &external_test_verifier)
+            .unwrap()
+            .finding,
         ExceptionReferenceFinding::OutOfScope
     );
 }
@@ -200,10 +223,16 @@ fn every_external_proof_flag_is_independently_mandatory() {
 fn malformed_time_status_and_self_approval_are_rejected() {
     let mut e = reference();
     e.effective_at = e.expires_at;
-    assert!(matches!(e.validate(&Limits::default()), Err(ContractError::InvalidDocument(_))));
+    assert!(matches!(
+        e.validate(&Limits::default()),
+        Err(ContractError::InvalidDocument(_))
+    ));
     e = reference();
     e.issued_at = EvaluationTime { unix_millis: 200 };
-    assert!(matches!(e.validate(&Limits::default()), Err(ContractError::InvalidDocument(_))));
+    assert!(matches!(
+        e.validate(&Limits::default()),
+        Err(ContractError::InvalidDocument(_))
+    ));
     e = reference();
     e.approver = e.owner.clone();
     assert_eq!(
@@ -233,8 +262,12 @@ fn compensation_and_justification_cannot_silently_weaken_controls() {
     e.compensating_controls.clear();
     assert!(e.validate(&Limits::default()).is_err());
     e = reference();
-    e.compensating_controls.push(e.compensating_controls[0].clone());
-    assert_eq!(e.validate(&Limits::default()), Err(ContractError::DuplicateIdentifier));
+    e.compensating_controls
+        .push(e.compensating_controls[0].clone());
+    assert_eq!(
+        e.validate(&Limits::default()),
+        Err(ContractError::DuplicateIdentifier)
+    );
     e = reference();
     e.compensating_controls = vec![
         RuleId::parse("z-rule").unwrap(),
@@ -242,13 +275,17 @@ fn compensation_and_justification_cannot_silently_weaken_controls() {
     ];
     assert_eq!(
         e.validate(&Limits::default()),
-        Err(ContractError::InvalidDocument("exception_unsorted_compensating_controls"))
+        Err(ContractError::InvalidDocument(
+            "exception_unsorted_compensating_controls"
+        ))
     );
     e = reference();
     e.compensating_controls[0] = e.target_rule.clone();
     assert_eq!(
         e.validate(&Limits::default()),
-        Err(ContractError::InvalidDocument("exception_self_compensation"))
+        Err(ContractError::InvalidDocument(
+            "exception_self_compensation"
+        ))
     );
     e = reference();
     e.justification = "x".repeat(513);
@@ -269,17 +306,22 @@ fn bounded_json_caller_limits_and_hostile_fields() {
         Err(ContractError::PayloadTooLarge)
     ));
     let oversized = vec![b' '; MAX_EXCEPTION_REFERENCE_JSON_BYTES + 1];
-    assert_eq!(ExceptionReference::parse_json(&oversized), Err(ContractError::PayloadTooLarge));
-    assert_eq!(reference().correlation_digest().unwrap(), reference().correlation_digest().unwrap());
+    assert_eq!(
+        ExceptionReference::parse_json(&oversized),
+        Err(ContractError::PayloadTooLarge)
+    );
+    assert_eq!(
+        reference().correlation_digest().unwrap(),
+        reference().correlation_digest().unwrap()
+    );
 }
 
 #[test]
 fn content_digest_is_stable_and_changes_when_critical_fields_change() {
     let baseline = reference();
     let expected = baseline.correlation_digest().unwrap();
-    let from_wire = ExceptionReference::parse_json(
-        &serde_json::to_vec(&baseline).unwrap()
-    ).unwrap();
+    let from_wire =
+        ExceptionReference::parse_json(&serde_json::to_vec(&baseline).unwrap()).unwrap();
     assert_eq!(expected, from_wire.correlation_digest().unwrap());
     for index in 0..5 {
         let mut altered = baseline.clone();
