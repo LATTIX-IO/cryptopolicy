@@ -209,15 +209,16 @@ impl X509AlgorithmIdentity {
         if input.len() > MAX_REPORT_JSON_BYTES {
             return Err(X509Error::SizeLimit);
         }
-        let value: Self = serde_json::from_slice(input)
-            .map_err(|_| X509Error::InvalidDer("result_json"))?;
+        let value: Self =
+            serde_json::from_slice(input).map_err(|_| X509Error::InvalidDer("result_json"))?;
         if value.parameters_present || value.signature_verified || value.certificate_validated {
             return Err(X509Error::InvalidDer("untrusted_result_verification_flags"));
         }
         X509EvidenceSource {
             source_id: value.source_id.clone(),
             evidence_ref: value.evidence_ref.clone(),
-        }.validate()?;
+        }
+        .validate()?;
         let canonical_oid = match value.oid.as_str() {
             "2.16.840.1.101.3.4.3.17" => OID_ML_DSA_44,
             "2.16.840.1.101.3.4.3.18" => OID_ML_DSA_65,
@@ -266,17 +267,53 @@ struct ProfileRecord {
 }
 fn profile_for_oid(value: &[u8], field: X509Field) -> Result<ProfileRecord, X509Error> {
     let observed = if value == OID_ML_DSA_44 {
-        (X509Field::CertificateSignature, "ML-DSA-44", "2.16.840.1.101.3.4.3.17", "RFC 9881", None)
+        (
+            X509Field::CertificateSignature,
+            "ML-DSA-44",
+            "2.16.840.1.101.3.4.3.17",
+            "RFC 9881",
+            None,
+        )
     } else if value == OID_ML_DSA_65 {
-        (X509Field::CertificateSignature, "ML-DSA-65", "2.16.840.1.101.3.4.3.18", "RFC 9881", None)
+        (
+            X509Field::CertificateSignature,
+            "ML-DSA-65",
+            "2.16.840.1.101.3.4.3.18",
+            "RFC 9881",
+            None,
+        )
     } else if value == OID_ML_DSA_87 {
-        (X509Field::CertificateSignature, "ML-DSA-87", "2.16.840.1.101.3.4.3.19", "RFC 9881", None)
+        (
+            X509Field::CertificateSignature,
+            "ML-DSA-87",
+            "2.16.840.1.101.3.4.3.19",
+            "RFC 9881",
+            None,
+        )
     } else if value == OID_ML_KEM_512 {
-        (X509Field::SubjectPublicKeyInfo, "ML-KEM-512", "2.16.840.1.101.3.4.4.1", "RFC 9935", Some(800))
+        (
+            X509Field::SubjectPublicKeyInfo,
+            "ML-KEM-512",
+            "2.16.840.1.101.3.4.4.1",
+            "RFC 9935",
+            Some(800),
+        )
     } else if value == OID_ML_KEM_768 {
-        (X509Field::SubjectPublicKeyInfo, "ML-KEM-768", "2.16.840.1.101.3.4.4.2", "RFC 9935", Some(1184))
+        (
+            X509Field::SubjectPublicKeyInfo,
+            "ML-KEM-768",
+            "2.16.840.1.101.3.4.4.2",
+            "RFC 9935",
+            Some(1184),
+        )
     } else if value == OID_ML_KEM_1024 {
-        (X509Field::SubjectPublicKeyInfo, "ML-KEM-1024", "2.16.840.1.101.3.4.4.3", "RFC 9935", Some(1568))
+        (
+            X509Field::SubjectPublicKeyInfo,
+            "ML-KEM-1024",
+            "2.16.840.1.101.3.4.4.3",
+            "RFC 9935",
+            Some(1568),
+        )
     } else {
         return Err(X509Error::UnsupportedOid);
     };
@@ -379,7 +416,10 @@ fn inspect_critical(state: CriticalExtensions) -> Result<(), X509Error> {
         CriticalExtensions::NotInspected => Err(X509Error::UncheckedCriticalExtensions),
     }
 }
-fn catalog_identity(profile: ProfileRecord, field: X509Field) -> Result<(String, String), X509Error> {
+fn catalog_identity(
+    profile: ProfileRecord,
+    field: X509Field,
+) -> Result<(String, String), X509Error> {
     let catalog = Catalog::embedded_v1().map_err(|_| X509Error::CatalogMismatch)?;
     let operation = match field {
         X509Field::CertificateSignature => OperationClass::Verify,

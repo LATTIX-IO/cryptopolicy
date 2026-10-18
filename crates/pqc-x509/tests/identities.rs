@@ -13,10 +13,14 @@ fn source() -> X509EvidenceSource {
     }
 }
 fn signature(oid_end: u8) -> Vec<u8> {
-    vec![0x30, 0x0b, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, oid_end]
+    vec![
+        0x30, 0x0b, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, oid_end,
+    ]
 }
 fn kem_identifier(oid_end: u8) -> Vec<u8> {
-    vec![0x30, 0x0b, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x04, oid_end]
+    vec![
+        0x30, 0x0b, 0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x04, oid_end,
+    ]
 }
 fn der_length(len: usize) -> Vec<u8> {
     if len <= 127 {
@@ -56,9 +60,11 @@ fn golden(name: &str) -> serde_json::Value {
 }
 fn hex_der(input: &str) -> Vec<u8> {
     assert_eq!(input.len() % 2, 0);
-    input.as_bytes().chunks_exact(2).map(|part| {
-        u8::from_str_radix(std::str::from_utf8(part).unwrap(), 16).unwrap()
-    }).collect()
+    input
+        .as_bytes()
+        .chunks_exact(2)
+        .map(|part| u8::from_str_radix(std::str::from_utf8(part).unwrap(), 16).unwrap())
+        .collect()
 }
 
 #[test]
@@ -192,7 +198,10 @@ fn any_other_key_usage_or_no_inspection_blocks_spki_normalization() {
 fn unknown_critical_and_malformed_critical_extensions_fail_closed() {
     let der = signature(0x11);
     let sample = spki(&kem_identifier(1), 800);
-    for state in [CriticalExtensions::UnknownCritical, CriticalExtensions::MalformedCritical] {
+    for state in [
+        CriticalExtensions::UnknownCritical,
+        CriticalExtensions::MalformedCritical,
+    ] {
         assert_eq!(
             normalize_ml_dsa_certificate_signature(&der, &der, state, &source()),
             Err(X509Error::UnsupportedCriticalExtension)
@@ -209,13 +218,19 @@ fn missing_critical_extension_inspection_never_produces_supported_fact() {
     let spki = spki(&kem_identifier(2), 1184);
     assert_eq!(
         normalize_ml_dsa_certificate_signature(
-            &der, &der, CriticalExtensions::NotInspected, &source()
+            &der,
+            &der,
+            CriticalExtensions::NotInspected,
+            &source()
         ),
         Err(X509Error::UncheckedCriticalExtensions)
     );
     assert_eq!(
         normalize_ml_kem_spki(
-            &spki, CriticalExtensions::NotInspected, MlKemKeyUsage::Absent, &source()
+            &spki,
+            CriticalExtensions::NotInspected,
+            MlKemKeyUsage::Absent,
+            &source()
         ),
         Err(X509Error::UncheckedCriticalExtensions)
     );
@@ -238,10 +253,7 @@ fn unknown_future_or_legacy_oids_cannot_map_to_nearby_profiles() {
     }
     let mut der = kem_identifier(1);
     der[12] = 4;
-    assert_eq!(
-        norm_spki(&spki(&der, 800)),
-        Err(X509Error::UnsupportedOid)
-    );
+    assert_eq!(norm_spki(&spki(&der, 800)), Err(X509Error::UnsupportedOid));
 }
 #[test]
 fn mldsa_signature_identifier_is_not_a_kem_key_identifier() {
@@ -259,7 +271,10 @@ fn null_parameters_are_rejected_even_when_oid_is_standardized() {
     let mut sign = signature(0x11);
     sign[1] += 2;
     sign.extend([0x05, 0x00]);
-    assert_eq!(norm_signature(&sign, &sign), Err(X509Error::ParametersNotAbsent));
+    assert_eq!(
+        norm_signature(&sign, &sign),
+        Err(X509Error::ParametersNotAbsent)
+    );
     let mut kem = kem_identifier(1);
     kem[1] += 2;
     kem.extend([0x05, 0x00]);
@@ -273,7 +288,10 @@ fn arbitrary_parameters_or_second_algorithm_oid_are_rejected() {
     let mut sign = signature(0x11);
     sign[1] += 3;
     sign.extend([0x02, 0x01, 0x01]);
-    assert_eq!(norm_signature(&sign, &sign), Err(X509Error::ParametersNotAbsent));
+    assert_eq!(
+        norm_signature(&sign, &sign),
+        Err(X509Error::ParametersNotAbsent)
+    );
     let mut kem = kem_identifier(1);
     kem[1] += 13;
     kem.extend(kem_identifier(2));
@@ -327,10 +345,16 @@ fn wrong_der_tags_and_duplicate_trailing_tlvs_are_invalid() {
     let der = signature(0x11);
     let mut tag = der.clone();
     tag[0] = 0x31;
-    assert_eq!(norm_signature(&tag, &tag), Err(X509Error::InvalidDer("wrong_tag")));
+    assert_eq!(
+        norm_signature(&tag, &tag),
+        Err(X509Error::InvalidDer("wrong_tag"))
+    );
     let mut tag = der.clone();
     tag[2] = 0x05;
-    assert_eq!(norm_signature(&tag, &tag), Err(X509Error::InvalidDer("wrong_tag")));
+    assert_eq!(
+        norm_signature(&tag, &tag),
+        Err(X509Error::InvalidDer("wrong_tag"))
+    );
     let mut tail = der.clone();
     tail.push(0);
     assert_eq!(
@@ -373,10 +397,7 @@ fn empty_or_oversized_oid_is_invalid() {
 fn spki_requires_bit_string_and_no_trailing_structure() {
     let mut sample = spki(&kem_identifier(1), 800);
     sample[17] = 0x04;
-    assert_eq!(
-        norm_spki(&sample),
-        Err(X509Error::InvalidDer("wrong_tag"))
-    );
+    assert_eq!(norm_spki(&sample), Err(X509Error::InvalidDer("wrong_tag")));
     let mut sample = spki(&kem_identifier(1), 800);
     sample.push(0x00);
     assert_eq!(
@@ -453,10 +474,22 @@ fn input_limits_apply_before_der_allocation_or_alias_matching() {
 #[test]
 fn caller_cannot_widen_der_limits() {
     for limits in [
-        X509Limits { max_algorithm_identifier_bytes: 0, ..X509Limits::default() },
-        X509Limits { max_algorithm_identifier_bytes: MAX_ALGORITHM_IDENTIFIER_DER_BYTES + 1, ..X509Limits::default() },
-        X509Limits { max_spki_bytes: 0, ..X509Limits::default() },
-        X509Limits { max_spki_bytes: MAX_SPKI_DER_BYTES + 1, ..X509Limits::default() },
+        X509Limits {
+            max_algorithm_identifier_bytes: 0,
+            ..X509Limits::default()
+        },
+        X509Limits {
+            max_algorithm_identifier_bytes: MAX_ALGORITHM_IDENTIFIER_DER_BYTES + 1,
+            ..X509Limits::default()
+        },
+        X509Limits {
+            max_spki_bytes: 0,
+            ..X509Limits::default()
+        },
+        X509Limits {
+            max_spki_bytes: MAX_SPKI_DER_BYTES + 1,
+            ..X509Limits::default()
+        },
     ] {
         assert_eq!(limits.validate(), Err(X509Error::InvalidLimit));
     }
@@ -492,31 +525,34 @@ fn result_wire_version_fields_and_unknown_critical_flags_cannot_escalate() {
     let result = norm_signature(&signature(0x11), &signature(0x11)).unwrap();
     let mut record = serde_json::to_value(&result).unwrap();
     record["signature_verified"] = true.into();
-    assert!(X509AlgorithmIdentity::parse_untrusted_json(
-        &serde_json::to_vec(&record).unwrap()
-    ).is_err());
+    assert!(
+        X509AlgorithmIdentity::parse_untrusted_json(&serde_json::to_vec(&record).unwrap()).is_err()
+    );
     record["signature_verified"] = false.into();
     record["certificate_validated"] = true.into();
-    assert!(X509AlgorithmIdentity::parse_untrusted_json(
-        &serde_json::to_vec(&record).unwrap()
-    ).is_err());
+    assert!(
+        X509AlgorithmIdentity::parse_untrusted_json(&serde_json::to_vec(&record).unwrap()).is_err()
+    );
     record["certificate_validated"] = false.into();
     record["unknown_critical"] = true.into();
-    assert!(X509AlgorithmIdentity::parse_untrusted_json(
-        &serde_json::to_vec(&record).unwrap()
-    ).is_err());
+    assert!(
+        X509AlgorithmIdentity::parse_untrusted_json(&serde_json::to_vec(&record).unwrap()).is_err()
+    );
     record.as_object_mut().unwrap().remove("unknown_critical");
     record["schema_version"] = "2".into();
-    assert!(X509AlgorithmIdentity::parse_untrusted_json(
-        &serde_json::to_vec(&record).unwrap()
-    ).is_err());
+    assert!(
+        X509AlgorithmIdentity::parse_untrusted_json(&serde_json::to_vec(&record).unwrap()).is_err()
+    );
 }
 #[test]
 fn versioned_dto_output_is_reproducible_after_round_trip() {
     let d = signature(0x12);
     let first = norm_signature(&d, &d).unwrap();
     let second = norm_signature(&d, &d).unwrap();
-    assert_eq!(serde_json::to_vec(&first).unwrap(), serde_json::to_vec(&second).unwrap());
+    assert_eq!(
+        serde_json::to_vec(&first).unwrap(),
+        serde_json::to_vec(&second).unwrap()
+    );
     let bytes = serde_json::to_vec(&first).unwrap();
     let decoded = X509AlgorithmIdentity::parse_untrusted_json(&bytes).unwrap();
     assert_eq!(decoded, first);
@@ -540,9 +576,8 @@ fn untrusted_result_json_rejects_profile_catalog_and_original_evidence_spoofing(
         let mut changed = valid.clone();
         changed[field] = forged;
         assert!(
-            X509AlgorithmIdentity::parse_untrusted_json(
-                &serde_json::to_vec(&changed).unwrap()
-            ).is_err(),
+            X509AlgorithmIdentity::parse_untrusted_json(&serde_json::to_vec(&changed).unwrap())
+                .is_err(),
             "forged field {field} was not rejected"
         );
     }
@@ -595,11 +630,17 @@ fn random_well_bounded_malformed_inputs_never_panic_or_fabricate_ids() {
         }
         let result = norm_signature(&payload, &payload);
         if let Ok(fact) = result {
-            assert!(matches!(fact.profile_id.as_str(), "ML-DSA-44" | "ML-DSA-65" | "ML-DSA-87"));
+            assert!(matches!(
+                fact.profile_id.as_str(),
+                "ML-DSA-44" | "ML-DSA-65" | "ML-DSA-87"
+            ));
         }
         let result = norm_spki(&payload);
         if let Ok(fact) = result {
-            assert!(matches!(fact.profile_id.as_str(), "ML-KEM-512" | "ML-KEM-768" | "ML-KEM-1024"));
+            assert!(matches!(
+                fact.profile_id.as_str(),
+                "ML-KEM-512" | "ML-KEM-768" | "ML-KEM-1024"
+            ));
         }
     }
 }
