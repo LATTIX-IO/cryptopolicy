@@ -188,6 +188,10 @@ pub enum WaiverAdmissionDisposition {
     RuleNotWaivable,
     /// The actual key/profile binding was not independently authenticated.
     KeyBindingUnverified,
+    /// A named profile was verified externally, but the pure policy evaluator
+    /// currently declines to authorize ANY named-profile facts. No candidate
+    /// or Permit may be produced before an independently reviewed evaluator.
+    ProfileEvaluatorUnsupported,
     /// A strictly scoped *simulated* decision was calculated.
     ///
     /// This does not imply a Permit or any enforcement authority.
