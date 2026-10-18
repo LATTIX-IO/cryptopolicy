@@ -214,7 +214,7 @@ def run_acceptance(source: Path = ROOT) -> None:
                 entries = [p for p in lock["package"] if p["name"] == name]
                 print("LOCK SOURCE", name, [(e.get("version"), e.get("source")) for e in entries], flush=True)
                 require(len(entries) == 1 and
-                        entries[0].get("source", "").startswith("registry+sparse+" + origin),
+                        entries[0].get("source", "") == "sparse+" + origin + "/index/",
                         "consumer did not resolve local registry package: " + name)
             command(cargo + ["run", "--locked", "--manifest-path", str(consumer_manifest)],
                     cwd=consumer, env=env)
