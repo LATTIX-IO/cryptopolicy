@@ -259,11 +259,13 @@ fn valid_handle(value: &str) -> bool {
 /// Does NOT validate a real provider, classical ECDHE or TLS 1.3 implementation.
 pub fn validate_tls_hybrid_components(group: &TlsHybridGroup) -> Result<(), CatalogError> {
     let catalog = Catalog::embedded_v1()?;
-    catalog.validate_usage(
-        group.kem_component,
-        OperationClass::Encapsulate,
-        UsageParameter::NamedSet(group.kem_component),
-    ).map(|_| ())
+    catalog
+        .validate_usage(
+            group.kem_component,
+            OperationClass::Encapsulate,
+            UsageParameter::NamedSet(group.kem_component),
+        )
+        .map(|_| ())
 }
 
 /// Evaluate only structural consistency of claimed TLS metadata.
