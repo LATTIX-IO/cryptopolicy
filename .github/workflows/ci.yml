@@ -82,3 +82,26 @@ jobs:
 
       - name: SemVer compatibility
         run: cargo semver-checks check-release --workspace --all-features
+
+  foss452-fmt-temporary:
+    name: FOSS-452 formatting capture (read-only, remove before merge)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+      - name: Install Rustfmt
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # stable
+        with:
+          toolchain: stable
+          components: rustfmt
+      - name: Capture canonical formatting
+        run: |
+          cargo fmt --all
+          echo "FOSS452_FMT_SOURCE=$(base64 -w0 crates/pqc-x509/src/lib.rs)"
+          echo "FOSS452_FMT_TESTS=$(base64 -w0 crates/pqc-x509/tests/identities.rs)"
+          echo "FOSS452_FMT_EXAMPLE=$(base64 -w0 crates/pqc-x509/examples/normalize_x509.rs)"
