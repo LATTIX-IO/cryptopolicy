@@ -140,15 +140,17 @@ fn evaluate(
     time: i64,
 ) -> WaiverAdmissionReport {
     evaluate_deny_waiver_candidate(
-        graph,
-        c,
-        &e.scope,
-        at(time),
-        e,
-        grant,
+        WaiverCandidateRequest {
+        effective: graph,
+        context: c,
+        actual_scope: &e.scope,
+        time: at(time),
+        exception: e,
+        grant: grant,
+        limits: &Limits::default(),
+        },
         &exception_verifier,
         &owner_verifier,
-        &Limits::default(),
     )
     .unwrap()
 }
@@ -191,15 +193,17 @@ fn exact_waiver_is_only_a_distinct_non_authorizing_candidate() {
 fn safe_defaults_and_missing_independent_trust_never_produce_candidate_permit() {
     let (graph, e, grant, context) = ready();
     let report = evaluate_deny_waiver_candidate(
-        &graph,
-        &context,
-        &e.scope,
-        at(150),
-        &e,
-        &grant,
+        WaiverCandidateRequest {
+        effective: &graph,
+        context: &context,
+        actual_scope: &e.scope,
+        time: at(150),
+        exception: &e,
+        grant: &grant,
+        limits: &Limits::default(),
+        },
         &UnverifiedExceptionReferences,
         &owner_verifier,
-        &Limits::default(),
     )
     .unwrap();
     assert_eq!(
@@ -209,15 +213,17 @@ fn safe_defaults_and_missing_independent_trust_never_produce_candidate_permit() 
     assert_eq!(report.candidate_outcome, DecisionOutcome::Deny);
     assert!(report.candidate_target_layer.is_none());
     let report = evaluate_deny_waiver_candidate(
-        &graph,
-        &context,
-        &e.scope,
-        at(150),
-        &e,
-        &grant,
+        WaiverCandidateRequest {
+        effective: &graph,
+        context: &context,
+        actual_scope: &e.scope,
+        time: at(150),
+        exception: &e,
+        grant: &grant,
+        limits: &Limits::default(),
+        },
         &exception_verifier,
         &UnverifiedPolicyWaiverAuthority,
-        &Limits::default(),
     )
     .unwrap();
     assert_eq!(
@@ -269,15 +275,17 @@ fn revoked_suspended_expired_unverified_wrong_tenant_and_approval_are_blocked() 
     e.scope.tenant_id = PolicyId::parse("tenant:other").unwrap();
     grant = grant_for(&e);
     let mismatch = evaluate_deny_waiver_candidate(
-        &graph,
-        &context,
-        &ready().1.scope,
-        at(150),
-        &e,
-        &grant,
+        WaiverCandidateRequest {
+        effective: &graph,
+        context: &context,
+        actual_scope: &ready().1.scope,
+        time: at(150),
+        exception: &e,
+        grant: &grant,
+        limits: &Limits::default(),
+        },
         &exception_verifier,
         &owner_verifier,
-        &Limits::default(),
     )
     .unwrap();
     assert_eq!(
@@ -383,15 +391,17 @@ fn unrelated_or_inactive_target_rule_is_not_a_waivable_matched_deny() {
     let (graph, e, grant, mut c) = ready();
     c.operation = CryptoOperation::Verify;
     let r = evaluate_deny_waiver_candidate(
-        &graph,
-        &c,
-        &e.scope,
-        at(150),
-        &e,
-        &grant,
+        WaiverCandidateRequest {
+        effective: &graph,
+        context: &c,
+        actual_scope: &e.scope,
+        time: at(150),
+        exception: &e,
+        grant: &grant,
+        limits: &Limits::default(),
+        },
         &exception_verifier,
         &owner_verifier,
-        &Limits::default(),
     )
     .unwrap();
     assert_eq!(r.disposition, WaiverAdmissionDisposition::ScopeMismatch);

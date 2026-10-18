@@ -197,6 +197,28 @@ pub struct WaiverAdmissionReport {
     pub candidate_target_layer: Option<PolicyDecision>,
 }
 
+/// One immutable evaluation request, retaining each independently bound input.
+///
+/// This grouping prevents accidentally swapping the policy, authority, time,
+/// scope or exception across a security-sensitive call boundary.
+#[derive(Clone, Copy, Debug)]
+pub struct WaiverCandidateRequest<'a> {
+    /// Original immutable compiled policy graph.
+    pub effective: &'a EffectivePolicy,
+    /// Original cryptographic operation evidence and explicit UTC time.
+    pub context: &'a CryptoContext,
+    /// Independently caller-bound exact tenant/key/operation/algorithm scope.
+    pub actual_scope: &'a ExceptionScope,
+    /// Exact evaluation time, not a system wall clock.
+    pub time: EvaluationTime,
+    /// Strict untrusted signed-reference exception metadata.
+    pub exception: &'a ExceptionReference,
+    /// Separately caller-authorized exact policy-owner grant.
+    pub grant: &'a PolicyWaiverGrant,
+    /// Resource bounds for all parsing and simulated evaluation.
+    pub limits: &'a Limits,
+}
+
 /// Conservative single-rule Deny exception candidate with full layer isolation.
 ///
 /// Preconditions:
@@ -217,16 +239,19 @@ pub fn evaluate_deny_waiver_candidate<
     E: ExceptionSourceVerifier,
     A: PolicyWaiverAuthorityVerifier,
 >(
-    effective: &EffectivePolicy,
-    context: &CryptoContext,
-    actual_scope: &ExceptionScope,
-    time: EvaluationTime,
-    exception: &ExceptionReference,
-    grant: &PolicyWaiverGrant,
+    request: WaiverCandidateRequest<'_>,
     exception_verifier: &E,
     owner_verifier: &A,
-    limits: &Limits,
 ) -> Result<WaiverAdmissionReport, CompositionError> {
+    let WaiverCandidateRequest {
+        effective,
+        context,
+        actual_scope,
+        time,
+        exception,
+        grant,
+        limits,
+    } = request;
     limits.validate()?;
     exception.validate(limits)?;
     grant.validate(limits)?;
