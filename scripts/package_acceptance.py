@@ -212,6 +212,7 @@ def run_acceptance(source: Path = ROOT) -> None:
             lock = tomllib.loads((consumer / "Cargo.lock").read_text())
             for name in CANDIDATES:
                 entries = [p for p in lock["package"] if p["name"] == name]
+                print("LOCK SOURCE", name, [(e.get("version"), e.get("source")) for e in entries], flush=True)
                 require(len(entries) == 1 and
                         entries[0].get("source", "").startswith("registry+sparse+" + origin),
                         "consumer did not resolve local registry package: " + name)
