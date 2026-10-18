@@ -223,7 +223,6 @@ fn claimed_coverage_is_not_an_independent_trust_attestation() {
     assert_ne!(decide(&p, &context).outcome, DecisionOutcome::Permit);
 }
 
-
 // FOSS-492: direct normative error/temporal/import runtime checks.
 // The published specification uses ABSTRACT error names. This suite checks the
 // actual strongly typed Rust error first; it does not claim an exact runtime
@@ -285,7 +284,10 @@ fn case_012_legacy_rsa_prohibition_is_inclusive_at_cutover() {
     context.evaluation_time = at(399);
     let before = decide(&policy, &context);
     assert!(
-        !before.reasons.iter().any(|r| r.code == ReasonCode::ExplicitDeny),
+        !before
+            .reasons
+            .iter()
+            .any(|r| r.code == ReasonCode::ExplicitDeny),
         "a time-gated prohibition must not apply before activation"
     );
     for moment in [400, 401, 800] {
@@ -294,9 +296,9 @@ fn case_012_legacy_rsa_prohibition_is_inclusive_at_cutover() {
         assert_decision("CASE-012", &decision, DecisionOutcome::Deny);
         assert!(decision.reasons.iter().any(|r| {
             r.code == ReasonCode::ExplicitDeny
-                && r.rule_id.as_ref().is_some_and(|id| {
-                    id.as_str() == "foss-492-legacy-rsa-cutover"
-                })
+                && r.rule_id
+                    .as_ref()
+                    .is_some_and(|id| id.as_str() == "foss-492-legacy-rsa-cutover")
         }));
         let before_permutation = decision.clone();
         policy.rules.reverse();
@@ -323,9 +325,11 @@ fn case_022_cyclic_pinned_policy_imports_fail_before_decision() {
         imports: vec![reference.clone()],
     };
     let resolver = |r: &PolicyReference| {
-        Ok::<Option<PolicyNode>, CompositionError>(
-            if *r == reference { Some(node.clone()) } else { None },
-        )
+        Ok::<Option<PolicyNode>, CompositionError>(if *r == reference {
+            Some(node.clone())
+        } else {
+            None
+        })
     };
     let failure = compile_policy_set(&set, &resolver, &Limits::default()).unwrap_err();
     assert_eq!(failure, CompositionError::CycleDetected);
@@ -359,10 +363,13 @@ fn case_025_overdeep_import_graph_fails_before_effective_policy() {
             policy
         })
         .collect();
-    let references: Vec<_> = policies.iter()
+    let references: Vec<_> = policies
+        .iter()
         .map(|p| PolicyReference::from_document(p).unwrap())
         .collect();
-    let nodes: Vec<_> = policies.into_iter().enumerate()
+    let nodes: Vec<_> = policies
+        .into_iter()
+        .enumerate()
         .map(|(i, document)| PolicyNode {
             schema_version: SchemaVersion::V1,
             document,
@@ -380,7 +387,8 @@ fn case_025_overdeep_import_graph_fails_before_effective_policy() {
     };
     let resolver = |r: &PolicyReference| {
         Ok::<Option<PolicyNode>, CompositionError>(
-            nodes.iter()
+            nodes
+                .iter()
                 .find(|node| node.document.policy_id == r.policy_id)
                 .cloned(),
         )
