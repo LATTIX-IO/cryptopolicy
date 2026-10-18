@@ -316,6 +316,53 @@ fn default_rejecting_registry_or_key_verifier_never_yields_candidate() {
 }
 
 #[test]
+fn reviewed_registry_cannot_mask_unverified_e0_or_unsigned_owner_grant() {
+    let (graph, e, grant, registry, binding, c) = prepared_deny();
+    let limits = Limits::default();
+    let req = || ReviewedWaiverRequest {
+        request: WaiverCandidateRequest {
+            effective: &graph, context: &c, actual_scope: &e.scope,
+            time: at(150), exception: &e, grant: &grant, limits: &limits,
+        },
+        registry: &registry, key_binding: &binding,
+    };
+    let source_missing = evaluate_reviewed_waiver_candidate(
+        req(), &UnverifiedExceptionReferences, &owner_verifier,
+        &source_registry_verifier, &source_key_verifier,
+    ).unwrap();
+    assert_eq!(source_missing.disposition, WaiverAdmissionDisposition::ExceptionNotReady);
+    assert_eq!(source_missing.candidate_outcome, DecisionOutcome::Deny);
+    assert!(source_missing.candidate_target_layer.is_none());
+
+    let owner_missing = evaluate_reviewed_waiver_candidate(
+        req(), &exception_verifier, &UnverifiedPolicyWaiverAuthority,
+        &source_registry_verifier, &source_key_verifier,
+    ).unwrap();
+    assert_eq!(owner_missing.disposition, WaiverAdmissionDisposition::GrantNotAuthorized);
+    assert_eq!(owner_missing.candidate_outcome, DecisionOutcome::Deny);
+
+    let mut forged_grant = grant.clone();
+    forged_grant.exception_digest = PolicyDigest::try_from("0".repeat(64)).unwrap();
+    let forged = reviewed(&graph, &e, &forged_grant, &registry, &binding, &c);
+    assert_eq!(forged.disposition, WaiverAdmissionDisposition::GrantNotAuthorized);
+    assert_eq!(forged.candidate_outcome, DecisionOutcome::Deny);
+}
+
+#[test]
+fn verified_key_profile_does_not_override_operation_or_environment_mismatch() {
+    let (graph, e, grant, registry, binding, mut c) = prepared_deny();
+    c.operation = CryptoOperation::Verify;
+    let wrong_operation = reviewed(&graph, &e, &grant, &registry, &binding, &c);
+    assert_eq!(wrong_operation.disposition, WaiverAdmissionDisposition::ScopeMismatch);
+    assert_eq!(wrong_operation.candidate_outcome, DecisionOutcome::Deny);
+    c.operation = CryptoOperation::Encrypt;
+    c.environment = Some("stage".to_owned());
+    let wrong_environment = reviewed(&graph, &e, &grant, &registry, &binding, &c);
+    assert_eq!(wrong_environment.disposition, WaiverAdmissionDisposition::ScopeMismatch);
+    assert_eq!(wrong_environment.candidate_outcome, DecisionOutcome::Deny);
+}
+
+#[test]
 fn profile_change_never_inherits_approval_for_other_profile() {
     let (graph, e, grant, registry, binding, mut c) = prepared_deny();
     c.facts[0].profile_id = Some(ProfileId::parse("AES-256-GCM:profile-b").unwrap());
