@@ -816,3 +816,53 @@ fn case_010_unverified_approver_missing_evidence_is_typed_invalid_exception() {
     );
     assert_eq!(result, Err(ExceptionAuditError::InvalidException));
 }
+
+
+#[test]
+fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
+    use cryptopolicy::{
+        ExceptionAuditError, ExceptionBoundContext, Limits, PolicyDigest,
+        UnverifiedExceptionReferences, UnverifiedPolicyWaiverAuthority, WaiverCandidateRequest,
+        build_blocked_exception_audit_receipt, evaluate_deny_waiver_candidate,
+    };
+    let (graph, c, mut e, grant) = legacy_rsa_denial_fixture();
+    e.justification = "TOP-SECRET:do-not-log-me".to_owned();
+    e.source_ref = cryptopolicy::EvidenceId::parse("source-private-approval").unwrap();
+    let mut grant = grant;
+    grant.exception_digest = e.correlation_digest().unwrap();
+    let report = evaluate_deny_waiver_candidate(
+        WaiverCandidateRequest {
+            effective: &graph, context: &c, actual_scope: &e.scope,
+            time: c.evaluation_time, exception: &e, grant: &grant,
+            limits: &Limits::default(),
+        },
+        &UnverifiedExceptionReferences, &UnverifiedPolicyWaiverAuthority,
+    ).unwrap();
+    let bound = ExceptionBoundContext {
+        policy: e.policy.clone(), target_rule: e.target_rule.clone(),
+        scope: e.scope.clone(), evaluation_time: c.evaluation_time,
+    };
+    let audit = build_blocked_exception_audit_receipt(
+        &report, &e, &bound, &Limits::default()
+    ).unwrap();
+    let encoded = serde_json::to_string(&audit).unwrap();
+    for forbidden in [
+        "TOP-SECRET", "source-private-approval", "approval:alpha:1",
+        "fixture-owner-unverified", "attest:1", "key_exportable",
+    ] {
+        assert!(!encoded.contains(forbidden), "receipt leaked {forbidden}");
+    }
+    assert_eq!(audit.correlation_digest().unwrap(), audit.correlation_digest().unwrap());
+    let mut forged = report.clone();
+    forged.candidate_outcome = DecisionOutcome::Permit;
+    assert_eq!(
+        build_blocked_exception_audit_receipt(&forged, &e, &bound, &Limits::default()),
+        Err(ExceptionAuditError::PositiveDecisionUnsupported)
+    );
+    let mut rebound = report.clone();
+    rebound.original_effective_digest = PolicyDigest::try_from("0".repeat(64)).unwrap();
+    assert_eq!(
+        build_blocked_exception_audit_receipt(&rebound, &e, &bound, &Limits::default()),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
+}
