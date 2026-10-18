@@ -598,11 +598,15 @@ fn case_019_hsm_provider_claim_without_attestation_is_not_verified() {
                 assurance_authenticated: false,
             })
         };
-    let report = assess_key_capabilities(
-        &request, &snapshot, &authenticated_source_without_assurance
-    ).unwrap();
+    let report =
+        assess_key_capabilities(&request, &snapshot, &authenticated_source_without_assurance)
+            .unwrap();
     assert_eq!(report.outcome, DecisionOutcome::Indeterminate);
-    assert!(report.reasons.contains(&CapabilityReason::AssuranceNotVerified));
+    assert!(
+        report
+            .reasons
+            .contains(&CapabilityReason::AssuranceNotVerified)
+    );
     assert!(report.findings[0].source_authenticated);
     assert!(!report.findings[0].assurance_authenticated);
     let projection = capability_missing_required_attribute(&report);
