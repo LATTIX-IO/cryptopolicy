@@ -8,12 +8,12 @@ byte-for-byte unchanged and explicitly says `runtime_conformance_verified:
 false`. The original static linter remains in place; no expected golden
 output was regenerated or rewritten by CI.
 
-This increment adds:
+This increment and the FOSS-492 core extension add:
 
 - `tests/fixtures/conformance/runtime-coverage-v1.json`: all 33 IDs in
   normative order, anchored to the exact original Git blob content identity,
   with declared `runtime-subset` or substantive `pending` status.
-- `crates/cryptopolicy/tests/normative_runtime.rs`: 8 direct Rust tests
+- `crates/cryptopolicy/tests/normative_runtime.rs`: 14 direct Rust tests
   that load the **actual original normative corpus** and execute current
   policy evaluator or validation APIs with stable test fixtures.
 - `scripts/conformance_coverage.py`: rejects missing/reordered cases,
@@ -34,6 +34,11 @@ This increment adds:
 | CASE-027 | Reordering matching Deny does not change decision/digest/reasons |
 | CASE-032 | Reverse rule ordering preserves the complete Deny result |
 | CASE-033 | Valid synthetic, caller-supplied observed/HSM fixture => Permit data record |
+| CASE-001/005 | Missing default effect and invalid rule effect => parser errors (normative InvalidPolicy family) |
+| CASE-012 | Legacy RSA deny activates at inclusive prohibited time; replay and rule ordering stable |
+| CASE-022 | Pinned cyclic policy imports => typed CycleDetected |
+| CASE-024 | Excess input bytes => typed PayloadTooLarge |
+| CASE-025 | Excess policy dependency depth => typed ResourceLimit(import_depth) |
 
 The subset compares **actual outcome and presence of required controlling
 reason codes**, not full exact ordered reason-vector identity for every case.
@@ -50,7 +55,7 @@ as a real access-control endorsement.
 
 ## Pending cases and dependencies
 
-The other **25 cases remain explicitly pending**. Especially:
+The other **19 cases remain explicitly pending**. Especially:
 
 - CASE-008/009/010: no signed, source-authenticated, scoped exception/waiver
   engine yet; blocked by FOSS-443.
@@ -98,3 +103,9 @@ the missing exception/enforcement scopes are supplied, independent
 goldens are audited, and complete reason/error output is checked. Source
 crate manifests continue to say `publish = false`; FOSS-464/466 remain
 release authorization gates.
+
+### FOSS-492 residual normative mismatch (not covered)
+
+CASE-007 and CASE-023 require **compile-time** PolicyConflict for attempted baseline weakening or contradictory exact profile constraints. The current composition model is a conjunction of independently evaluated layers; it prevents unauthorized use but does not always return that normative *error family* at compilation. CASE-030 expects UnsupportedSchema for unknown critical fields, while serde currently returns InvalidJson (fail closed, different error code). CASE-031 expects InvalidPolicy for untrusted issuer authentication; the policy DTO parses unverified issuer strings and leaves actual provenance authentication outside its API. None of these four may be marked runtime-subset without an explicit source-verified API and reason/error crosswalk. These are retained for FOSS-492/B.
+
+Current binding total after FOSS-492/A: **14/33**; remaining **19**. Normative file and `runtime_conformance_verified=false` remain untouched. Actual Rust error variants are checked before mapping expected abstract normative error families; this is not a statement that the runtime already serializes the abstract codes.
