@@ -136,7 +136,9 @@ impl RuleTemporal {
             && self.required_from.is_none()
             && self.prohibited_from.is_none()
         {
-            return Err(ContractError::InvalidDocument("empty rule temporal constraint"));
+            return Err(ContractError::InvalidDocument(
+                "empty rule temporal constraint",
+            ));
         }
         if (self.deprecated_from.is_some() && effect != RuleEffect::Warn)
             || (self.required_from.is_some() && effect != RuleEffect::Require)
@@ -155,7 +157,9 @@ impl RuleTemporal {
         let start = [self.effective_from, trigger].into_iter().flatten().max();
         if let (Some(end), Some(start)) = (self.expires_at, start) {
             if end <= start {
-                return Err(ContractError::InvalidDocument("invalid rule temporal interval"));
+                return Err(ContractError::InvalidDocument(
+                    "invalid rule temporal interval",
+                ));
             }
         }
         Ok(())
