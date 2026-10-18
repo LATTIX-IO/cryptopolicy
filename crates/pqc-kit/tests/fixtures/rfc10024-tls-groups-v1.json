@@ -1,0 +1,38 @@
+[
+  {
+    "codepoint": 4587,
+    "name": "SecP256r1MLKEM768",
+    "classical": "secp256r1",
+    "kem": "ML-KEM-768",
+    "client_share": 1249,
+    "server_share": 1153,
+    "shared_secret": 64,
+    "recommended": false,
+    "kem_first": false,
+    "source": "RFC 10024 Sections 4.1, 4.2, 4.3, 7.2"
+  },
+  {
+    "codepoint": 4588,
+    "name": "X25519MLKEM768",
+    "classical": "X25519",
+    "kem": "ML-KEM-768",
+    "client_share": 1216,
+    "server_share": 1120,
+    "shared_secret": 64,
+    "recommended": true,
+    "kem_first": true,
+    "source": "RFC 10024 Sections 4.1, 4.2, 4.3, 7.1"
+  },
+  {
+    "codepoint": 4589,
+    "name": "SecP384r1MLKEM1024",
+    "classical": "secp384r1",
+    "kem": "ML-KEM-1024",
+    "client_share": 1665,
+    "server_share": 1665,
+    "shared_secret": 80,
+    "recommended": false,
+    "kem_first": false,
+    "source": "RFC 10024 Sections 4.1, 4.2, 4.3, 7.3"
+  }
+]
