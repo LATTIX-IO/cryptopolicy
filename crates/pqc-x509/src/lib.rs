@@ -214,6 +214,38 @@ impl X509AlgorithmIdentity {
         if value.parameters_present || value.signature_verified || value.certificate_validated {
             return Err(X509Error::InvalidDer("untrusted_result_verification_flags"));
         }
+        X509EvidenceSource {
+            source_id: value.source_id.clone(),
+            evidence_ref: value.evidence_ref.clone(),
+        }.validate()?;
+        let canonical_oid = match value.oid.as_str() {
+            "2.16.840.1.101.3.4.3.17" => OID_ML_DSA_44,
+            "2.16.840.1.101.3.4.3.18" => OID_ML_DSA_65,
+            "2.16.840.1.101.3.4.3.19" => OID_ML_DSA_87,
+            "2.16.840.1.101.3.4.4.1" => OID_ML_KEM_512,
+            "2.16.840.1.101.3.4.4.2" => OID_ML_KEM_768,
+            "2.16.840.1.101.3.4.4.3" => OID_ML_KEM_1024,
+            _ => return Err(X509Error::UnsupportedOid),
+        };
+        let profile = profile_for_oid(canonical_oid, value.field)?;
+        if value.profile_id != profile.id
+            || value.standards_profile != profile.source
+            || value.public_key_octets != profile.pubkey_len
+        {
+            return Err(X509Error::InvalidDer("inconsistent_result_profile"));
+        }
+        let (version, fingerprint) = catalog_identity(profile, value.field)?;
+        if value.catalog_version != version || value.catalog_sha256 != fingerprint {
+            return Err(X509Error::CatalogMismatch);
+        }
+        if value.input_der_sha256.len() != 64
+            || !value
+                .input_der_sha256
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            return Err(X509Error::InvalidDer("invalid_der_fingerprint"));
+        }
         Ok(value)
     }
 }
