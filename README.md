@@ -169,9 +169,13 @@ Run `cargo run -p pqc-kit --example tls_hybrid` and `cargo test -p pqc-kit --tes
 
 ## Normative runtime conformance — incremental bridge (FOSS-459)
 
-The original 33-case normative security contract remains **specification-only**. The [runtime conformance crosswalk](docs/CONFORMANCE_COVERAGE.md) explicitly accounts for all 33 cases, and binds 19 to real Rust evaluator/validation and provenance-safe assessment tests, leaving 14 pending with identified gaps. Assessment and provider evidence remain non-authorizing until authenticated externally. Both the crosswalk audit and runtime-bound cases are executed in CI. These checks assert actual outcomes and controlling reasons for the 8 cases; they do not claim a complete 33-case reason/error golden corpus. Run `python3 scripts/conformance_coverage.py` and `cargo test -p cryptopolicy --test normative_runtime --locked`.
+The original 33-case normative security contract remains **specification-only**. The [runtime conformance crosswalk](docs/CONFORMANCE_COVERAGE.md) explicitly accounts for all 33 cases, and binds 22 to real Rust evaluator/validation and provenance-safe assessment/exception-rejection tests, leaving 11 pending with identified gaps. Negative exception receipts are non-authorizing; positive signed waivers remain unsupported. Assessment and provider evidence remain non-authorizing until authenticated externally. Both the crosswalk audit and runtime-bound cases are executed in CI. These checks assert actual outcomes and controlling reasons for the 8 cases; they do not claim a complete 33-case reason/error golden corpus. Run `python3 scripts/conformance_coverage.py` and `cargo test -p cryptopolicy --test normative_runtime --locked`.
 
 FOSS-500/A now provides a **non-authorizing, simulated exact Deny waiver candidate** gated by two independent caller-owned verifiers and mandatory `Require` compensation. It preserves every other baseline/overlay layer and keeps the original policy digest. A candidate Permit is not an authenticated or enforceable authorization. See [waiver admission](docs/EXCEPTION_ADMISSION.md). `RuleRequirement` deviations and signed audit remain deferred to subsequent issues.
+
+## Blocked exception audit receipts (FOSS-501/A)
+
+The E2/A audit API constructs bounded, deterministic, redacted and **block-only** receipts from actual original Deny decisions and exception-rejection reports. Expired, wrong-tenant and unverified-approver normative security cases are now executable, raising the partial conformance crosswalk to 22/33. Receipt digests are for correlation, not signer provenance or authorization; see [audit contract](docs/EXCEPTION_AUDIT.md). Positive waiver audit and FOSS-503 named-profile evaluation remain deferred.
 
 ## Exact-scope exception reference (FOSS-499)
 

@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-501/A: strict, redacted, blocked-only exception audit receipts with correlation-only SHA-256, exact source rule/policy/time/reason linkage, and a typed InvalidException for missing/untrusted approval. Real normative runtime tests CASE-008/009/010 increase honest partial conformance to 22/33 (11 pending); no positive waiver or enforcement authority.
+
 - FOSS-500/A: purely simulated, exact-scope targeted Deny-waiver admission against immutable compiled policies, gated by independently verified E0 exception reference plus policy-owner grant, exact tenant/environment/operation/key binding and nonempty `Require` compensators. Every unrelated mandatory Deny and Indeterminate remains effective; candidate digest differs from pinned source. Default owner verifier denies. No auth tokens, live PEP, signing, conformance promotion or publishing.
 
 - FOSS-499/E0: strict exact-scope signed-reference exception DTO, bounded closed-schema parse/validation, explicit issued/effective/expiry and revocation status, deterministic correlation fingerprint, independent caller-owned source/approver/approval/revocation trust gate and default reject-all verifier. Reproducible fixture, synthetic example, adversarial security regression suite. No waiver, policy grant, signature verification or publication.

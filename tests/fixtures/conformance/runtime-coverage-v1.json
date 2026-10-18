@@ -43,18 +43,18 @@
     },
     {
       "id": "CASE-008",
-      "status": "pending",
-      "reason": "FOSS-443 signed exceptions not implemented"
+      "status": "runtime-subset",
+      "test": "case_008_expired_exception_preserves_legacy_rsa_explicit_deny"
     },
     {
       "id": "CASE-009",
-      "status": "pending",
-      "reason": "FOSS-443 tenant-scoped signed exceptions not implemented"
+      "status": "runtime-subset",
+      "test": "case_009_other_tenant_exception_cannot_waive_explicit_deny"
     },
     {
       "id": "CASE-010",
-      "status": "pending",
-      "reason": "FOSS-443 approval validation not implemented"
+      "status": "runtime-subset",
+      "test": "case_010_unverified_approver_missing_evidence_is_typed_invalid_exception"
     },
     {
       "id": "CASE-011",
