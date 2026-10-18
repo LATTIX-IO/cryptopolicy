@@ -155,6 +155,12 @@ See [X.509 normalization](docs/X509_NORMALIZATION.md).
 
 The `pqc-jose` crate normalizes only exact public AKP JWK ML-DSA-44/65/87 identities with separately extracted matching JWS protected-header JSON. Bounded strict JSON, canonical base64url, exact public-key sizes and a pinned catalog prevent algorithm confusion. No signature/key verification or PolicyDecision is performed; projection is always inferred and unverified. Run `cargo run -p pqc-jose --example normalize_jose` and `cargo test -p pqc-jose --test identities --locked`. See [the JOSE contract](docs/JOSE_NORMALIZATION.md).
 
+## RFC 9964 COSE ML-DSA AKP identity normalization (FOSS-457)
+
+The `pqc-cose` crate strictly parses a canonical CBOR COSE_Key and separately extracted protected-header map for exact ML-DSA-44/65/87 identifiers (-48/-49/-50), kty 7 (AKP) and label -1 public key. It rejects private label -2, unknown headers, all critical extensions, nonpreferred CBOR encoding and mismatched algorithms; it checks exact 1312/1952/2592-byte public-key lengths against a pinned pqc-kit catalog. It does not validate signatures, keys, identities, thumbprints or permissions. `CryptoContext` projection remains inferred and unverified.
+
+Run `cargo run -p pqc-cose --example normalize_cose` and `cargo test -p pqc-cose --test identities --locked`. See [COSE normalization contract](docs/COSE_NORMALIZATION.md).
+
 ## Crates
 
 - cryptopolicy
