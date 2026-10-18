@@ -1,0 +1,5 @@
+[
+  {"alg":"ML-DSA-44","public_key_octets":1312,"signature_octets":2420,"reference":"RFC 9964 Table 1 / FIPS 204"},
+  {"alg":"ML-DSA-65","public_key_octets":1952,"signature_octets":3309,"reference":"RFC 9964 Table 1 / FIPS 204"},
+  {"alg":"ML-DSA-87","public_key_octets":2592,"signature_octets":4627,"reference":"RFC 9964 Table 1 / FIPS 204"}
+]

@@ -1,17 +1,14 @@
 # pqc-jose
 
-$CrateName is part of the Lattix open-source ecosystem.
+Bounded RFC 9964 ML-DSA JOSE/JWK **public-key metadata** normalization.
 
-This crate is under active development. The initial release establishes the
-public package namespace and project boundary while the production API is
-developed.
+Recognizes exact ML-DSA-44/65/87 AKP JWKs and matching JWS protected-header JSON. This does **not** perform signature/key validation, cryptographic operations, issuer authentication or policy authorization. Private JWK seed material and unknown/critical headers are deliberately rejected.
 
-Repository: https://github.com/LATTIX-IO/cryptopolicy
+```sh
+cargo run -p pqc-jose --example normalize_jose
+cargo test -p pqc-jose --test identities --locked
+```
 
-## Status
+See [contract](../../docs/JOSE_NORMALIZATION.md).
 
-Early development. APIs prior to 1.0 may change.
-
-## License
-
-Licensed under either Apache-2.0 or MIT, at your option.
+Maintained by Lattix Technologies Corp. Licensed under MIT OR Apache-2.0.
