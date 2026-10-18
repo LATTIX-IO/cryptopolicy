@@ -50,7 +50,7 @@ fn array(elements: Vec<Vec<u8>>) -> Vec<u8> {
 }
 
 fn map(mut items: Vec<(i64, Vec<u8>)>) -> Vec<u8> {
-    items.sort_by(|a, b| int(a.0).cmp(&int(b.0)));
+    items.sort_by_key(|a| int(a.0));
     let mut out = count(5, items.len());
     for (label, content) in items {
         out.extend(int(label));
@@ -135,7 +135,7 @@ fn private_seed_and_key_usage_confusion_rejected() {
         (1, int(7)),
         (3, int(-48)),
         (-1, bstr(&vec![0; 1312])),
-        (-2, bstr(&vec![0; 32])),
+        (-2, bstr(&[0; 32])),
     ]);
     assert_eq!(
         normalize_ml_dsa_cose_key(&with_seed, &h, &evidence()),
