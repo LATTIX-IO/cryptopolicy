@@ -6,10 +6,11 @@
 //! sources, ownership/delegation, nonce freshness, key identity and revocation.
 
 use crate::{
-    CompositionError, ContractError, CryptoContext, EvaluationTime, EvidenceId, ExceptionDeviation,
-    ExceptionScope, ExceptionSourceVerifier, ExceptionStatus, Limits, PolicyReference,
+    CompositionError, ContractError, CryptoContext, EvaluationTime, EvidenceId,
+    ExceptionBoundContext, ExceptionDeviation, ExceptionReferenceFinding, ExceptionScope,
+    ExceptionSourceVerifier, ExceptionStatus, Limits, PolicyReference,
     PolicyWaiverAuthorityVerifier, ProfileId, RuleId, SchemaVersion, WaiverAdmissionDisposition,
-    WaiverAdmissionReport, WaiverCandidateRequest,
+    WaiverAdmissionReport, WaiverCandidateRequest, assess_exception_reference,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -295,6 +296,8 @@ pub fn evaluate_reviewed_waiver_candidate<
     // No way to infer scope from untrusted key metadata. Both externally
     // authenticated exact scope and named profile MUST match actual facts.
     if context.evaluation_time != time
+        || context.operation != actual_scope.operation
+        || context.environment.as_deref() != Some(actual_scope.environment.as_str())
         || context.facts.len() != 1
         || context.facts[0].profile_id.as_ref() != Some(&key_binding.profile_id)
         || context.facts[0].algorithm_id.as_ref() != Some(&actual_scope.algorithm_id)
@@ -334,12 +337,45 @@ pub fn evaluate_reviewed_waiver_candidate<
     {
         return Ok(reject(WaiverAdmissionDisposition::RegistryNotAuthorized));
     }
-    // The base evaluator's requires_unavailable_profile() deliberately treats
-    // ALL profile-bearing facts as unsupported for a Permit. External registry
-    // and key attestations cannot override an unsupported algorithm profile
-    // or manufacture a RequirementSatisfied reason. Keep this explicit and
-    // fail-closed until the separately reviewed profile evaluator exists.
-    let _ = (exception_verifier, owner_verifier);
+    // Enforce independent E0 and E1 approval after registry and key binding.
+    // A verified registry must not mask an unsigned source exception,
+    // missing/expired approval or unrelated policy-owner grant.
+    exception.validate(limits)?;
+    if grant.deviation == ExceptionDeviation::RuleDeny {
+        // The legacy public E1 validator must continue to reject Require.
+        grant.validate(limits)?;
+    }
+    let digest = exception.correlation_digest()?;
+    if grant.schema_version != SchemaVersion::V1
+        || grant.policy != exception.policy
+        || grant.target_rule != exception.target_rule
+        || grant.exception_id != exception.exception_id
+        || grant.exception_digest != digest
+        || grant.deviation != exception.deviation
+        || grant.scope != exception.scope
+        || grant.compensating_controls != exception.compensating_controls
+        || grant.authorized_at >= grant.expires_at
+        || time < grant.authorized_at
+        || time >= grant.expires_at
+    {
+        return Ok(reject(WaiverAdmissionDisposition::GrantNotAuthorized));
+    }
+    let bound = ExceptionBoundContext {
+        policy: exception.policy.clone(),
+        target_rule: exception.target_rule.clone(),
+        scope: actual_scope.clone(),
+        evaluation_time: time,
+    };
+    let e0 = assess_exception_reference(exception, &bound, exception_verifier)?;
+    if e0.finding != ExceptionReferenceFinding::ReferenceReadyForPolicyAdmission {
+        return Ok(reject(WaiverAdmissionDisposition::ExceptionNotReady));
+    }
+    if !owner_verifier.authorize(grant, exception, effective, context)? {
+        return Ok(reject(WaiverAdmissionDisposition::GrantNotAuthorized));
+    }
+    // The pure evaluator's requires_unavailable_profile() intentionally blocks
+    // ALL named profile Permit outcomes. These independent verifiers still
+    // cannot override that unsupported profile boundary.
     Ok(reject(
         WaiverAdmissionDisposition::ProfileEvaluatorUnsupported,
     ))
