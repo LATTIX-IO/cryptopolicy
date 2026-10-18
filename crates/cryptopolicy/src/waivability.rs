@@ -310,7 +310,7 @@ pub fn evaluate_reviewed_waiver_candidate<
     }
     // FOSS-500/A remains conservative (no profile), while the advanced path
     // explicitly supplies a *verified* exact profile and allows Require rules.
-    evaluate_waiver_candidate_core(
+    crate::exception_admission::evaluate_waiver_candidate_core(
         request, exception_verifier, owner_verifier, Some(&key_binding.profile_id), true,
     )
 }
