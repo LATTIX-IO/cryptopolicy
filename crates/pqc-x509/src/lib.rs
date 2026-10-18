@@ -218,7 +218,6 @@ impl X509AlgorithmIdentity {
     }
 }
 
-const PREFIX: &[u8] = &[0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04];
 const OID_ML_DSA_44: &[u8] = &[0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x11];
 const OID_ML_DSA_65: &[u8] = &[0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x12];
 const OID_ML_DSA_87: &[u8] = &[0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x03, 0x13];
@@ -234,14 +233,20 @@ struct ProfileRecord {
     pubkey_len: Option<usize>,
 }
 fn profile_for_oid(value: &[u8], field: X509Field) -> Result<ProfileRecord, X509Error> {
-    let observed = match value {
-        OID_ML_DSA_44 => (X509Field::CertificateSignature, "ML-DSA-44", "2.16.840.1.101.3.4.3.17", "RFC 9881", None),
-        OID_ML_DSA_65 => (X509Field::CertificateSignature, "ML-DSA-65", "2.16.840.1.101.3.4.3.18", "RFC 9881", None),
-        OID_ML_DSA_87 => (X509Field::CertificateSignature, "ML-DSA-87", "2.16.840.1.101.3.4.3.19", "RFC 9881", None),
-        OID_ML_KEM_512 => (X509Field::SubjectPublicKeyInfo, "ML-KEM-512", "2.16.840.1.101.3.4.4.1", "RFC 9935", Some(800)),
-        OID_ML_KEM_768 => (X509Field::SubjectPublicKeyInfo, "ML-KEM-768", "2.16.840.1.101.3.4.4.2", "RFC 9935", Some(1184)),
-        OID_ML_KEM_1024 => (X509Field::SubjectPublicKeyInfo, "ML-KEM-1024", "2.16.840.1.101.3.4.4.3", "RFC 9935", Some(1568)),
-        _ => return Err(X509Error::UnsupportedOid),
+    let observed = if value == OID_ML_DSA_44 {
+        (X509Field::CertificateSignature, "ML-DSA-44", "2.16.840.1.101.3.4.3.17", "RFC 9881", None)
+    } else if value == OID_ML_DSA_65 {
+        (X509Field::CertificateSignature, "ML-DSA-65", "2.16.840.1.101.3.4.3.18", "RFC 9881", None)
+    } else if value == OID_ML_DSA_87 {
+        (X509Field::CertificateSignature, "ML-DSA-87", "2.16.840.1.101.3.4.3.19", "RFC 9881", None)
+    } else if value == OID_ML_KEM_512 {
+        (X509Field::SubjectPublicKeyInfo, "ML-KEM-512", "2.16.840.1.101.3.4.4.1", "RFC 9935", Some(800))
+    } else if value == OID_ML_KEM_768 {
+        (X509Field::SubjectPublicKeyInfo, "ML-KEM-768", "2.16.840.1.101.3.4.4.2", "RFC 9935", Some(1184))
+    } else if value == OID_ML_KEM_1024 {
+        (X509Field::SubjectPublicKeyInfo, "ML-KEM-1024", "2.16.840.1.101.3.4.4.3", "RFC 9935", Some(1568))
+    } else {
+        return Err(X509Error::UnsupportedOid);
     };
     if observed.0 != field {
         return Err(X509Error::WrongRole);
