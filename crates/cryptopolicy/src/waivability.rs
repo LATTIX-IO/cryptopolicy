@@ -340,5 +340,7 @@ pub fn evaluate_reviewed_waiver_candidate<
     // or manufacture a RequirementSatisfied reason. Keep this explicit and
     // fail-closed until the separately reviewed profile evaluator exists.
     let _ = (exception_verifier, owner_verifier);
-    Ok(reject(WaiverAdmissionDisposition::ProfileEvaluatorUnsupported))
+    Ok(reject(
+        WaiverAdmissionDisposition::ProfileEvaluatorUnsupported,
+    ))
 }
