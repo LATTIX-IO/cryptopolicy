@@ -156,7 +156,7 @@ fn critical_unknown_and_unprotected_algorithm_headers_fail_closed() {
     let k = key(-48, 1312);
     for protected in [
         map(vec![(1, int(-48)), (2, array(vec![]))]),
-        map(vec![(1, int(-48)), (2, array(vec![int(99)]))]),
+        map(vec![(1, int(-48)), (2, array(vec![int(2)]))]),
         map(vec![(1, int(-48)), (3, int(7))]),
         map(vec![(4, bstr(b"untrusted-key-id"))]),
         map(vec![]),
@@ -234,7 +234,7 @@ fn wrong_lengths_and_malformed_cbor_rejected() {
     for malformed in [vec![0xbf, 0xff], vec![0xc0, 0xa0], vec![0xf6], vec![0x9f, 0xff]] {
         assert!(normalize_ml_dsa_cose_key(&malformed, &header(-48), &evidence()).is_err());
     }
-    let k = map(vec![(1, int(7)), (3, int(-48)), (-1, int(1312))]);
+    let k = map(vec![(1, int(7)), (3, int(-48)), (-1, int(7))]);
     assert_eq!(
         normalize_ml_dsa_cose_key(&k, &header(-48), &evidence()),
         Err(CoseError::UnsupportedKeyParameter)
@@ -283,8 +283,10 @@ fn bounded_inputs_and_invalid_source_identifiers_fail() {
     );
     let mut source = evidence();
     source.evidence_ref = "../../unsafe".to_owned();
-    // A relative-looking identifier is opaque but remains in bounded ASCII grammar.
-    assert!(normalize_ml_dsa_cose_key(&k, &h, &source).is_ok());
+    assert_eq!(
+        normalize_ml_dsa_cose_key(&k, &h, &source),
+        Err(CoseError::InvalidIdentifier)
+    );
     source.source_id = "bad\nsource".to_owned();
     assert_eq!(
         normalize_ml_dsa_cose_key(&k, &h, &source),
