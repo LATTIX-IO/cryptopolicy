@@ -22,3 +22,15 @@ The embedded data is in data/catalog-v1.json. Its exact bytes are pinned by EMBE
 - All five crates remain publish=false. FOSS-466 administrator approval remains required.
 
 See ../../docs/ALGORITHM_CATALOG.md for sources, binary data contract, status semantics, and security scope.
+
+## RFC 10024 hybrid TLS constructions (FOSS-458)
+
+The `pqc_kit::tls_hybrid` module registers exact published TLS hybrid groups
+4587/4588/4589, distinguishes configured from negotiated evidence, rejects
+obsoleted draft and unknown codepoints, and checks RFC 10024 share lengths.
+It never verifies a TLS transcript or authorizes an operation.
+
+    cargo run -p pqc-kit --example tls_hybrid
+    cargo test -p pqc-kit --test tls_hybrid --locked
+
+See [TLS hybrid contract](../../docs/TLS_HYBRID_PROFILES.md).
