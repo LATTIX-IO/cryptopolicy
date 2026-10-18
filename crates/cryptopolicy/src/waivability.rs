@@ -6,11 +6,10 @@
 //! sources, ownership/delegation, nonce freshness, key identity and revocation.
 
 use crate::{
-    CompositionError, ContractError, CryptoContext, EvaluationTime, EvidenceId,
-    ExceptionDeviation, ExceptionReference, ExceptionScope, ExceptionSourceVerifier,
-    ExceptionStatus, Limits, PolicyReference, PolicyWaiverAuthorityVerifier, PolicyWaiverGrant,
-    ProfileId, RuleId, SchemaVersion, WaiverAdmissionDisposition, WaiverAdmissionReport,
-    WaiverCandidateRequest,
+    CompositionError, ContractError, CryptoContext, EvaluationTime, EvidenceId, ExceptionDeviation,
+    ExceptionReference, ExceptionScope, ExceptionSourceVerifier, ExceptionStatus, Limits,
+    PolicyReference, PolicyWaiverAuthorityVerifier, PolicyWaiverGrant, ProfileId, RuleId,
+    SchemaVersion, WaiverAdmissionDisposition, WaiverAdmissionReport, WaiverCandidateRequest,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
@@ -69,8 +68,8 @@ impl WaivabilityRegistry {
         if bytes.len() > crate::MAX_EXCEPTION_REFERENCE_JSON_BYTES {
             return Err(ContractError::PayloadTooLarge);
         }
-        let registry: Self = serde_json::from_slice(bytes)
-            .map_err(|e| ContractError::InvalidJson(e.to_string()))?;
+        let registry: Self =
+            serde_json::from_slice(bytes).map_err(|e| ContractError::InvalidJson(e.to_string()))?;
         registry.validate(limits)?;
         Ok(registry)
     }
@@ -79,7 +78,9 @@ impl WaivabilityRegistry {
     pub fn validate(&self, limits: &Limits) -> Result<(), ContractError> {
         limits.validate()?;
         if self.schema_version != SchemaVersion::V1 || self.revision == 0 {
-            return Err(ContractError::InvalidDocument("waivability_registry_version"));
+            return Err(ContractError::InvalidDocument(
+                "waivability_registry_version",
+            ));
         }
         if self.issued_at > self.effective_at || self.effective_at >= self.expires_at {
             return Err(ContractError::InvalidDocument("waivability_registry_time"));
@@ -96,12 +97,16 @@ impl WaivabilityRegistry {
             if entry.compensating_controls.is_empty()
                 || entry.compensating_controls.len() > crate::MAX_EXCEPTION_COMPENSATING_CONTROLS
             {
-                return Err(ContractError::ResourceLimitExceeded("waivability_compensators"));
+                return Err(ContractError::ResourceLimitExceeded(
+                    "waivability_compensators",
+                ));
             }
             let mut seen = BTreeSet::new();
             for id in &entry.compensating_controls {
                 if id == &entry.target_rule {
-                    return Err(ContractError::InvalidDocument("waivability_self_compensation"));
+                    return Err(ContractError::InvalidDocument(
+                        "waivability_self_compensation",
+                    ));
                 }
                 if !seen.insert(id) {
                     return Err(ContractError::DuplicateIdentifier);
@@ -111,11 +116,15 @@ impl WaivabilityRegistry {
                 return Err(ContractError::InvalidDocument("waivability_order"));
             }
         }
-        if self.entries.windows(2).any(|v| v[0].target_rule >= v[1].target_rule) {
+        if self
+            .entries
+            .windows(2)
+            .any(|v| v[0].target_rule >= v[1].target_rule)
+        {
             return Err(ContractError::InvalidDocument("waivability_entry_order"));
         }
-        let encoded = serde_json::to_vec(self)
-            .map_err(|e| ContractError::InvalidJson(e.to_string()))?;
+        let encoded =
+            serde_json::to_vec(self).map_err(|e| ContractError::InvalidJson(e.to_string()))?;
         if encoded.len() > crate::MAX_EXCEPTION_REFERENCE_JSON_BYTES {
             return Err(ContractError::PayloadTooLarge);
         }
@@ -164,8 +173,10 @@ pub trait WaivabilityRegistryVerifier {
 }
 impl<F> WaivabilityRegistryVerifier for F
 where
-    F: Fn(&WaivabilityRegistry, &WaiverCandidateRequest<'_>)
-        -> Result<RegistryVerification, ContractError>,
+    F: Fn(
+        &WaivabilityRegistry,
+        &WaiverCandidateRequest<'_>,
+    ) -> Result<RegistryVerification, ContractError>,
 {
     fn verify(
         &self,
@@ -189,9 +200,11 @@ impl<F> KeyProfileBindingVerifier for F
 where
     F: Fn(&KeyProfileBinding, &CryptoContext) -> Result<bool, ContractError>,
 {
-    fn verify(&self, binding: &KeyProfileBinding, context: &CryptoContext)
-        -> Result<bool, ContractError>
-    {
+    fn verify(
+        &self,
+        binding: &KeyProfileBinding,
+        context: &CryptoContext,
+    ) -> Result<bool, ContractError> {
         self(binding, context)
     }
 }
@@ -250,9 +263,20 @@ pub fn evaluate_reviewed_waiver_candidate<
     registry_verifier: &R,
     key_verifier: &K,
 ) -> Result<WaiverAdmissionReport, CompositionError> {
-    let ReviewedWaiverRequest { request, registry, key_binding } = reviewed;
-    let WaiverCandidateRequest { effective, context, actual_scope, time,
-        exception, grant, limits } = request;
+    let ReviewedWaiverRequest {
+        request,
+        registry,
+        key_binding,
+    } = reviewed;
+    let WaiverCandidateRequest {
+        effective,
+        context,
+        actual_scope,
+        time,
+        exception,
+        grant,
+        limits,
+    } = request;
     registry.validate(limits)?;
     actual_scope.validate()?;
     key_binding.scope.validate()?;
@@ -284,8 +308,10 @@ pub fn evaluate_reviewed_waiver_candidate<
         return Ok(reject(WaiverAdmissionDisposition::KeyBindingUnverified));
     }
     if registry.status != ExceptionStatus::Active
-        || time < registry.effective_at || time >= registry.expires_at
-        || registry.policy != exception.policy || registry.policy != grant.policy
+        || time < registry.effective_at
+        || time >= registry.expires_at
+        || registry.policy != exception.policy
+        || registry.policy != grant.policy
     {
         return Ok(reject(WaiverAdmissionDisposition::RegistryNotAuthorized));
     }
@@ -311,6 +337,10 @@ pub fn evaluate_reviewed_waiver_candidate<
     // FOSS-500/A remains conservative (no profile), while the advanced path
     // explicitly supplies a *verified* exact profile and allows Require rules.
     crate::exception_admission::evaluate_waiver_candidate_core(
-        request, exception_verifier, owner_verifier, Some(&key_binding.profile_id), true,
+        request,
+        exception_verifier,
+        owner_verifier,
+        Some(&key_binding.profile_id),
+        true,
     )
 }

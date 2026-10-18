@@ -55,7 +55,9 @@ impl PolicyWaiverGrant {
     /// Additional RuleRequirement mode is valid ONLY for externally reviewed
     /// FOSS-502 waivability registry admission, not the legacy E1 API.
     pub(crate) fn validate_reviewed(
-        &self, limits: &Limits, allow_requirement: bool,
+        &self,
+        limits: &Limits,
+        allow_requirement: bool,
     ) -> Result<(), ContractError> {
         limits.validate()?;
         self.scope.validate()?;
@@ -337,7 +339,10 @@ pub(crate) fn evaluate_waiver_candidate_core<
         ),
         ExceptionDeviation::RuleRequirement if allow_requirement => (
             RuleEffect::Require,
-            &[ReasonCode::RequirementNotSatisfied, ReasonCode::MissingRequiredAttribute][..],
+            &[
+                ReasonCode::RequirementNotSatisfied,
+                ReasonCode::MissingRequiredAttribute,
+            ][..],
             WaiverAdmissionDisposition::NoMatchingMandatoryRule,
         ),
         ExceptionDeviation::RuleRequirement => {
