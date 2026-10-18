@@ -274,6 +274,10 @@ pub fn evaluate_deny_waiver_candidate<
         || context.environment.as_deref() != Some(actual_scope.environment.as_str())
         || context.facts.len() != 1
         || context.facts[0].algorithm_id.as_ref() != Some(&actual_scope.algorithm_id)
+        // E0's v1 exception scope does not authenticate a specific profile.
+        // A claimed profile must never silently inherit a broader algorithm waiver.
+        // A verified exact-profile binding is a separate FOSS-502 contract.
+        || context.facts[0].profile_id.is_some()
         || exception.scope != *actual_scope
     {
         return Ok(fallback(WaiverAdmissionDisposition::ScopeMismatch));
