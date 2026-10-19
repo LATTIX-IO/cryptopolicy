@@ -177,6 +177,12 @@ pub enum WaiverAdmissionDisposition {
     /// A named profile passed external gates but is not yet supported by the
     /// pure evaluator; no candidate Permit or operation authorization follows.
     ProfileEvaluatorUnsupported,
+    /// Exact referenced Deny/Require did not actually block the original
+    /// evaluated policy decision in its pinned source policy node.
+    NoMatchingMandatoryRule,
+    /// The pinned profile source/key/canonical parameter attestation failed.
+    /// No simulated policy result may be promoted to a candidate Permit.
+    ProfileQualificationNotReady,
     /// A strictly scoped *simulated* decision was calculated.
     ///
     /// This does not imply a Permit or any enforcement authority.
