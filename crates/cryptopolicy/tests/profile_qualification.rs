@@ -178,6 +178,16 @@ fn wrong_operations_key_bits_or_named_set_fail_before_source_authentication() {
 }
 
 #[test]
+fn unsupported_key_agreement_and_derivation_never_coerce_to_kem_usage() {
+    for operation in [CryptoOperation::KeyAgreement, CryptoOperation::DeriveKey] {
+        let (mut context, scope, binding) = prepare("ML-KEM-1024", operation);
+        context.facts[0].properties.as_mut().unwrap().key_size_bits = None;
+        let result = qualify(&context, &scope, &binding, &named("ML-KEM-1024"));
+        assert_eq!(result.finding, ProfileQualificationFinding::OperationUnsupported);
+    }
+}
+
+#[test]
 fn swapped_profile_algorithm_key_environment_operation_and_time_fail_closed() {
     let (mut c, scope, binding) = prepare("AES-256-GCM", CryptoOperation::Encrypt);
     c.facts[0].profile_id = Some(ProfileId::parse("AES-128-GCM").unwrap());
