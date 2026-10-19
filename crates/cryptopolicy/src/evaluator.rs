@@ -12,6 +12,19 @@ use crate::{
 use sha2::{Digest, Sha256};
 use std::collections::BTreeSet;
 
+/// Private explicit trust modes. The reviewed source-qualification wrapper
+/// is the only module permitted to mint the sealed proof for Attested mode.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+enum ProfileTrustMode {
+    /// Original v1 preview: known classical algorithms may produce policy data.
+    Legacy,
+    /// Both independent source and actual-key gates passed at this call.
+    Attested,
+    /// Explicit profile qualification failed: no fallback to a generic
+    /// classical-algorithm preview Permit, even when profile_id was omitted.
+    QualificationRejected,
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum Truth {
     Yes,
@@ -227,7 +240,7 @@ pub fn evaluate_with_limits(
     explicit_time: EvaluationTime,
     limits: &Limits,
 ) -> Result<PolicyDecision, ContractError> {
-    evaluate_internal(policy, context, explicit_time, limits, false)
+    evaluate_internal(policy, context, explicit_time, limits, ProfileTrustMode::Legacy)
 }
 
 /// Crate-private permission to interpret the exact named profile. Call ONLY
@@ -241,7 +254,24 @@ pub(crate) fn evaluate_with_attested_profile(
     limits: &Limits,
     _proof: &crate::verified_evaluator::QualifiedProfileProof,
 ) -> Result<PolicyDecision, ContractError> {
-    evaluate_internal(policy, context, explicit_time, limits, true)
+    evaluate_internal(policy, context, explicit_time, limits, ProfileTrustMode::Attested)
+}
+
+/// Rejected qualification is NOT an invitation to use a generic algorithm
+/// preview Allow. Preserve explicit Deny/Require results but never Permit.
+pub(crate) fn evaluate_rejected_profile_qualification(
+    policy: &PolicyDocument,
+    context: &CryptoContext,
+    explicit_time: EvaluationTime,
+    limits: &Limits,
+) -> Result<PolicyDecision, ContractError> {
+    evaluate_internal(
+        policy,
+        context,
+        explicit_time,
+        limits,
+        ProfileTrustMode::QualificationRejected,
+    )
 }
 
 fn evaluate_internal(
@@ -249,7 +279,7 @@ fn evaluate_internal(
     context: &CryptoContext,
     explicit_time: EvaluationTime,
     limits: &Limits,
-    qualified_profile: bool,
+    profile_mode: ProfileTrustMode,
 ) -> Result<PolicyDecision, ContractError> {
     limits.validate()?;
     let policy_bytes = policy.canonical_json_with_limits(limits)?;
@@ -360,7 +390,7 @@ fn evaluate_internal(
                 Truth::Yes => {
                     require_satisfied.insert(rule.rule_id.clone());
                     if fact
-                        .is_some_and(|f| requires_unavailable_profile(rule, f, qualified_profile))
+                        .is_some_and(|f| requires_unavailable_profile(rule, f, profile_mode == ProfileTrustMode::Attested))
                     {
                         unvalidated_profile.insert(rule.rule_id.clone());
                     }
@@ -376,7 +406,7 @@ fn evaluate_internal(
                 Truth::Yes => {
                     allow_satisfied.insert(rule.rule_id.clone());
                     if fact
-                        .is_some_and(|f| requires_unavailable_profile(rule, f, qualified_profile))
+                        .is_some_and(|f| requires_unavailable_profile(rule, f, profile_mode == ProfileTrustMode::Attested))
                     {
                         unvalidated_profile.insert(rule.rule_id.clone());
                     }
@@ -406,10 +436,14 @@ fn evaluate_internal(
             // exact catalog profile may satisfy an ordinary Allow. In the
             // latter case source, provider, parameter, revocation and actual
             // key binding were separately verified before this call.
-            let known = qualified_profile
-                || f.algorithm_id
-                    .as_ref()
-                    .is_some_and(|id| preview_algorithm_known(id, context.operation, f));
+            // A rejected explicit qualification may NEVER fall back to the
+            // legacy recognized-classical-algorithm preview Permit. The
+            // original public API retains its exact Legacy behavior.
+            let known = profile_mode == ProfileTrustMode::Attested
+                || (profile_mode == ProfileTrustMode::Legacy
+                    && f.algorithm_id
+                        .as_ref()
+                        .is_some_and(|id| preview_algorithm_known(id, context.operation, f)));
             if !unvalidated_profile.is_empty() || !known {
                 for id in &allow_satisfied {
                     reasons.insert((Some(id.clone()), ReasonCode::UnsupportedProfile));
