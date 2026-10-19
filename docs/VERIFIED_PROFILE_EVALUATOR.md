@@ -36,9 +36,13 @@ enforcement.
 If and only if the actual qualification returns
 `ReadyForVerifiedEvaluator`, a crate-private, sealed-proof-gated evaluator interprets the
 canonical named profile and explicit `Requirement::Profile` /
-`RuleSelector.profile_id` equality. For every other qualification result
-the normal conservative evaluator is called; a missing or forged
-qualification never promotes a fact to Permit.
+`RuleSelector.profile_id` equality. For every other qualification result, the same Deny/Require/temporal
+rules execute in a special **qualification-rejected** mode that
+*forbids all preview Permit outcomes*, including the subtle case where
+a missing `profile_id` could otherwise fall back to a legacy
+`AES-256-GCM` preview Permit. The original public legacy evaluator
+continues to operate exactly as before; only requests through the
+new explicitly authenticated entrypoint are subject to this hard gate.
 
 The original evaluator's algorithm preview recognition logic, v1 policy
 schema, canonical policy digest, stable reason ordering, temporal rules and
@@ -85,7 +89,8 @@ approve exceptions or open network connections.
     cargo fmt --all -- --check
 
 The profile-qualification suite tests ordinary AES-256-GCM and exact
-ML-DSA-65 profile Allow, default deny, independent trusted source/key
+ML-DSA-65 profile Allow, the **missing-profile-to-classical-preview**
+downgrade attempt, default deny, independent trusted source/key
 callbacks, a spoofed report, conflicting profile IDs, absent external
 evidence, mandatory unsatisfied or unknown requirements, Deny rule
 permutations, explicitly supplied effective/expiry boundaries, and
