@@ -949,6 +949,52 @@ fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
         Err(ExceptionAuditError::ReceiptInconsistent)
     );
 
+    // A forged ExplicitDeny reason cannot substitute for an actual matched
+    // target rule, even when the decision outcome remains Deny.
+    let mut unmatched_reason = report.clone();
+    let target_layer = unmatched_reason
+        .original
+        .components
+        .iter_mut()
+        .find(|layer| layer.reference == e.policy)
+        .unwrap();
+    target_layer
+        .decision
+        .matched_rules
+        .retain(|rule| rule != &e.target_rule);
+    assert_eq!(
+        build_blocked_exception_audit_receipt(
+            &unmatched_reason, &e, &bound, &Limits::default()
+        ),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
+    let mut forged_id = report.clone();
+    let target_layer = forged_id
+        .original
+        .components
+        .iter_mut()
+        .find(|layer| layer.reference == e.policy)
+        .unwrap();
+    target_layer.decision.policy_id = cryptopolicy::PolicyId::parse("forged:policy").unwrap();
+    assert_eq!(
+        build_blocked_exception_audit_receipt(&forged_id, &e, &bound, &Limits::default()),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
+    let mut forged_version = report.clone();
+    let target_layer = forged_version
+        .original
+        .components
+        .iter_mut()
+        .find(|layer| layer.reference == e.policy)
+        .unwrap();
+    target_layer.decision.policy_version = cryptopolicy::PolicyVersion::parse("9.9.9").unwrap();
+    assert_eq!(
+        build_blocked_exception_audit_receipt(
+            &forged_version, &e, &bound, &Limits::default()
+        ),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
+
     // Even directly constructed/deserialized receipts cannot hash a forged
     // candidate Permit, aggregate Permit or apparent accepted waiver.
     let mut forged_receipt = audit.clone();
