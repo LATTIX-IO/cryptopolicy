@@ -345,3 +345,39 @@ fn malformed_multiple_fact_and_bounded_contexts_never_upgrade_evidence() {
         Err(ContractError::PayloadTooLarge)
     ));
 }
+
+
+#[test]
+fn caller_constructed_oversize_context_is_checked_before_json_allocation() {
+    let (mut context, scope, binding) =
+        prepare("AES-256-GCM", CryptoOperation::Encrypt);
+    context.facts = vec![context.facts[0].clone(); 2049];
+    let witness = ProfileParameterWitness::KeyBits(256);
+    let limit = Limits::default();
+    let too_many = ProfileQualificationRequest {
+        context: &context, actual_scope: &scope, binding: &binding,
+        parameter: &witness, time: context.evaluation_time, limits: &limit,
+    };
+    assert_eq!(
+        qualify_embedded_profile(
+            too_many, &SyntheticEvidenceSource, &SyntheticKeyOwner
+        ),
+        Err(ContractError::ResourceLimitExceeded("context facts"))
+    );
+    context.facts.truncate(1);
+    context.environment = Some("x".repeat(limit.max_json_bytes + 1));
+    // The malformed environment cannot cause a JSON allocation of
+    // an unbounded caller-created string before exact scope mismatch.
+    let huge_environment = ProfileQualificationRequest {
+        context: &context, actual_scope: &scope, binding: &binding,
+        parameter: &witness, time: context.evaluation_time, limits: &limit,
+    };
+    assert_eq!(
+        qualify_embedded_profile(
+            huge_environment, &SyntheticEvidenceSource, &SyntheticKeyOwner
+        )
+        .unwrap()
+        .finding,
+        ProfileQualificationFinding::ScopeMismatch
+    );
+}
