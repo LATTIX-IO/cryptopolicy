@@ -358,7 +358,9 @@ fn evaluate_internal(
                 }
                 Truth::Yes => {
                     require_satisfied.insert(rule.rule_id.clone());
-                    if fact.is_some_and(|f| requires_unavailable_profile(rule, f, qualified_profile)) {
+                    if fact
+                        .is_some_and(|f| requires_unavailable_profile(rule, f, qualified_profile))
+                    {
                         unvalidated_profile.insert(rule.rule_id.clone());
                     }
                 }
@@ -372,7 +374,9 @@ fn evaluate_internal(
                 }
                 Truth::Yes => {
                     allow_satisfied.insert(rule.rule_id.clone());
-                    if fact.is_some_and(|f| requires_unavailable_profile(rule, f, qualified_profile)) {
+                    if fact
+                        .is_some_and(|f| requires_unavailable_profile(rule, f, qualified_profile))
+                    {
                         unvalidated_profile.insert(rule.rule_id.clone());
                     }
                 }
