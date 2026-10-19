@@ -230,6 +230,11 @@ pub fn qualify_embedded_profile<E: ProfileEvidenceVerifier, K: KeyProfileBinding
         CryptoOperation::Hash => OperationClass::Hash,
         CryptoOperation::Encapsulate => OperationClass::Encapsulate,
         CryptoOperation::Decapsulate => OperationClass::Decapsulate,
+        // No equivalent standardized usage class exists in the pinned v1
+        // catalog. Never reinterpret key agreement or KDF as a KEM operation.
+        CryptoOperation::KeyAgreement | CryptoOperation::DeriveKey => {
+            return Ok(report(ProfileQualificationFinding::OperationUnsupported));
+        }
     };
     match catalog.validate_usage(binding.profile_id.as_str(), operation, parameter) {
         Ok(_) => {}
