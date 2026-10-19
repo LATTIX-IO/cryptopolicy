@@ -258,7 +258,10 @@ pub fn build_blocked_exception_audit_receipt(
     }
     // This negative-only receipt must really be based on a matching Deny,
     // not invented "block" metadata or a no-rule/default policy.
-    if !target.decision.matched_rules.contains(&reference.target_rule)
+    if !target
+        .decision
+        .matched_rules
+        .contains(&reference.target_rule)
         || !target.decision.reasons.iter().any(|reason| {
             reason.rule_id.as_ref() == Some(&reference.target_rule)
                 && reason.code == ReasonCode::ExplicitDeny
@@ -305,9 +308,10 @@ pub fn build_blocked_exception_audit_receipt(
         // original decision cannot be treated as an actual evaluator reason.
         if layer.decision.reasons.iter().any(|reason| {
             reason.code == ReasonCode::ExplicitDeny
-                && !reason.rule_id.as_ref().is_some_and(|id| {
-                    layer.decision.matched_rules.contains(id)
-                })
+                && !reason
+                    .rule_id
+                    .as_ref()
+                    .is_some_and(|id| layer.decision.matched_rules.contains(id))
         }) {
             return Err(ExceptionAuditError::ReceiptInconsistent);
         }

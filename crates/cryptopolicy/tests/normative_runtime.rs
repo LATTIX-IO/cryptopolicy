@@ -963,9 +963,7 @@ fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
         .matched_rules
         .retain(|rule| rule != &e.target_rule);
     assert_eq!(
-        build_blocked_exception_audit_receipt(
-            &unmatched_reason, &e, &bound, &Limits::default()
-        ),
+        build_blocked_exception_audit_receipt(&unmatched_reason, &e, &bound, &Limits::default()),
         Err(ExceptionAuditError::ReceiptInconsistent)
     );
     let mut forged_id = report.clone();
@@ -989,9 +987,7 @@ fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
         .unwrap();
     target_layer.decision.policy_version = cryptopolicy::PolicyVersion::parse("9.9.9").unwrap();
     assert_eq!(
-        build_blocked_exception_audit_receipt(
-            &forged_version, &e, &bound, &Limits::default()
-        ),
+        build_blocked_exception_audit_receipt(&forged_version, &e, &bound, &Limits::default()),
         Err(ExceptionAuditError::ReceiptInconsistent)
     );
 
