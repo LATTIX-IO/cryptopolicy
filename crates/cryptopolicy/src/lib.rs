@@ -20,6 +20,7 @@ mod profile_qualification;
 mod requirement_codec;
 mod types;
 mod validation;
+mod verified_evaluator;
 mod waivability;
 
 pub use assessment::*;
@@ -35,4 +36,5 @@ pub use policy::*;
 pub use profile_qualification::*;
 pub use types::*;
 pub use validation::*;
+pub use verified_evaluator::*;
 pub use waivability::*;
