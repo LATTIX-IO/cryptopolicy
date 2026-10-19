@@ -7,10 +7,10 @@
 
 use crate::{
     AlgorithmId, ContractError, CryptoContext, CryptoOperation, EvaluationTime, EvidenceQuality,
-    ExceptionScope, FactOrigin, KeyProfileBinding, KeyProfileBindingVerifier, Limits,
-    PolicyDigest, ProfileId,
+    ExceptionScope, FactOrigin, KeyProfileBinding, KeyProfileBindingVerifier, Limits, PolicyDigest,
+    ProfileId,
 };
-use pqc_kit::{Catalog, CatalogError, OperationClass, UsageParameter, EMBEDDED_CATALOG_SHA256_V1};
+use pqc_kit::{Catalog, CatalogError, EMBEDDED_CATALOG_SHA256_V1, OperationClass, UsageParameter};
 use serde::{Deserialize, Serialize};
 
 /// Exactly attested public parameters, not guessed from an algorithm string.
@@ -149,7 +149,12 @@ pub fn qualify_embedded_profile<E: ProfileEvidenceVerifier, K: KeyProfileBinding
     key_verifier: &K,
 ) -> Result<ProfileQualificationReport, ContractError> {
     let ProfileQualificationRequest {
-        context, actual_scope, binding, parameter, time, limits,
+        context,
+        actual_scope,
+        binding,
+        parameter,
+        time,
+        limits,
     } = request;
     limits.validate()?;
     actual_scope.validate()?;
@@ -257,5 +262,7 @@ pub fn qualify_embedded_profile<E: ProfileEvidenceVerifier, K: KeyProfileBinding
     {
         return Ok(report(ProfileQualificationFinding::SourceNotAuthenticated));
     }
-    Ok(report(ProfileQualificationFinding::ReadyForVerifiedEvaluator))
+    Ok(report(
+        ProfileQualificationFinding::ReadyForVerifiedEvaluator,
+    ))
 }

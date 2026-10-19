@@ -33,7 +33,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &UnverifiedProfileEvidence,
         &UnverifiedKeyProfileBinding,
     )?;
-    assert_eq!(result.finding, ProfileQualificationFinding::KeyNotAuthenticated);
+    assert_eq!(
+        result.finding,
+        ProfileQualificationFinding::KeyNotAuthenticated
+    );
     println!(
         "catalog={} profile={} finding={:?}",
         result.catalog_digest.as_str(),
