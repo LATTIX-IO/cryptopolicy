@@ -905,6 +905,22 @@ fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
         build_blocked_exception_audit_receipt(&forged, &e, &bound, &Limits::default()),
         Err(ExceptionAuditError::PositiveDecisionUnsupported)
     );
+    let mut impossible_candidate = report.clone();
+    impossible_candidate.disposition = cryptopolicy::WaiverAdmissionDisposition::CandidateEvaluated;
+    assert_eq!(
+        build_blocked_exception_audit_receipt(
+            &impossible_candidate, &e, &bound, &Limits::default()
+        ),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
+    let mut inconsistent_outcome = report.clone();
+    inconsistent_outcome.candidate_outcome = DecisionOutcome::Indeterminate;
+    assert_eq!(
+        build_blocked_exception_audit_receipt(
+            &inconsistent_outcome, &e, &bound, &Limits::default()
+        ),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
     let mut rebound = report.clone();
     rebound.original_effective_digest = PolicyDigest::try_from("0".repeat(64)).unwrap();
     assert_eq!(
