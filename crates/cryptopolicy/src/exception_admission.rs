@@ -168,6 +168,15 @@ pub enum WaiverAdmissionDisposition {
     GrantNotAuthorized,
     /// Required compensation rules are absent, inapplicable or not satisfied.
     CompensationNotSatisfied,
+    /// The pinned owner registry was not verified for this rule and operation.
+    RegistryNotAuthorized,
+    /// No exact approved waivable rule matches the original policy and scope.
+    RuleNotWaivable,
+    /// Trusted data-plane key/profile identity could not be authenticated.
+    KeyBindingUnverified,
+    /// A named profile passed external gates but is not yet supported by the
+    /// pure evaluator; no candidate Permit or operation authorization follows.
+    ProfileEvaluatorUnsupported,
     /// A strictly scoped *simulated* decision was calculated.
     ///
     /// This does not imply a Permit or any enforcement authority.

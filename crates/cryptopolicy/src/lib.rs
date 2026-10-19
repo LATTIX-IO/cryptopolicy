@@ -18,6 +18,7 @@ mod policy;
 mod requirement_codec;
 mod types;
 mod validation;
+mod waivability;
 
 pub use assessment::*;
 pub use capability::*;
@@ -30,3 +31,4 @@ pub use normative_projection::*;
 pub use policy::*;
 pub use types::*;
 pub use validation::*;
+pub use waivability::*;
