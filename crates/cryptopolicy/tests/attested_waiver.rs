@@ -602,7 +602,6 @@ fn policy_expiry_cannot_be_bypassed_by_a_permitted_target_rule_exception() {
     assert_eq!(f.run().candidate_outcome, DecisionOutcome::Deny);
 }
 
-
 fn pqc_source_verifier(
     request: &ProfileQualificationRequest<'_>,
 ) -> Result<ProfileEvidenceVerification, ContractError> {
@@ -616,13 +615,11 @@ fn pqc_source_verifier(
         provider_attested: props
             .and_then(|p| p.provider_id.as_ref())
             .is_some_and(|id| id.as_str() == "provider:alpha")
-            && props.and_then(|p| p.source_quality)
-                == Some(EvidenceQuality::ExternallyVerified),
+            && props.and_then(|p| p.source_quality) == Some(EvidenceQuality::ExternallyVerified),
         parameters_attested: matches!(
             request.parameter,
             ProfileParameterWitness::NamedSet(p) if p.as_str() == "ML-DSA-65"
-        )
-            && props.and_then(|p| p.key_size_bits).is_none()
+        ) && props.and_then(|p| p.key_size_bits).is_none()
             && props.and_then(|p| p.security_category) == Some(3),
         revocation_fresh: request.binding.key_version_ref.as_str() == "key-version:3",
     })
@@ -632,7 +629,8 @@ fn pqc_source_verifier(
 fn qualified_ml_dsa_profile_can_only_simulate_exact_owner_approved_deny() {
     let mut policy = source_policy("owner:pqc");
     let require = policy
-        .rules.iter_mut()
+        .rules
+        .iter_mut()
         .find(|r| r.rule_id.as_str() == "r-require-protection")
         .unwrap();
     require.requirements = vec![
@@ -640,7 +638,8 @@ fn qualified_ml_dsa_profile_can_only_simulate_exact_owner_approved_deny() {
         Requirement::SourceQuality(EvidenceQuality::ExternallyVerified),
     ];
     let allow = policy
-        .rules.iter_mut()
+        .rules
+        .iter_mut()
         .find(|r| r.rule_id.as_str() == "r-allow-aes")
         .unwrap();
     allow.rule_id = RuleId::parse("r-allow-mldsa").unwrap();
@@ -669,14 +668,24 @@ fn qualified_ml_dsa_profile_can_only_simulate_exact_owner_approved_deny() {
     f.key.profile_id = ProfileId::parse("ML-DSA-65").unwrap();
     f.parameter = ProfileParameterWitness::NamedSet(ProfileId::parse("ML-DSA-65").unwrap());
     let report = f.run_with(
-        &exception_verifier, &owner_verifier, &registry_verifier,
-        &key_verifier, &pqc_source_verifier,
+        &exception_verifier,
+        &owner_verifier,
+        &registry_verifier,
+        &key_verifier,
+        &pqc_source_verifier,
     );
     assert_eq!(report.original.outcome, DecisionOutcome::Deny);
-    assert_eq!(report.disposition, WaiverAdmissionDisposition::CandidateEvaluated);
+    assert_eq!(
+        report.disposition,
+        WaiverAdmissionDisposition::CandidateEvaluated
+    );
     assert_eq!(report.candidate_outcome, DecisionOutcome::Permit);
     assert_ne!(
-        report.candidate_target_layer.as_ref().unwrap().policy_digest,
+        report
+            .candidate_target_layer
+            .as_ref()
+            .unwrap()
+            .policy_digest,
         f.exception.policy.digest
     );
 
@@ -684,8 +693,11 @@ fn qualified_ml_dsa_profile_can_only_simulate_exact_owner_approved_deny() {
     // cannot inherit the approved ML-DSA-65 profile or obtain a candidate.
     f.parameter = ProfileParameterWitness::NamedSet(ProfileId::parse("ML-DSA-44").unwrap());
     let wrong_named_set = f.run_with(
-        &exception_verifier, &owner_verifier, &registry_verifier,
-        &key_verifier, &pqc_source_verifier,
+        &exception_verifier,
+        &owner_verifier,
+        &registry_verifier,
+        &key_verifier,
+        &pqc_source_verifier,
     );
     assert_eq!(
         wrong_named_set.disposition,
@@ -698,12 +710,13 @@ fn qualified_ml_dsa_profile_can_only_simulate_exact_owner_approved_deny() {
 fn unsupported_named_hybrid_cannot_be_granted_by_valid_owner_registry() {
     let mut policy = source_policy("owner:hybrid");
     let allow = policy
-        .rules.iter_mut()
+        .rules
+        .iter_mut()
         .find(|r| r.rule_id.as_str() == "r-allow-aes")
         .unwrap();
-    allow.requirements.push(
-        Requirement::NamedHybrid(ProfileId::parse("fake-hybrid-construction").unwrap())
-    );
+    allow.requirements.push(Requirement::NamedHybrid(
+        ProfileId::parse("fake-hybrid-construction").unwrap(),
+    ));
     policy.rules.push(deny("r-target-deny"));
     let f = Prepared::from(&[policy.clone()], &policy, ExceptionDeviation::RuleDeny);
     let report = f.run();
