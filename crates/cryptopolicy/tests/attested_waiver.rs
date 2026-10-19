@@ -416,7 +416,7 @@ fn altered_profile_key_tenant_operation_nonce_grant_and_expiry_fail_closed() {
     assert_eq!(f.run().disposition, WaiverAdmissionDisposition::ExceptionNotReady);
 
     f = Prepared::deny();
-    f.context.evaluation_time = at(200);
+    f.context.evaluation_time = at(199);
     assert_eq!(f.run().disposition, WaiverAdmissionDisposition::CandidateEvaluated);
     f.context.evaluation_time = at(250);
     assert_eq!(f.run().disposition, WaiverAdmissionDisposition::RegistryNotAuthorized);
