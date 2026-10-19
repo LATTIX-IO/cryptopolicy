@@ -129,14 +129,20 @@ impl BlockedExceptionAuditReceipt {
         }
         if self.compensating_rules.is_empty()
             || self.compensating_rules.len() > crate::MAX_EXCEPTION_COMPENSATING_CONTROLS
-            || self.compensating_rules.windows(2).any(|pair| pair[0] >= pair[1])
+            || self
+                .compensating_rules
+                .windows(2)
+                .any(|pair| pair[0] >= pair[1])
             || self.compensating_rules.contains(&self.target_rule)
         {
             return Err(ExceptionAuditError::ReceiptInconsistent);
         }
         if self.blocking_reasons.is_empty()
             || self.blocking_reasons.len() > Limits::default().max_decision_reasons
-            || self.blocking_reasons.windows(2).any(|pair| pair[0] >= pair[1])
+            || self
+                .blocking_reasons
+                .windows(2)
+                .any(|pair| pair[0] >= pair[1])
             || !self.blocking_reasons.iter().any(|reason| {
                 reason.policy == self.target_policy
                     && reason.rule_id.as_ref() == Some(&self.target_rule)
@@ -261,13 +267,19 @@ pub fn build_blocked_exception_audit_receipt(
     // Recompute aggregate precedence from every real serialized layer.
     // A forged aggregate Deny cannot be justified by all-Permit components.
     // This is consistency validation, not cryptographic source proof.
-    let recomputed = if report.original.components.iter().any(|layer| {
-        layer.decision.outcome == DecisionOutcome::Deny
-    }) {
+    let recomputed = if report
+        .original
+        .components
+        .iter()
+        .any(|layer| layer.decision.outcome == DecisionOutcome::Deny)
+    {
         DecisionOutcome::Deny
-    } else if report.original.components.iter().any(|layer| {
-        layer.decision.outcome == DecisionOutcome::Indeterminate
-    }) {
+    } else if report
+        .original
+        .components
+        .iter()
+        .any(|layer| layer.decision.outcome == DecisionOutcome::Indeterminate)
+    {
         DecisionOutcome::Indeterminate
     } else {
         DecisionOutcome::Permit
