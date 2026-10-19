@@ -243,8 +243,10 @@ pub fn qualify_embedded_profile<E: ProfileEvidenceVerifier, K: KeyProfileBinding
             return Ok(report(ProfileQualificationFinding::OperationUnsupported));
         }
     };
-    match catalog.validate_usage(binding.profile_id.as_str(), operation, parameter) {
-        Ok(_) => {}
+    let reviewed_profile = match catalog.validate_usage(
+        binding.profile_id.as_str(), operation, parameter
+    ) {
+        Ok(profile) => profile,
         Err(CatalogError::UnknownProfile | CatalogError::AliasNotCanonical) => {
             return Ok(report(ProfileQualificationFinding::UnknownOrAliasProfile));
         }
@@ -259,6 +261,14 @@ pub fn qualify_embedded_profile<E: ProfileEvidenceVerifier, K: KeyProfileBinding
         }
         Err(_) => {
             return Err(ContractError::InvalidDocument("catalog_unexpected_error"));
+        }
+    };
+    // A claimed category cannot exceed or contradict the standardized
+    // cryptographic profile's reviewed PQC category. This is an identity
+    // consistency check, NOT standalone source or module authentication.
+    if let Some(expected) = reviewed_profile.security.pqc_category {
+        if props.and_then(|p| p.security_category) != Some(expected) {
+            return Ok(report(ProfileQualificationFinding::ParameterMismatch));
         }
     }
     // Identity comparisons and catalog membership do not attest anything.

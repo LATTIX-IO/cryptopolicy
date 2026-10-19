@@ -120,6 +120,8 @@ fn pq_named_set_profile_uses_exact_canonical_catalog_identity() {
     ] {
         let (mut c, scope, binding) = prepare(name, operation);
         c.facts[0].properties.as_mut().unwrap().key_size_bits = None;
+        c.facts[0].properties.as_mut().unwrap().security_category =
+            Some(if name == "ML-DSA-65" { 3 } else { 5 });
         let result = qualify(&c, &scope, &binding, &named(name));
         assert_eq!(
             result.finding,
@@ -171,6 +173,7 @@ fn wrong_operations_key_bits_or_named_set_fail_before_source_authentication() {
     );
     let (mut pq, scope, binding) = prepare("ML-DSA-65", CryptoOperation::Verify);
     pq.facts[0].properties.as_mut().unwrap().key_size_bits = None;
+    pq.facts[0].properties.as_mut().unwrap().security_category = Some(3);
     assert_eq!(
         qualify(&pq, &scope, &binding, &named("ML-DSA-44")).finding,
         ProfileQualificationFinding::ParameterMismatch
@@ -188,6 +191,20 @@ fn unsupported_key_agreement_and_derivation_never_coerce_to_kem_usage() {
             ProfileQualificationFinding::OperationUnsupported
         );
     }
+}
+
+#[test]
+fn inflated_pqc_category_cannot_relabel_a_standardized_profile() {
+    let (mut c, scope, binding) = prepare("ML-DSA-65", CryptoOperation::Verify);
+    c.facts[0].properties.as_mut().unwrap().key_size_bits = None;
+    c.facts[0].properties.as_mut().unwrap().security_category = Some(5);
+    let result = qualify(&c, &scope, &binding, &named("ML-DSA-65"));
+    assert_eq!(result.finding, ProfileQualificationFinding::ParameterMismatch);
+    c.facts[0].properties.as_mut().unwrap().security_category = Some(3);
+    assert_eq!(
+        qualify(&c, &scope, &binding, &named("ML-DSA-65")).finding,
+        ProfileQualificationFinding::ReadyForVerifiedEvaluator
+    );
 }
 
 #[test]
