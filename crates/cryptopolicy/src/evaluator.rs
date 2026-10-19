@@ -240,7 +240,13 @@ pub fn evaluate_with_limits(
     explicit_time: EvaluationTime,
     limits: &Limits,
 ) -> Result<PolicyDecision, ContractError> {
-    evaluate_internal(policy, context, explicit_time, limits, ProfileTrustMode::Legacy)
+    evaluate_internal(
+        policy,
+        context,
+        explicit_time,
+        limits,
+        ProfileTrustMode::Legacy,
+    )
 }
 
 /// Crate-private permission to interpret the exact named profile. Call ONLY
@@ -254,7 +260,13 @@ pub(crate) fn evaluate_with_attested_profile(
     limits: &Limits,
     _proof: &crate::verified_evaluator::QualifiedProfileProof,
 ) -> Result<PolicyDecision, ContractError> {
-    evaluate_internal(policy, context, explicit_time, limits, ProfileTrustMode::Attested)
+    evaluate_internal(
+        policy,
+        context,
+        explicit_time,
+        limits,
+        ProfileTrustMode::Attested,
+    )
 }
 
 /// Rejected qualification is NOT an invitation to use a generic algorithm
@@ -389,9 +401,13 @@ fn evaluate_internal(
                 }
                 Truth::Yes => {
                     require_satisfied.insert(rule.rule_id.clone());
-                    if fact
-                        .is_some_and(|f| requires_unavailable_profile(rule, f, profile_mode == ProfileTrustMode::Attested))
-                    {
+                    if fact.is_some_and(|f| {
+                        requires_unavailable_profile(
+                            rule,
+                            f,
+                            profile_mode == ProfileTrustMode::Attested,
+                        )
+                    }) {
                         unvalidated_profile.insert(rule.rule_id.clone());
                     }
                 }
@@ -405,9 +421,13 @@ fn evaluate_internal(
                 }
                 Truth::Yes => {
                     allow_satisfied.insert(rule.rule_id.clone());
-                    if fact
-                        .is_some_and(|f| requires_unavailable_profile(rule, f, profile_mode == ProfileTrustMode::Attested))
-                    {
+                    if fact.is_some_and(|f| {
+                        requires_unavailable_profile(
+                            rule,
+                            f,
+                            profile_mode == ProfileTrustMode::Attested,
+                        )
+                    }) {
                         unvalidated_profile.insert(rule.rule_id.clone());
                     }
                 }
