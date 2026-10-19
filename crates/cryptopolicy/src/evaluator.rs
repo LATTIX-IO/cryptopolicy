@@ -172,9 +172,21 @@ fn preview_algorithm_known(
     }
 }
 
-/// Without FOSS-445/458, exact profile names and named hybrid constructions
-/// remain unverified. Matching their text cannot establish authorization.
-fn requires_unavailable_profile(rule: &PolicyRule, fact: &CryptoFact) -> bool {
+/// Profile selectors/requirements remain untrusted by the original evaluator.
+/// Only the crate-internal FOSS-507 path can interpret a named profile, and
+/// only after actual FOSS-505 external key + source qualification succeeds.
+/// Exact named-hybrid constructions remain unsupported in BOTH modes.
+fn requires_unavailable_profile(
+    rule: &PolicyRule,
+    fact: &CryptoFact,
+    qualified_profile: bool,
+) -> bool {
+    if qualified_profile {
+        return rule
+            .requirements
+            .iter()
+            .any(|r| matches!(r, Requirement::NamedHybrid(_)));
+    }
     rule.selector.profile_id.is_some()
         || fact.profile_id.is_some()
         || rule
@@ -214,6 +226,29 @@ pub fn evaluate_with_limits(
     context: &CryptoContext,
     explicit_time: EvaluationTime,
     limits: &Limits,
+) -> Result<PolicyDecision, ContractError> {
+    evaluate_internal(policy, context, explicit_time, limits, false)
+}
+
+/// Crate-private permission to interpret the exact named profile. Call ONLY
+/// after FOSS-505's real embedded-catalog and independent source/key checks,
+/// NEVER from an externally supplied ProfileQualificationReport alone.
+/// Returns policy data, not a signed/authorized cryptographic operation.
+pub(crate) fn evaluate_with_attested_profile(
+    policy: &PolicyDocument,
+    context: &CryptoContext,
+    explicit_time: EvaluationTime,
+    limits: &Limits,
+) -> Result<PolicyDecision, ContractError> {
+    evaluate_internal(policy, context, explicit_time, limits, true)
+}
+
+fn evaluate_internal(
+    policy: &PolicyDocument,
+    context: &CryptoContext,
+    explicit_time: EvaluationTime,
+    limits: &Limits,
+    qualified_profile: bool,
 ) -> Result<PolicyDecision, ContractError> {
     limits.validate()?;
     let policy_bytes = policy.canonical_json_with_limits(limits)?;
@@ -323,7 +358,7 @@ pub fn evaluate_with_limits(
                 }
                 Truth::Yes => {
                     require_satisfied.insert(rule.rule_id.clone());
-                    if fact.is_some_and(|f| requires_unavailable_profile(rule, f)) {
+                    if fact.is_some_and(|f| requires_unavailable_profile(rule, f, qualified_profile)) {
                         unvalidated_profile.insert(rule.rule_id.clone());
                     }
                 }
@@ -337,7 +372,7 @@ pub fn evaluate_with_limits(
                 }
                 Truth::Yes => {
                     allow_satisfied.insert(rule.rule_id.clone());
-                    if fact.is_some_and(|f| requires_unavailable_profile(rule, f)) {
+                    if fact.is_some_and(|f| requires_unavailable_profile(rule, f, qualified_profile)) {
                         unvalidated_profile.insert(rule.rule_id.clone());
                     }
                 }
@@ -362,10 +397,14 @@ pub fn evaluate_with_limits(
         DecisionOutcome::Indeterminate
     } else if !allow_satisfied.is_empty() {
         if let Some(f) = fact {
-            let known = f
-                .algorithm_id
-                .as_ref()
-                .is_some_and(|id| preview_algorithm_known(id, context.operation, f));
+            // A known v1 preview algorithm OR the independently qualified,
+            // exact catalog profile may satisfy an ordinary Allow. In the
+            // latter case source, provider, parameter, revocation and actual
+            // key binding were separately verified before this call.
+            let known = qualified_profile
+                || f.algorithm_id
+                    .as_ref()
+                    .is_some_and(|id| preview_algorithm_known(id, context.operation, f));
             if !unvalidated_profile.is_empty() || !known {
                 for id in &allow_satisfied {
                     reasons.insert((Some(id.clone()), ReasonCode::UnsupportedProfile));
