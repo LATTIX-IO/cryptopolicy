@@ -283,7 +283,6 @@ fn source_quality_missing_attestation_and_nonobserved_facts_never_qualify() {
         key.finding,
         ProfileQualificationFinding::KeyNotAuthenticated
     );
-    let mut c = c;
     c.facts[0].properties.as_mut().unwrap().provider_id =
         Some(ProviderId::parse("provider:wrong").unwrap());
     let source = qualify(&c, &scope, &binding, &ProfileParameterWitness::KeyBits(256));
