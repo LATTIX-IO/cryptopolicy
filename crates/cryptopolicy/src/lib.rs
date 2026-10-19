@@ -25,6 +25,7 @@ mod verified_evaluator;
 mod waivability;
 
 pub use assessment::*;
+pub use attested_waiver::*;
 pub use capability::*;
 pub use composition::*;
 pub use evaluator::*;
