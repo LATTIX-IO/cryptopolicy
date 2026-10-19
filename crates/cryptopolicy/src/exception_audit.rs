@@ -114,10 +114,45 @@ pub struct BlockedExceptionAuditReceipt {
 }
 
 impl BlockedExceptionAuditReceipt {
+    /// Validate the blocked-only contract even when a caller constructs or
+    /// deserializes a receipt without using the safe builder.
+    ///
+    /// Validation is structural; it cannot authenticate the supplied source,
+    /// caller or policy computation. A digest is only a correlation handle.
+    pub fn validate_blocked_invariants(&self) -> Result<(), ExceptionAuditError> {
+        if self.schema_version != SchemaVersion::V1
+            || self.original_outcome != DecisionOutcome::Deny
+            || self.candidate_outcome != DecisionOutcome::Deny
+            || self.disposition == WaiverAdmissionDisposition::CandidateEvaluated
+        {
+            return Err(ExceptionAuditError::ReceiptInconsistent);
+        }
+        if self.compensating_rules.is_empty()
+            || self.compensating_rules.len() > crate::MAX_EXCEPTION_COMPENSATING_CONTROLS
+            || self.compensating_rules.windows(2).any(|pair| pair[0] >= pair[1])
+            || self.compensating_rules.contains(&self.target_rule)
+        {
+            return Err(ExceptionAuditError::ReceiptInconsistent);
+        }
+        if self.blocking_reasons.is_empty()
+            || self.blocking_reasons.len() > Limits::default().max_decision_reasons
+            || self.blocking_reasons.windows(2).any(|pair| pair[0] >= pair[1])
+            || !self.blocking_reasons.iter().any(|reason| {
+                reason.policy == self.target_policy
+                    && reason.rule_id.as_ref() == Some(&self.target_rule)
+                    && reason.code == ReasonCode::ExplicitDeny
+            })
+        {
+            return Err(ExceptionAuditError::ReceiptInconsistent);
+        }
+        Ok(())
+    }
+
     /// Stable, domain-separated fingerprint for correlation only.
     ///
     /// The digest is NOT an HMAC, signature, source proof or Permit.
     pub fn correlation_digest(&self) -> Result<PolicyDigest, ExceptionAuditError> {
+        self.validate_blocked_invariants()?;
         let bytes =
             serde_json::to_vec(self).map_err(|_| ExceptionAuditError::ReceiptInconsistent)?;
         if bytes.len() > crate::MAX_EXCEPTION_REFERENCE_JSON_BYTES {
@@ -209,12 +244,35 @@ pub fn build_blocked_exception_audit_receipt(
                 && layer.decision.evaluated_at == bound.evaluation_time
         })
         .ok_or(ExceptionAuditError::ReceiptInconsistent)?;
+    // Independently validate each target's actual outcome. An untrusted
+    // serialized report cannot claim Permit on the target while smuggling an
+    // ExplicitDeny reason into an aggregate Deny receipt.
+    if target.decision.outcome != DecisionOutcome::Deny {
+        return Err(ExceptionAuditError::ReceiptInconsistent);
+    }
     // This negative-only receipt must really be based on a matching Deny,
     // not invented "block" metadata or a no-rule/default policy.
     if !target.decision.reasons.iter().any(|reason| {
         reason.rule_id.as_ref() == Some(&reference.target_rule)
             && reason.code == ReasonCode::ExplicitDeny
     }) {
+        return Err(ExceptionAuditError::ReceiptInconsistent);
+    }
+    // Recompute aggregate precedence from every real serialized layer.
+    // A forged aggregate Deny cannot be justified by all-Permit components.
+    // This is consistency validation, not cryptographic source proof.
+    let recomputed = if report.original.components.iter().any(|layer| {
+        layer.decision.outcome == DecisionOutcome::Deny
+    }) {
+        DecisionOutcome::Deny
+    } else if report.original.components.iter().any(|layer| {
+        layer.decision.outcome == DecisionOutcome::Indeterminate
+    }) {
+        DecisionOutcome::Indeterminate
+    } else {
+        DecisionOutcome::Permit
+    };
+    if recomputed != report.original.outcome {
         return Err(ExceptionAuditError::ReceiptInconsistent);
     }
     let mut actual_reasons = BTreeSet::new();
@@ -264,6 +322,7 @@ pub fn build_blocked_exception_audit_receipt(
         blocking_reasons: actual_reasons.into_iter().collect(),
         enforcement: BlockedExceptionEnforcement::Block,
     };
+    receipt.validate_blocked_invariants()?;
     let bytes =
         serde_json::to_vec(&receipt).map_err(|_| ExceptionAuditError::ReceiptInconsistent)?;
     if bytes.len() > crate::MAX_EXCEPTION_REFERENCE_JSON_BYTES {
