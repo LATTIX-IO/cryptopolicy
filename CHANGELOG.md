@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-505 / FOSS-503/A: strict canonical standards-catalog profile qualification pinned to immutable `pqc-kit` SHA-256, exact AES key bits and ML-DSA/ML-KEM named sets, explicit UTC, independently authenticated observed source, provider/parameter/revocation and actual key/profile binding. Default rejects all; `ReadyForVerifiedEvaluator` is metadata only, never Permit or a waiver. No conformance promotion or publishing.
+
 - FOSS-501/A: strict, redacted, blocked-only exception audit receipts with correlation-only SHA-256, exact source rule/policy/time/reason linkage, and a typed InvalidException for missing/untrusted approval. Real normative runtime tests CASE-008/009/010 increase honest partial conformance to 22/33 (11 pending); no positive waiver or enforcement authority.
 
 - FOSS-502: versioned exact policy-owner waivability registry with external approval/delegation/replay/revocation verifier, named actual-key/profile binding and distinct verifier, plus an explicit fail-closed `ProfileEvaluatorUnsupported` outcome until FOSS-503 supplies a source-authenticated catalog-aware named-profile evaluator. No cloned candidate or compensating-rule success is claimed for named-profile requests. Legacy FOSS-500/A behavior remains default-deny for profile-bearing contexts and unreviewed Require deviations. Added negative security, temporal and cross-policy tests; no corpus claim or crate publication.
