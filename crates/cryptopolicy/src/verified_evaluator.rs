@@ -8,7 +8,7 @@
 use crate::{
     ContractError, KeyProfileBindingVerifier, PolicyDecision, PolicyDocument,
     ProfileEvidenceVerifier, ProfileQualificationFinding, ProfileQualificationReport,
-    ProfileQualificationRequest, evaluate_with_limits, qualify_embedded_profile,
+    ProfileQualificationRequest, qualify_embedded_profile,
 };
 
 /// Internal capability granted only by this wrapper *after* the pinned
@@ -38,8 +38,10 @@ pub struct QualifiedProfilePolicyDecision {
 /// A positive ProfileQualificationReport is NOT accepted as an input.
 /// Instead, on EVERY call this function re-runs bounded canonical embedded
 /// catalog validation and BOTH independent external verifier callbacks.
-/// Failed qualification falls back to the original strictly conservative
-/// evaluator, ensuring unrelated Deny/Require/expiry constraints still run.
+/// Failed qualification uses a separate fail-closed evaluation mode that
+/// preserves unrelated Deny/Require/expiry constraints but never grants
+/// a preview Permit from a generic classical algorithm identity; in
+/// particular missing profile_id cannot downgrade a requested trust gate.
 /// Named hybrid requirements stay unsupported even with source proof.
 ///
 /// A returned DecisionOutcome::Permit is only policy-evaluation data. It is
@@ -66,7 +68,12 @@ pub fn evaluate_qualified_profile_with_limits<
                 &proof,
             )?
         } else {
-            evaluate_with_limits(policy, request.context, request.time, request.limits)?
+            crate::evaluator::evaluate_rejected_profile_qualification(
+                policy,
+                request.context,
+                request.time,
+                request.limits,
+            )?
         };
     Ok(QualifiedProfilePolicyDecision {
         qualification,
