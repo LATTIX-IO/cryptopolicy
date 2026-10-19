@@ -239,6 +239,7 @@ pub(crate) fn evaluate_with_attested_profile(
     context: &CryptoContext,
     explicit_time: EvaluationTime,
     limits: &Limits,
+    _proof: &crate::verified_evaluator::QualifiedProfileProof,
 ) -> Result<PolicyDecision, ContractError> {
     evaluate_internal(policy, context, explicit_time, limits, true)
 }
