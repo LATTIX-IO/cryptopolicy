@@ -933,4 +933,52 @@ fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
         build_blocked_exception_audit_receipt(&rebound, &e, &bound, &Limits::default()),
         Err(ExceptionAuditError::ReceiptInconsistent)
     );
+
+    // A deserialized or mutated aggregate with a forged Deny reason but
+    // actual target-layer Permit must never become an audit receipt.
+    let mut forged_component = report.clone();
+    let targeted_layer = forged_component
+        .original
+        .components
+        .iter_mut()
+        .find(|layer| layer.reference == e.policy)
+        .unwrap();
+    targeted_layer.decision.outcome = DecisionOutcome::Permit;
+    assert_eq!(
+        build_blocked_exception_audit_receipt(&forged_component, &e, &bound, &Limits::default()),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
+
+    // Even directly constructed/deserialized receipts cannot hash a forged
+    // candidate Permit, aggregate Permit or apparent accepted waiver.
+    let mut forged_receipt = audit.clone();
+    forged_receipt.candidate_outcome = DecisionOutcome::Permit;
+    assert_eq!(
+        forged_receipt.correlation_digest(),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
+    forged_receipt = audit.clone();
+    forged_receipt.original_outcome = DecisionOutcome::Permit;
+    assert_eq!(
+        forged_receipt.correlation_digest(),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
+    forged_receipt = audit.clone();
+    forged_receipt.disposition = cryptopolicy::WaiverAdmissionDisposition::CandidateEvaluated;
+    assert_eq!(
+        forged_receipt.correlation_digest(),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
+    forged_receipt = audit.clone();
+    forged_receipt.blocking_reasons.clear();
+    assert_eq!(
+        forged_receipt.correlation_digest(),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
+    forged_receipt = audit.clone();
+    forged_receipt.compensating_rules.clear();
+    assert_eq!(
+        forged_receipt.correlation_digest(),
+        Err(ExceptionAuditError::ReceiptInconsistent)
+    );
 }
