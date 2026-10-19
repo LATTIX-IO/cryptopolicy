@@ -11,6 +11,15 @@ use crate::{
     ProfileQualificationRequest, evaluate_with_limits, qualify_embedded_profile,
 };
 
+/// Internal capability granted only by this wrapper *after* the pinned
+/// catalog and both independent source/key verifiers returned a fresh,
+/// positive qualification. The private field prevents other crate modules
+/// from constructing an unreviewed qualified-evaluation authorization hint.
+/// This is NOT a public key, signature, or enforceable Permit.
+pub(crate) struct QualifiedProfileProof {
+    _private: (),
+}
+
 /// An inspectable *policy-data* decision, NOT an enforcement capability.
 ///
 /// Both fields are untrusted when deserialized or constructed externally:
@@ -48,11 +57,13 @@ pub fn evaluate_qualified_profile_with_limits<
     let qualification = qualify_embedded_profile(request, source_verifier, key_verifier)?;
     let decision =
         if qualification.finding == ProfileQualificationFinding::ReadyForVerifiedEvaluator {
+            let proof = QualifiedProfileProof { _private: () };
             crate::evaluator::evaluate_with_attested_profile(
                 policy,
                 request.context,
                 request.time,
                 request.limits,
+                &proof,
             )?
         } else {
             evaluate_with_limits(policy, request.context, request.time, request.limits)?
