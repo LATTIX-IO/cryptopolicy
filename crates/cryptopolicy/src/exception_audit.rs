@@ -178,6 +178,14 @@ pub fn build_blocked_exception_audit_receipt(
     {
         return Err(ExceptionAuditError::PositiveDecisionUnsupported);
     }
+    // A rejection may not rewrite the original outcome or invent a candidate
+    // without its independently derived target-layer decision. Fail rather
+    // than fingerprint an internally contradictory, user-deserialized report.
+    if report.disposition == WaiverAdmissionDisposition::CandidateEvaluated
+        || report.candidate_outcome != report.original.outcome
+    {
+        return Err(ExceptionAuditError::ReceiptInconsistent);
+    }
     if report.original_effective_digest != report.original.effective_policy_digest
         || report.original.evaluated_at != report.evaluated_at
         || report.evaluated_at != bound.evaluation_time
