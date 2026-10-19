@@ -278,7 +278,9 @@ fn source_quality_missing_attestation_and_nonobserved_facts_never_qualify() {
     };
     assert_eq!(
         qualify_embedded_profile(direct, &SyntheticEvidenceSource, &SyntheticKeyOwner),
-        Err(ContractError::InvalidDocument("inconsistent_source_quality"))
+        Err(ContractError::InvalidDocument(
+            "inconsistent_source_quality"
+        ))
     );
     c.facts[0].properties.as_mut().unwrap().source_quality = None;
     assert_eq!(
