@@ -321,30 +321,53 @@ fn reviewed_registry_cannot_mask_unverified_e0_or_unsigned_owner_grant() {
     let limits = Limits::default();
     let req = || ReviewedWaiverRequest {
         request: WaiverCandidateRequest {
-            effective: &graph, context: &c, actual_scope: &e.scope,
-            time: at(150), exception: &e, grant: &grant, limits: &limits,
+            effective: &graph,
+            context: &c,
+            actual_scope: &e.scope,
+            time: at(150),
+            exception: &e,
+            grant: &grant,
+            limits: &limits,
         },
-        registry: &registry, key_binding: &binding,
+        registry: &registry,
+        key_binding: &binding,
     };
     let source_missing = evaluate_reviewed_waiver_candidate(
-        req(), &UnverifiedExceptionReferences, &owner_verifier,
-        &source_registry_verifier, &source_key_verifier,
-    ).unwrap();
-    assert_eq!(source_missing.disposition, WaiverAdmissionDisposition::ExceptionNotReady);
+        req(),
+        &UnverifiedExceptionReferences,
+        &owner_verifier,
+        &source_registry_verifier,
+        &source_key_verifier,
+    )
+    .unwrap();
+    assert_eq!(
+        source_missing.disposition,
+        WaiverAdmissionDisposition::ExceptionNotReady
+    );
     assert_eq!(source_missing.candidate_outcome, DecisionOutcome::Deny);
     assert!(source_missing.candidate_target_layer.is_none());
 
     let owner_missing = evaluate_reviewed_waiver_candidate(
-        req(), &exception_verifier, &UnverifiedPolicyWaiverAuthority,
-        &source_registry_verifier, &source_key_verifier,
-    ).unwrap();
-    assert_eq!(owner_missing.disposition, WaiverAdmissionDisposition::GrantNotAuthorized);
+        req(),
+        &exception_verifier,
+        &UnverifiedPolicyWaiverAuthority,
+        &source_registry_verifier,
+        &source_key_verifier,
+    )
+    .unwrap();
+    assert_eq!(
+        owner_missing.disposition,
+        WaiverAdmissionDisposition::GrantNotAuthorized
+    );
     assert_eq!(owner_missing.candidate_outcome, DecisionOutcome::Deny);
 
     let mut forged_grant = grant.clone();
     forged_grant.exception_digest = PolicyDigest::try_from("0".repeat(64)).unwrap();
     let forged = reviewed(&graph, &e, &forged_grant, &registry, &binding, &c);
-    assert_eq!(forged.disposition, WaiverAdmissionDisposition::GrantNotAuthorized);
+    assert_eq!(
+        forged.disposition,
+        WaiverAdmissionDisposition::GrantNotAuthorized
+    );
     assert_eq!(forged.candidate_outcome, DecisionOutcome::Deny);
 }
 
@@ -353,12 +376,18 @@ fn verified_key_profile_does_not_override_operation_or_environment_mismatch() {
     let (graph, e, grant, registry, binding, mut c) = prepared_deny();
     c.operation = CryptoOperation::Verify;
     let wrong_operation = reviewed(&graph, &e, &grant, &registry, &binding, &c);
-    assert_eq!(wrong_operation.disposition, WaiverAdmissionDisposition::ScopeMismatch);
+    assert_eq!(
+        wrong_operation.disposition,
+        WaiverAdmissionDisposition::ScopeMismatch
+    );
     assert_eq!(wrong_operation.candidate_outcome, DecisionOutcome::Deny);
     c.operation = CryptoOperation::Encrypt;
     c.environment = Some("stage".to_owned());
     let wrong_environment = reviewed(&graph, &e, &grant, &registry, &binding, &c);
-    assert_eq!(wrong_environment.disposition, WaiverAdmissionDisposition::ScopeMismatch);
+    assert_eq!(
+        wrong_environment.disposition,
+        WaiverAdmissionDisposition::ScopeMismatch
+    );
     assert_eq!(wrong_environment.candidate_outcome, DecisionOutcome::Deny);
 }
 
