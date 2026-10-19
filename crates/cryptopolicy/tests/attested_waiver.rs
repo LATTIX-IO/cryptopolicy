@@ -502,8 +502,11 @@ fn altered_profile_key_tenant_operation_nonce_grant_and_expiry_fail_closed() {
     );
 
     f = Prepared::deny();
-    f.exception.expires_at = at(150);
+    // A well-formed exception expires *after* activation, but before the
+    // explicit evaluation time; malformed 150..150 is a typed error instead.
+    f.exception.expires_at = at(151);
     f.grant.exception_digest = f.exception.correlation_digest().unwrap();
+    f.context.evaluation_time = at(151);
     assert_eq!(
         f.run().disposition,
         WaiverAdmissionDisposition::ExceptionNotReady
