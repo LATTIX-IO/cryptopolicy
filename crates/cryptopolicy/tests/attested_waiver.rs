@@ -675,10 +675,9 @@ fn qualified_ml_dsa_profile_can_only_simulate_exact_owner_approved_deny() {
     assert_eq!(report.original.outcome, DecisionOutcome::Deny);
     assert_eq!(report.disposition, WaiverAdmissionDisposition::CandidateEvaluated);
     assert_eq!(report.candidate_outcome, DecisionOutcome::Permit);
-    assert_eq!(
-        report.candidate_target_layer.as_ref().unwrap().policy_digest
-            != f.exception.policy.digest,
-        true
+    assert_ne!(
+        report.candidate_target_layer.as_ref().unwrap().policy_digest,
+        f.exception.policy.digest
     );
 
     // An otherwise identical source with a wrong attested named parameter
