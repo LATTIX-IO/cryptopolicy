@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-507/B: explicit, in-process source/key-qualified named-profile policy evaluation against immutable `pqc-kit` v1. Preserves legacy unverified evaluator and policy digest, stable Deny/Require precedence, default deny, UTC time boundaries and fail-closed named-hybrid behavior; never issues cryptographic enforcement authority or approvals. New deterministic security regressions and documentation.
+
 - FOSS-505 / FOSS-503/A: strict canonical standards-catalog profile qualification pinned to immutable `pqc-kit` SHA-256, exact AES key bits and ML-DSA/ML-KEM named sets, explicit UTC, independently authenticated observed source, provider/parameter/revocation and actual key/profile binding. Default rejects all; `ReadyForVerifiedEvaluator` is metadata only, never Permit or a waiver. No conformance promotion or publishing.
 
 - FOSS-501/A: strict, redacted, blocked-only exception audit receipts with correlation-only SHA-256, exact source rule/policy/time/reason linkage, and a typed InvalidException for missing/untrusted approval. Real normative runtime tests CASE-008/009/010 increase honest partial conformance to 22/33 (11 pending); no positive waiver or enforcement authority.
