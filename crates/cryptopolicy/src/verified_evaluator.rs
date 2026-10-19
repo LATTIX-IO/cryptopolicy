@@ -8,8 +8,7 @@
 use crate::{
     ContractError, KeyProfileBindingVerifier, PolicyDecision, PolicyDocument,
     ProfileEvidenceVerifier, ProfileQualificationFinding, ProfileQualificationReport,
-    ProfileQualificationRequest, qualify_embedded_profile,
-    evaluate_with_limits,
+    ProfileQualificationRequest, evaluate_with_limits, qualify_embedded_profile,
 };
 
 /// An inspectable *policy-data* decision, NOT an enforcement capability.
@@ -47,16 +46,17 @@ pub fn evaluate_qualified_profile_with_limits<
     key_verifier: &K,
 ) -> Result<QualifiedProfilePolicyDecision, ContractError> {
     let qualification = qualify_embedded_profile(request, source_verifier, key_verifier)?;
-    let decision = if qualification.finding == ProfileQualificationFinding::ReadyForVerifiedEvaluator
-    {
-        crate::evaluator::evaluate_with_attested_profile(
-            policy, request.context, request.time, request.limits,
-        )?
-    } else {
-        evaluate_with_limits(
-            policy, request.context, request.time, request.limits,
-        )?
-    };
+    let decision =
+        if qualification.finding == ProfileQualificationFinding::ReadyForVerifiedEvaluator {
+            crate::evaluator::evaluate_with_attested_profile(
+                policy,
+                request.context,
+                request.time,
+                request.limits,
+            )?
+        } else {
+            evaluate_with_limits(policy, request.context, request.time, request.limits)?
+        };
     Ok(QualifiedProfilePolicyDecision {
         qualification,
         decision,
