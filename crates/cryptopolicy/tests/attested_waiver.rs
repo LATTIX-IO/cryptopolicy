@@ -728,3 +728,52 @@ fn unsupported_named_hybrid_cannot_be_granted_by_valid_owner_registry() {
     assert_eq!(report.candidate_outcome, DecisionOutcome::Deny);
     assert!(report.candidate_target_layer.is_none());
 }
+
+
+#[test]
+fn original_unknown_mandatory_requirement_requires_exact_owner_waiver() {
+    // Unknown source sensitivity is not silently assumed to match a Require.
+    // Only a fresh separately approved exact waiver, with all verified
+    // compensators, may yield hypothetical policy data, never PEP authority.
+    let mut policy = source_policy("owner:unknown-require");
+    let mut target = mandatory_require("r-target-require");
+    target.requirements = vec![Requirement::Sensitivity(DataSensitivity::Restricted)];
+    policy.rules.push(target);
+    let mut f = Prepared::from(&[policy.clone()], &policy, ExceptionDeviation::RuleRequirement);
+    f.context.facts[0].properties.as_mut().unwrap().data_sensitivity = None;
+    let original = f.graph.evaluate(&f.context, at(150), &Limits::default()).unwrap();
+    assert_eq!(original.outcome, DecisionOutcome::Indeterminate);
+    assert!(original.components[0].decision.reasons.iter().any(|reason| {
+        reason.rule_id.as_ref() == Some(&f.exception.target_rule)
+            && reason.code == ReasonCode::MissingRequiredAttribute
+    }));
+    let report = f.run();
+    assert_eq!(report.disposition, WaiverAdmissionDisposition::CandidateEvaluated);
+    assert_eq!(report.original, original);
+    assert_eq!(report.candidate_outcome, DecisionOutcome::Permit);
+    assert_eq!(f.graph.evaluate(&f.context, at(150), &Limits::default()).unwrap(), original);
+}
+
+#[test]
+fn same_rule_id_in_an_independent_baseline_is_never_waived_by_overlay_authority() {
+    let mut baseline = source_policy("org:same-id-baseline");
+    baseline.rules.push(deny("r-target-deny"));
+    let mut overlay = source_policy("org:target-overlay");
+    overlay.rules.push(deny("r-target-deny"));
+    let f = Prepared::from(
+        &[baseline.clone(), overlay.clone()],
+        &overlay,
+        ExceptionDeviation::RuleDeny,
+    );
+    let report = f.run();
+    assert_eq!(report.disposition, WaiverAdmissionDisposition::CandidateEvaluated);
+    assert_eq!(report.candidate_target_layer.as_ref().unwrap().outcome, DecisionOutcome::Permit);
+    assert_eq!(report.original.components.len(), 2);
+    assert_eq!(report.candidate_outcome, DecisionOutcome::Deny);
+    let remaining = report.original.components.iter()
+        .find(|c| c.reference.policy_id == baseline.policy_id).unwrap();
+    assert_eq!(remaining.decision.outcome, DecisionOutcome::Deny);
+    assert!(remaining.decision.reasons.iter().any(|r| r.rule_id.as_ref()
+        .is_some_and(|id| id.as_str() == "r-target-deny")
+        && r.code == ReasonCode::ExplicitDeny));
+}
