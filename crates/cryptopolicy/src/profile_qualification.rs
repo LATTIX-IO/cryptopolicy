@@ -243,26 +243,25 @@ pub fn qualify_embedded_profile<E: ProfileEvidenceVerifier, K: KeyProfileBinding
             return Ok(report(ProfileQualificationFinding::OperationUnsupported));
         }
     };
-    let reviewed_profile = match catalog.validate_usage(
-        binding.profile_id.as_str(), operation, parameter
-    ) {
-        Ok(profile) => profile,
-        Err(CatalogError::UnknownProfile | CatalogError::AliasNotCanonical) => {
-            return Ok(report(ProfileQualificationFinding::UnknownOrAliasProfile));
-        }
-        Err(CatalogError::NonStandard(_)) => {
-            return Ok(report(ProfileQualificationFinding::NonStandardProfile));
-        }
-        Err(CatalogError::OperationMismatch) => {
-            return Ok(report(ProfileQualificationFinding::OperationUnsupported));
-        }
-        Err(CatalogError::ParameterMismatch) => {
-            return Ok(report(ProfileQualificationFinding::ParameterMismatch));
-        }
-        Err(_) => {
-            return Err(ContractError::InvalidDocument("catalog_unexpected_error"));
-        }
-    };
+    let reviewed_profile =
+        match catalog.validate_usage(binding.profile_id.as_str(), operation, parameter) {
+            Ok(profile) => profile,
+            Err(CatalogError::UnknownProfile | CatalogError::AliasNotCanonical) => {
+                return Ok(report(ProfileQualificationFinding::UnknownOrAliasProfile));
+            }
+            Err(CatalogError::NonStandard(_)) => {
+                return Ok(report(ProfileQualificationFinding::NonStandardProfile));
+            }
+            Err(CatalogError::OperationMismatch) => {
+                return Ok(report(ProfileQualificationFinding::OperationUnsupported));
+            }
+            Err(CatalogError::ParameterMismatch) => {
+                return Ok(report(ProfileQualificationFinding::ParameterMismatch));
+            }
+            Err(_) => {
+                return Err(ContractError::InvalidDocument("catalog_unexpected_error"));
+            }
+        };
     // A claimed category cannot exceed or contradict the standardized
     // cryptographic profile's reviewed PQC category. This is an identity
     // consistency check, NOT standalone source or module authentication.

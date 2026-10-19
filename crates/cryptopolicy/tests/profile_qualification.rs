@@ -199,7 +199,10 @@ fn inflated_pqc_category_cannot_relabel_a_standardized_profile() {
     c.facts[0].properties.as_mut().unwrap().key_size_bits = None;
     c.facts[0].properties.as_mut().unwrap().security_category = Some(5);
     let result = qualify(&c, &scope, &binding, &named("ML-DSA-65"));
-    assert_eq!(result.finding, ProfileQualificationFinding::ParameterMismatch);
+    assert_eq!(
+        result.finding,
+        ProfileQualificationFinding::ParameterMismatch
+    );
     c.facts[0].properties.as_mut().unwrap().security_category = Some(3);
     assert_eq!(
         qualify(&c, &scope, &binding, &named("ML-DSA-65")).finding,
