@@ -159,12 +159,10 @@ pub fn qualify_embedded_profile<E: ProfileEvidenceVerifier, K: KeyProfileBinding
     limits.validate()?;
     actual_scope.validate()?;
     binding.scope.validate()?;
-    let encoded = serde_json::to_vec(context)
-        .map_err(|_| ContractError::InvalidDocument("profile_context_encoding"))?;
-    limits.check_json(&encoded)?;
-    if CryptoContext::parse_json_with_limits(&encoded, limits)? != *context {
-        return Err(ContractError::InvalidDocument("profile_context_roundtrip"));
-    }
+    // Critical resource preflight before any allocation/serialization of
+    // caller-constructed CryptoContext. A huge facts Vec or environment
+    // must never be copied into an unbounded serde_json Vec first.
+    limits.check_count(context.facts.len(), limits.max_facts, "context facts")?;
     // Only checked-in immutable snapshot is eligible. Never accept a network
     // catalog, runtime aliases, silently updated fingerprint or raw strings.
     let catalog = Catalog::embedded_v1()
@@ -188,6 +186,15 @@ pub fn qualify_embedded_profile<E: ProfileEvidenceVerifier, K: KeyProfileBinding
         || binding.scope != *actual_scope
     {
         return Ok(report(ProfileQualificationFinding::ScopeMismatch));
+    }
+    // Safe to serialize only after checking the single-fact shape and exact
+    // bounded environment; all remaining fields use bounded typed IDs.
+    crate::validate_context_properties(context)?;
+    let encoded = serde_json::to_vec(context)
+        .map_err(|_| ContractError::InvalidDocument("profile_context_encoding"))?;
+    limits.check_json(&encoded)?;
+    if CryptoContext::parse_json_with_limits(&encoded, limits)? != *context {
+        return Err(ContractError::InvalidDocument("profile_context_roundtrip"));
     }
     let fact = &context.facts[0];
     // v1 qualified canonical profile ID is identical to its canonical
