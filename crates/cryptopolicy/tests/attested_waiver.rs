@@ -68,9 +68,11 @@ fn compile(policies: &[PolicyDocument]) -> EffectivePolicy {
     compile_policy_set(&set, &resolver, &Limits::default()).unwrap()
 }
 
-fn exception_for(policy: &PolicyDocument, target: &str, deviation: ExceptionDeviation)
-    -> ExceptionReference
-{
+fn exception_for(
+    policy: &PolicyDocument,
+    target: &str,
+    deviation: ExceptionDeviation,
+) -> ExceptionReference {
     let mut e =
         ExceptionReference::parse_json(include_bytes!("fixtures/exception-reference-v1.json"))
             .unwrap();
@@ -164,12 +166,11 @@ fn registry_verifier(
 ) -> Result<RegistryVerification, ContractError> {
     Ok(RegistryVerification {
         registry_authenticated: registry.registry_ref.as_str() == "registry:alpha:12",
-        owner_delegation_verified:
-            registry.authority_ref.as_str() == "owner-registry:verified:alpha"
-                && registry.policy == request.exception.policy,
+        owner_delegation_verified: registry.authority_ref.as_str()
+            == "owner-registry:verified:alpha"
+            && registry.policy == request.exception.policy,
         revocation_fresh: registry.status == ExceptionStatus::Active,
-        replay_fresh: registry.revision == 12
-            && registry.nonce.as_str() == "registry-nonce:12",
+        replay_fresh: registry.revision == 12 && registry.nonce.as_str() == "registry-nonce:12",
     })
 }
 fn key_verifier(
@@ -189,8 +190,7 @@ fn source_verifier(
     let fact = &request.context.facts[0];
     let props = fact.properties.as_ref();
     Ok(ProfileEvidenceVerification {
-        source_authenticated: fact.evidence_ref.as_ref()
-            == Some(&request.binding.evidence_ref)
+        source_authenticated: fact.evidence_ref.as_ref() == Some(&request.binding.evidence_ref)
             && request.binding.evidence_ref.as_str() == "attest:1"
             && fact.origin == FactOrigin::Observed
             && fact.verified,
@@ -198,8 +198,7 @@ fn source_verifier(
             .and_then(|p| p.provider_id.as_ref())
             .is_some_and(|v| v.as_str() == "provider:alpha")
             && props.and_then(|p| p.key_protection) == Some(KeyProtection::HardwareSecurityModule)
-            && props.and_then(|p| p.source_quality)
-                == Some(EvidenceQuality::ExternallyVerified),
+            && props.and_then(|p| p.source_quality) == Some(EvidenceQuality::ExternallyVerified),
         parameters_attested: *request.parameter == ProfileParameterWitness::KeyBits(256)
             && props.and_then(|p| p.key_size_bits) == Some(256)
             && props.and_then(|p| p.security_category) == Some(5),
@@ -220,9 +219,11 @@ struct Prepared {
     parameter: ProfileParameterWitness,
 }
 impl Prepared {
-    fn from(policies: &[PolicyDocument], targeted: &PolicyDocument, deviation: ExceptionDeviation)
-        -> Self
-    {
+    fn from(
+        policies: &[PolicyDocument],
+        targeted: &PolicyDocument,
+        deviation: ExceptionDeviation,
+    ) -> Self {
         let target_rule = match deviation {
             ExceptionDeviation::RuleDeny => "r-target-deny",
             ExceptionDeviation::RuleRequirement => "r-target-require",
@@ -247,13 +248,20 @@ impl Prepared {
     fn require() -> Self {
         let mut policy = source_policy("owner:baseline");
         policy.rules.push(mandatory_require("r-target-require"));
-        Self::from(&[policy.clone()], &policy, ExceptionDeviation::RuleRequirement)
+        Self::from(
+            &[policy.clone()],
+            &policy,
+            ExceptionDeviation::RuleRequirement,
+        )
     }
 
     fn run(&self) -> WaiverAdmissionReport {
         self.run_with(
-            &exception_verifier, &owner_verifier, &registry_verifier,
-            &key_verifier, &source_verifier,
+            &exception_verifier,
+            &owner_verifier,
+            &registry_verifier,
+            &key_verifier,
+            &source_verifier,
         )
     }
     fn run_with<
@@ -288,35 +296,60 @@ impl Prepared {
                 },
                 parameter: &self.parameter,
             },
-            e, a, r, k, p,
-        ).unwrap()
+            e,
+            a,
+            r,
+            k,
+            p,
+        )
+        .unwrap()
     }
 }
 
 #[test]
 fn owner_approved_matching_deny_uses_qualified_policy_not_profile_stripping() {
     let prepared = Prepared::deny();
-    let original = prepared.graph.evaluate(
-        &prepared.context, at(150), &Limits::default()
-    ).unwrap();
+    let original = prepared
+        .graph
+        .evaluate(&prepared.context, at(150), &Limits::default())
+        .unwrap();
     assert_eq!(original.outcome, DecisionOutcome::Deny);
-    assert_eq!(prepared.run_with(
-        &UnverifiedExceptionReferences, &owner_verifier,
-        &registry_verifier, &key_verifier, &source_verifier,
-    ).disposition, WaiverAdmissionDisposition::ExceptionNotReady);
+    assert_eq!(
+        prepared
+            .run_with(
+                &UnverifiedExceptionReferences,
+                &owner_verifier,
+                &registry_verifier,
+                &key_verifier,
+                &source_verifier,
+            )
+            .disposition,
+        WaiverAdmissionDisposition::ExceptionNotReady
+    );
 
     let report = prepared.run();
-    assert_eq!(report.disposition, WaiverAdmissionDisposition::CandidateEvaluated);
+    assert_eq!(
+        report.disposition,
+        WaiverAdmissionDisposition::CandidateEvaluated
+    );
     assert_eq!(report.original, original);
     assert_eq!(report.original_effective_digest, *prepared.graph.digest());
     assert_eq!(report.candidate_outcome, DecisionOutcome::Permit);
     let candidate = report.candidate_target_layer.as_ref().unwrap();
     assert_eq!(candidate.outcome, DecisionOutcome::Permit);
     assert_ne!(candidate.policy_digest, prepared.exception.policy.digest);
-    assert!(candidate.reasons.iter().any(|reason| reason.code == ReasonCode::RequirementSatisfied
-        && reason.rule_id.as_ref().is_some_and(|r| r.as_str() == "r-require-protection")));
+    assert!(candidate.reasons.iter().any(|reason| {
+        reason.code == ReasonCode::RequirementSatisfied
+            && reason
+                .rule_id
+                .as_ref()
+                .is_some_and(|r| r.as_str() == "r-require-protection")
+    }));
     assert_eq!(
-        prepared.graph.evaluate(&prepared.context, at(150), &Limits::default()).unwrap(),
+        prepared
+            .graph
+            .evaluate(&prepared.context, at(150), &Limits::default())
+            .unwrap(),
         original
     );
     assert_eq!(report, prepared.run());
@@ -325,101 +358,168 @@ fn owner_approved_matching_deny_uses_qualified_policy_not_profile_stripping() {
 #[test]
 fn specifically_approved_failed_mandatory_require_is_only_hypothetically_removed() {
     let prepared = Prepared::require();
-    let original = prepared.graph.evaluate(
-        &prepared.context, at(150), &Limits::default()
-    ).unwrap();
+    let original = prepared
+        .graph
+        .evaluate(&prepared.context, at(150), &Limits::default())
+        .unwrap();
     assert_eq!(original.outcome, DecisionOutcome::Deny);
     assert!(original.components[0].decision.reasons.iter().any(|r| {
-        r.rule_id.as_ref().is_some_and(|id| id.as_str() == "r-target-require")
+        r.rule_id
+            .as_ref()
+            .is_some_and(|id| id.as_str() == "r-target-require")
             && r.code == ReasonCode::RequirementNotSatisfied
     }));
     // The original FOSS-500/A evaluator remains reject-by-default for Require.
-    assert!(evaluate_deny_waiver_candidate(
-        WaiverCandidateRequest {
-            effective: &prepared.graph,
-            context: &prepared.context,
-            actual_scope: &prepared.exception.scope,
-            time: at(150),
-            exception: &prepared.exception,
-            grant: &prepared.grant,
-            limits: &Limits::default(),
-        },
-        &exception_verifier,
-        &owner_verifier,
-    ).is_err());
+    assert!(
+        evaluate_deny_waiver_candidate(
+            WaiverCandidateRequest {
+                effective: &prepared.graph,
+                context: &prepared.context,
+                actual_scope: &prepared.exception.scope,
+                time: at(150),
+                exception: &prepared.exception,
+                grant: &prepared.grant,
+                limits: &Limits::default(),
+            },
+            &exception_verifier,
+            &owner_verifier,
+        )
+        .is_err()
+    );
     let result = prepared.run();
-    assert_eq!(result.disposition, WaiverAdmissionDisposition::CandidateEvaluated);
+    assert_eq!(
+        result.disposition,
+        WaiverAdmissionDisposition::CandidateEvaluated
+    );
     assert_eq!(result.candidate_outcome, DecisionOutcome::Permit);
     assert_eq!(result.original, original);
-    assert!(result.candidate_target_layer.as_ref().unwrap().matched_rules.iter()
-        .all(|id| id.as_str() != "r-target-require"));
+    assert!(
+        result
+            .candidate_target_layer
+            .as_ref()
+            .unwrap()
+            .matched_rules
+            .iter()
+            .all(|id| id.as_str() != "r-target-require")
+    );
 }
 
 #[test]
 fn missing_or_untrusted_source_and_actual_key_never_become_candidate_permit() {
     let fixture = Prepared::deny();
     let missing_source = fixture.run_with(
-        &exception_verifier, &owner_verifier, &registry_verifier,
-        &key_verifier, &UnverifiedProfileEvidence,
+        &exception_verifier,
+        &owner_verifier,
+        &registry_verifier,
+        &key_verifier,
+        &UnverifiedProfileEvidence,
     );
-    assert_eq!(missing_source.disposition, WaiverAdmissionDisposition::ProfileQualificationNotReady);
+    assert_eq!(
+        missing_source.disposition,
+        WaiverAdmissionDisposition::ProfileQualificationNotReady
+    );
     assert_eq!(missing_source.candidate_outcome, DecisionOutcome::Deny);
     assert!(missing_source.candidate_target_layer.is_none());
 
     let wrong_key = fixture.run_with(
-        &exception_verifier, &owner_verifier, &registry_verifier,
-        &UnverifiedKeyProfileBinding, &source_verifier,
+        &exception_verifier,
+        &owner_verifier,
+        &registry_verifier,
+        &UnverifiedKeyProfileBinding,
+        &source_verifier,
     );
-    assert_eq!(wrong_key.disposition, WaiverAdmissionDisposition::KeyBindingUnverified);
+    assert_eq!(
+        wrong_key.disposition,
+        WaiverAdmissionDisposition::KeyBindingUnverified
+    );
     assert_eq!(wrong_key.candidate_outcome, DecisionOutcome::Deny);
     let wrong_owner = fixture.run_with(
-        &exception_verifier, &UnverifiedPolicyWaiverAuthority, &registry_verifier,
-        &key_verifier, &source_verifier,
+        &exception_verifier,
+        &UnverifiedPolicyWaiverAuthority,
+        &registry_verifier,
+        &key_verifier,
+        &source_verifier,
     );
-    assert_eq!(wrong_owner.disposition, WaiverAdmissionDisposition::GrantNotAuthorized);
+    assert_eq!(
+        wrong_owner.disposition,
+        WaiverAdmissionDisposition::GrantNotAuthorized
+    );
     let wrong_registry = fixture.run_with(
-        &exception_verifier, &owner_verifier, &UnverifiedWaivabilityRegistry,
-        &key_verifier, &source_verifier,
+        &exception_verifier,
+        &owner_verifier,
+        &UnverifiedWaivabilityRegistry,
+        &key_verifier,
+        &source_verifier,
     );
-    assert_eq!(wrong_registry.disposition, WaiverAdmissionDisposition::RegistryNotAuthorized);
+    assert_eq!(
+        wrong_registry.disposition,
+        WaiverAdmissionDisposition::RegistryNotAuthorized
+    );
 }
 
 #[test]
 fn altered_profile_key_tenant_operation_nonce_grant_and_expiry_fail_closed() {
     let mut f = Prepared::deny();
     f.context.facts[0].profile_id = Some(ProfileId::parse("AES-128-GCM").unwrap());
-    assert_eq!(f.run().disposition, WaiverAdmissionDisposition::ScopeMismatch);
+    assert_eq!(
+        f.run().disposition,
+        WaiverAdmissionDisposition::ScopeMismatch
+    );
 
     f = Prepared::deny();
     f.key.key_version_ref = EvidenceId::parse("key-version:replayed").unwrap();
-    assert_eq!(f.run().disposition, WaiverAdmissionDisposition::KeyBindingUnverified);
+    assert_eq!(
+        f.run().disposition,
+        WaiverAdmissionDisposition::KeyBindingUnverified
+    );
 
     f = Prepared::deny();
     f.exception.scope.tenant_id = PolicyId::parse("tenant:other").unwrap();
-    assert_eq!(f.run().disposition, WaiverAdmissionDisposition::ScopeMismatch);
+    assert_eq!(
+        f.run().disposition,
+        WaiverAdmissionDisposition::ScopeMismatch
+    );
 
     f = Prepared::deny();
     f.context.operation = CryptoOperation::Decrypt;
-    assert_eq!(f.run().disposition, WaiverAdmissionDisposition::ScopeMismatch);
+    assert_eq!(
+        f.run().disposition,
+        WaiverAdmissionDisposition::ScopeMismatch
+    );
 
     f = Prepared::deny();
     f.registry.nonce = EvidenceId::parse("registry-nonce:replayed").unwrap();
-    assert_eq!(f.run().disposition, WaiverAdmissionDisposition::RegistryNotAuthorized);
+    assert_eq!(
+        f.run().disposition,
+        WaiverAdmissionDisposition::RegistryNotAuthorized
+    );
 
     f = Prepared::deny();
     f.grant.policy_authority_ref = EvidenceId::parse("owner-grant:forged").unwrap();
-    assert_eq!(f.run().disposition, WaiverAdmissionDisposition::GrantNotAuthorized);
+    assert_eq!(
+        f.run().disposition,
+        WaiverAdmissionDisposition::GrantNotAuthorized
+    );
 
     f = Prepared::deny();
     f.exception.expires_at = at(150);
     f.grant.exception_digest = f.exception.correlation_digest().unwrap();
-    assert_eq!(f.run().disposition, WaiverAdmissionDisposition::ExceptionNotReady);
+    assert_eq!(
+        f.run().disposition,
+        WaiverAdmissionDisposition::ExceptionNotReady
+    );
 
     f = Prepared::deny();
     f.context.evaluation_time = at(199);
-    assert_eq!(f.run().disposition, WaiverAdmissionDisposition::CandidateEvaluated);
+    assert_eq!(
+        f.run().disposition,
+        WaiverAdmissionDisposition::CandidateEvaluated
+    );
     f.context.evaluation_time = at(250);
-    assert_eq!(f.run().disposition, WaiverAdmissionDisposition::RegistryNotAuthorized);
+    assert_eq!(
+        f.run().disposition,
+        WaiverAdmissionDisposition::RegistryNotAuthorized
+    );
 }
 
 #[test]
@@ -430,7 +530,10 @@ fn nonmatching_target_and_wrong_owner_rule_can_never_be_waived() {
     inactive.selector.operation = Some(CryptoOperation::Decrypt);
     policy.rules.push(inactive);
     let original = Prepared::from(&[policy.clone()], &policy, ExceptionDeviation::RuleDeny);
-    assert_eq!(original.run().disposition, WaiverAdmissionDisposition::NoMatchingExplicitDeny);
+    assert_eq!(
+        original.run().disposition,
+        WaiverAdmissionDisposition::NoMatchingExplicitDeny
+    );
     let mut wrong = Prepared::deny();
     wrong.exception.target_rule = RuleId::parse("r-unknown-rule").unwrap();
     assert_ne!(wrong.run().candidate_outcome, DecisionOutcome::Permit);
@@ -439,15 +542,21 @@ fn nonmatching_target_and_wrong_owner_rule_can_never_be_waived() {
 #[test]
 fn failed_compensation_blocks_even_if_target_deny_could_be_removed() {
     let mut source = source_policy("owner:baseline");
-    source.rules.iter_mut()
+    source
+        .rules
+        .iter_mut()
         .find(|rule| rule.rule_id.as_str() == "r-require-protection")
         .unwrap()
-        .requirements.push(Requirement::KeyExportable(true));
+        .requirements
+        .push(Requirement::KeyExportable(true));
     source.rules.push(deny("r-target-deny"));
     let f = Prepared::from(&[source.clone()], &source, ExceptionDeviation::RuleDeny);
     let report = f.run();
     assert_eq!(report.original.outcome, DecisionOutcome::Deny);
-    assert_eq!(report.disposition, WaiverAdmissionDisposition::CompensationNotSatisfied);
+    assert_eq!(
+        report.disposition,
+        WaiverAdmissionDisposition::CompensationNotSatisfied
+    );
     assert_eq!(report.candidate_outcome, DecisionOutcome::Deny);
     assert!(report.candidate_target_layer.is_none());
 }
@@ -458,10 +567,20 @@ fn unrelated_mandatory_baseline_deny_still_dominates_qualified_overlay_candidate
     baseline.rules.push(deny("r-independent-hard-deny"));
     let mut overlay = source_policy("org:waivable-overlay");
     overlay.rules.push(deny("r-target-deny"));
-    let f = Prepared::from(&[baseline, overlay.clone()], &overlay, ExceptionDeviation::RuleDeny);
+    let f = Prepared::from(
+        &[baseline, overlay.clone()],
+        &overlay,
+        ExceptionDeviation::RuleDeny,
+    );
     let report = f.run();
-    assert_eq!(report.disposition, WaiverAdmissionDisposition::CandidateEvaluated);
-    assert_eq!(report.candidate_target_layer.as_ref().unwrap().outcome, DecisionOutcome::Permit);
+    assert_eq!(
+        report.disposition,
+        WaiverAdmissionDisposition::CandidateEvaluated
+    );
+    assert_eq!(
+        report.candidate_target_layer.as_ref().unwrap().outcome,
+        DecisionOutcome::Permit
+    );
     assert_eq!(report.candidate_outcome, DecisionOutcome::Deny);
     assert_eq!(report.original.outcome, DecisionOutcome::Deny);
     assert_eq!(report.original.components.len(), 2);
@@ -473,6 +592,9 @@ fn policy_expiry_cannot_be_bypassed_by_a_permitted_target_rule_exception() {
     policy.expires_at = Some(at(150));
     policy.rules.push(deny("r-target-deny"));
     let f = Prepared::from(&[policy.clone()], &policy, ExceptionDeviation::RuleDeny);
-    assert_eq!(f.run().disposition, WaiverAdmissionDisposition::NoMatchingExplicitDeny);
+    assert_eq!(
+        f.run().disposition,
+        WaiverAdmissionDisposition::NoMatchingExplicitDeny
+    );
     assert_eq!(f.run().candidate_outcome, DecisionOutcome::Deny);
 }

@@ -11,10 +11,10 @@
 use crate::{
     CompositionError, DecisionOutcome, ExceptionDeviation, ExceptionSourceVerifier,
     KeyProfileBindingVerifier, PolicyWaiverAuthorityVerifier, ProfileEvidenceVerifier,
-    ProfileParameterWitness, ProfileQualificationFinding, ProfileQualificationRequest,
-    ReasonCode, ReviewedWaiverRequest, RuleEffect, WaivabilityRegistryVerifier,
-    WaiverAdmissionDisposition, WaiverAdmissionReport, WaiverCandidateRequest,
-    evaluate_qualified_profile_with_limits, evaluate_reviewed_waiver_candidate,
+    ProfileParameterWitness, ProfileQualificationFinding, ProfileQualificationRequest, ReasonCode,
+    ReviewedWaiverRequest, RuleEffect, WaivabilityRegistryVerifier, WaiverAdmissionDisposition,
+    WaiverAdmissionReport, WaiverCandidateRequest, evaluate_qualified_profile_with_limits,
+    evaluate_reviewed_waiver_candidate,
 };
 
 /// One immutable, original target and its explicitly attested profile witness.
@@ -145,7 +145,10 @@ pub fn evaluate_attested_waiver_candidate<
     let blocked = preflight.original.components.iter().any(|layer| {
         layer.reference == exception.policy
             && layer.decision.outcome != DecisionOutcome::Permit
-            && layer.decision.matched_rules.contains(&exception.target_rule)
+            && layer
+                .decision
+                .matched_rules
+                .contains(&exception.target_rule)
             && layer.decision.reasons.iter().any(|reason| {
                 reason.rule_id.as_ref() == Some(&exception.target_rule)
                     && match exception.deviation {
