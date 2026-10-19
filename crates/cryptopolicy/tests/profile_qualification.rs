@@ -765,7 +765,6 @@ fn changed_source_or_exact_profile_identity_reverts_to_conservative_result() {
     assert_ne!(d.decision.outcome, DecisionOutcome::Permit);
 }
 
-
 #[test]
 fn rejected_qualification_cannot_fall_back_to_legacy_classical_preview_permit() {
     let (mut c, scope, binding) = prepare("AES-256-GCM", CryptoOperation::Encrypt);
@@ -786,21 +785,40 @@ fn rejected_qualification_cannot_fall_back_to_legacy_classical_preview_permit() 
         limits: &Limits::default(),
     };
     let gated = evaluate_qualified_profile_with_limits(
-        &p, req, &SyntheticEvidenceSource, &SyntheticKeyOwner,
-    ).unwrap();
-    assert_eq!(gated.qualification.finding, ProfileQualificationFinding::ScopeMismatch);
+        &p,
+        req,
+        &SyntheticEvidenceSource,
+        &SyntheticKeyOwner,
+    )
+    .unwrap();
+    assert_eq!(
+        gated.qualification.finding,
+        ProfileQualificationFinding::ScopeMismatch
+    );
     assert_eq!(gated.decision.outcome, DecisionOutcome::Indeterminate);
-    assert!(gated.decision.reasons.iter().any(|reason| {
-        reason.code == ReasonCode::UnsupportedProfile
-    }));
-    assert!(!gated.decision.reasons.iter().any(|reason| {
-        reason.code == ReasonCode::ExplicitAllow
-    }));
+    assert!(
+        gated
+            .decision
+            .reasons
+            .iter()
+            .any(|reason| { reason.code == ReasonCode::UnsupportedProfile })
+    );
+    assert!(
+        !gated
+            .decision
+            .reasons
+            .iter()
+            .any(|reason| { reason.code == ReasonCode::ExplicitAllow })
+    );
     assert_eq!(gated.decision.policy_digest, legacy.policy_digest);
     // Untrusted source gates cannot regain preview Permit even if the
     // original caller's fact sets verified=true and claims external quality.
     let untrusted = evaluate_qualified_profile_with_limits(
-        &p, req, &UnverifiedProfileEvidence, &UnverifiedKeyProfileBinding,
-    ).unwrap();
+        &p,
+        req,
+        &UnverifiedProfileEvidence,
+        &UnverifiedKeyProfileBinding,
+    )
+    .unwrap();
     assert_eq!(untrusted.decision.outcome, DecisionOutcome::Indeterminate);
 }
