@@ -183,7 +183,10 @@ fn unsupported_key_agreement_and_derivation_never_coerce_to_kem_usage() {
         let (mut context, scope, binding) = prepare("ML-KEM-1024", operation);
         context.facts[0].properties.as_mut().unwrap().key_size_bits = None;
         let result = qualify(&context, &scope, &binding, &named("ML-KEM-1024"));
-        assert_eq!(result.finding, ProfileQualificationFinding::OperationUnsupported);
+        assert_eq!(
+            result.finding,
+            ProfileQualificationFinding::OperationUnsupported
+        );
     }
 }
 
