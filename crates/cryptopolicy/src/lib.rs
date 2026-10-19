@@ -7,6 +7,7 @@
 #![warn(missing_docs)]
 
 mod assessment;
+mod attested_waiver;
 mod capability;
 mod composition;
 mod evaluator;
