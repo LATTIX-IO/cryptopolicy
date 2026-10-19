@@ -258,10 +258,12 @@ pub fn build_blocked_exception_audit_receipt(
     }
     // This negative-only receipt must really be based on a matching Deny,
     // not invented "block" metadata or a no-rule/default policy.
-    if !target.decision.reasons.iter().any(|reason| {
-        reason.rule_id.as_ref() == Some(&reference.target_rule)
-            && reason.code == ReasonCode::ExplicitDeny
-    }) {
+    if !target.decision.matched_rules.contains(&reference.target_rule)
+        || !target.decision.reasons.iter().any(|reason| {
+            reason.rule_id.as_ref() == Some(&reference.target_rule)
+                && reason.code == ReasonCode::ExplicitDeny
+        })
+    {
         return Err(ExceptionAuditError::ReceiptInconsistent);
     }
     // Recompute aggregate precedence from every real serialized layer.
@@ -288,10 +290,25 @@ pub fn build_blocked_exception_audit_receipt(
         return Err(ExceptionAuditError::ReceiptInconsistent);
     }
     let mut actual_reasons = BTreeSet::new();
+    let mut pinned_layers = BTreeSet::new();
     for layer in &report.original.components {
-        if layer.decision.policy_digest != layer.reference.digest
+        if !pinned_layers.insert(&layer.reference)
+            || layer.decision.schema_version != SchemaVersion::V1
+            || layer.decision.policy_id != layer.reference.policy_id
+            || layer.decision.policy_version != layer.reference.version
+            || layer.decision.policy_digest != layer.reference.digest
             || layer.decision.evaluated_at != bound.evaluation_time
         {
+            return Err(ExceptionAuditError::ReceiptInconsistent);
+        }
+        // A reported ExplicitDeny without a matching target rule in the
+        // original decision cannot be treated as an actual evaluator reason.
+        if layer.decision.reasons.iter().any(|reason| {
+            reason.code == ReasonCode::ExplicitDeny
+                && !reason.rule_id.as_ref().is_some_and(|id| {
+                    layer.decision.matched_rules.contains(id)
+                })
+        }) {
             return Err(ExceptionAuditError::ReceiptInconsistent);
         }
         for reason in &layer.decision.reasons {
