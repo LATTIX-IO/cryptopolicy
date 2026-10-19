@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-501/A: strict, redacted, blocked-only exception audit receipts with correlation-only SHA-256, exact source rule/policy/time/reason linkage, and a typed InvalidException for missing/untrusted approval. Real normative runtime tests CASE-008/009/010 increase honest partial conformance to 22/33 (11 pending); no positive waiver or enforcement authority.
+
 - FOSS-502: versioned exact policy-owner waivability registry with external approval/delegation/replay/revocation verifier, named actual-key/profile binding and distinct verifier, plus an explicit fail-closed `ProfileEvaluatorUnsupported` outcome until FOSS-503 supplies a source-authenticated catalog-aware named-profile evaluator. No cloned candidate or compensating-rule success is claimed for named-profile requests. Legacy FOSS-500/A behavior remains default-deny for profile-bearing contexts and unreviewed Require deviations. Added negative security, temporal and cross-policy tests; no corpus claim or crate publication.
 
 - FOSS-500/A: purely simulated, exact-scope targeted Deny-waiver admission against immutable compiled policies, gated by independently verified E0 exception reference plus policy-owner grant, exact tenant/environment/operation/key binding and nonempty `Require` compensators. Every unrelated mandatory Deny and Indeterminate remains effective; candidate digest differs from pinned source. Default owner verifier denies. No auth tokens, live PEP, signing, conformance promotion or publishing.
