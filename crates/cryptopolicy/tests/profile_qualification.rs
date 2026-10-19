@@ -428,3 +428,220 @@ fn caller_constructed_oversize_context_is_checked_before_json_allocation() {
         ProfileQualificationFinding::ScopeMismatch
     );
 }
+
+
+// FOSS-507: the separately qualified evaluator is never a PEP authorization
+// token. These tests exercise the actual v1 evaluator's original rule/deny
+// precedence, not reconstructed fixture expectations or a Permit shortcut.
+
+fn fixture_policy() -> PolicyDocument {
+    PolicyDocument::parse_json(include_bytes!("fixtures/evaluator-policy-v1.json")).unwrap()
+}
+fn verified_policy_evaluation(
+    policy: &PolicyDocument,
+    context: &CryptoContext,
+    scope: &ExceptionScope,
+    binding: &KeyProfileBinding,
+    witness: &ProfileParameterWitness,
+) -> QualifiedProfilePolicyDecision {
+    evaluate_qualified_profile_with_limits(
+        policy,
+        ProfileQualificationRequest {
+            context,
+            actual_scope: scope,
+            binding,
+            parameter: witness,
+            time: context.evaluation_time,
+            limits: &Limits::default(),
+        },
+        &SyntheticEvidenceSource,
+        &SyntheticKeyOwner,
+    )
+    .unwrap()
+}
+
+#[test]
+fn verified_profile_evaluator_interprets_exact_allow_without_changing_legacy() {
+    let (c, scope, binding) = prepare("AES-256-GCM", CryptoOperation::Encrypt);
+    let witness = ProfileParameterWitness::KeyBits(256);
+    let mut p = fixture_policy();
+    let allow = p.rules.iter_mut().find(|rule| rule.rule_id.as_str() == "r-allow-aes").unwrap();
+    allow.selector.profile_id = Some(ProfileId::parse("AES-256-GCM").unwrap());
+    allow.requirements.push(Requirement::Profile(ProfileId::parse("AES-256-GCM").unwrap()));
+    let before = evaluate_with_limits(&p, &c, c.evaluation_time, &Limits::default()).unwrap();
+    assert_eq!(before.outcome, DecisionOutcome::Indeterminate);
+    let after = verified_policy_evaluation(&p, &c, &scope, &binding, &witness);
+    assert_eq!(after.qualification.finding, ProfileQualificationFinding::ReadyForVerifiedEvaluator);
+    assert_eq!(after.decision.outcome, DecisionOutcome::Permit);
+    assert_eq!(after.decision.policy_digest, p.canonical_digest().unwrap());
+    assert_eq!(before.policy_digest, after.decision.policy_digest);
+    assert!(after.decision.reasons.iter().any(|r| r.code == ReasonCode::ExplicitAllow));
+    assert!(after.decision.reasons.iter().any(|r| r.code == ReasonCode::RequirementSatisfied));
+    assert_eq!(after, verified_policy_evaluation(&p, &c, &scope, &binding, &witness));
+    // No caller flag has changed the meaning of the original entrypoint.
+    assert_eq!(before, evaluate_with_limits(&p, &c, c.evaluation_time, &Limits::default()).unwrap());
+}
+
+#[test]
+fn canonical_pqc_signature_profile_requires_real_source_binding_and_explicit_allow() {
+    let (mut c, scope, binding) = prepare("ML-DSA-65", CryptoOperation::Verify);
+    c.facts[0].properties.as_mut().unwrap().key_size_bits = None;
+    c.facts[0].properties.as_mut().unwrap().security_category = Some(3);
+    let mut p = fixture_policy();
+    p.rules.clear();
+    let profile = ProfileId::parse("ML-DSA-65").unwrap();
+    p.rules.push(PolicyRule {
+        rule_id: RuleId::parse("allow-attested-ml-dsa").unwrap(),
+        effect: RuleEffect::Allow,
+        selector: RuleSelector {
+            match_all: false,
+            operation: Some(CryptoOperation::Verify),
+            algorithm_id: Some(AlgorithmId::parse("ML-DSA-65").unwrap()),
+            profile_id: Some(profile.clone()),
+            environment: Some("prod".to_string()),
+            advanced: None,
+        },
+        requirements: vec![
+            Requirement::Profile(profile.clone()),
+            Requirement::SourceQuality(EvidenceQuality::ExternallyVerified),
+        ],
+        temporal: None,
+    });
+    let named = ProfileParameterWitness::NamedSet(profile);
+    assert_eq!(evaluate(&p, &c, c.evaluation_time).unwrap().outcome, DecisionOutcome::Indeterminate);
+    let evaluated = verified_policy_evaluation(&p, &c, &scope, &binding, &named);
+    assert_eq!(evaluated.qualification.finding, ProfileQualificationFinding::ReadyForVerifiedEvaluator);
+    assert_eq!(evaluated.decision.outcome, DecisionOutcome::Permit);
+    assert_eq!(evaluated.decision.policy_digest, p.canonical_digest().unwrap());
+}
+
+#[test]
+fn qualified_fact_never_overrides_explicit_deny_or_unsatisfied_mandatory_require() {
+    let (mut c, scope, binding) = prepare("AES-256-GCM", CryptoOperation::Encrypt);
+    let witness = ProfileParameterWitness::KeyBits(256);
+    let mut p = fixture_policy();
+    p.rules.push(PolicyRule {
+        rule_id: RuleId::parse("x-foss-507-deny").unwrap(),
+        effect: RuleEffect::Deny,
+        selector: RuleSelector {
+            match_all: true, operation: None, algorithm_id: None,
+            profile_id: None, environment: None, advanced: None,
+        },
+        requirements: vec![],
+        temporal: None,
+    });
+    for order in 0..2 {
+        if order == 1 { p.rules.reverse(); }
+        let d = verified_policy_evaluation(&p, &c, &scope, &binding, &witness).decision;
+        assert_eq!(d.outcome, DecisionOutcome::Deny);
+        assert!(d.reasons.iter().any(|r| r.code == ReasonCode::ExplicitDeny));
+        assert!(!d.reasons.iter().any(|r| r.code == ReasonCode::ExplicitAllow));
+    }
+    p = fixture_policy();
+    p.rules.iter_mut().find(|r| r.rule_id.as_str() == "r-require-protection").unwrap()
+        .requirements.push(Requirement::KeyExportable(true));
+    let denied = verified_policy_evaluation(&p, &c, &scope, &binding, &witness).decision;
+    assert_eq!(denied.outcome, DecisionOutcome::Deny);
+    assert!(denied.reasons.iter().any(|r| r.code == ReasonCode::RequirementNotSatisfied));
+    c.facts[0].properties.as_mut().unwrap().key_exportable = None;
+    let uncertain = verified_policy_evaluation(&p, &c, &scope, &binding, &witness).decision;
+    assert_eq!(uncertain.outcome, DecisionOutcome::Indeterminate);
+    assert!(uncertain.reasons.iter().any(|r| r.code == ReasonCode::MissingRequiredAttribute));
+}
+
+#[test]
+fn qualified_fact_without_explicit_allow_is_still_denied() {
+    let (c, scope, binding) = prepare("AES-256-GCM", CryptoOperation::Encrypt);
+    let mut p = fixture_policy();
+    p.rules.retain(|r| r.effect != RuleEffect::Allow);
+    // Even an explicit default Allow cannot authorize an unmatched context.
+    p.default_effect = DefaultEffect::Allow;
+    let d = verified_policy_evaluation(
+        &p, &c, &scope, &binding, &ProfileParameterWitness::KeyBits(256)
+    );
+    assert_eq!(d.qualification.finding, ProfileQualificationFinding::ReadyForVerifiedEvaluator);
+    assert_eq!(d.decision.outcome, DecisionOutcome::Deny);
+    assert!(d.decision.reasons.iter().any(|r| r.code == ReasonCode::DefaultDenied));
+}
+
+#[test]
+fn default_deny_verifiers_cannot_promote_a_spoofed_qualification_report() {
+    let (c, scope, binding) = prepare("AES-256-GCM", CryptoOperation::Encrypt);
+    let p = fixture_policy();
+    let witness = ProfileParameterWitness::KeyBits(256);
+    let req = ProfileQualificationRequest {
+        context: &c, actual_scope: &scope, binding: &binding,
+        parameter: &witness, time: c.evaluation_time, limits: &Limits::default(),
+    };
+    for untrusted in 0..2 {
+        let checked = if untrusted == 0 {
+            evaluate_qualified_profile_with_limits(
+                &p, req, &UnverifiedProfileEvidence, &SyntheticKeyOwner,
+            ).unwrap()
+        } else {
+            evaluate_qualified_profile_with_limits(
+                &p, req, &SyntheticEvidenceSource, &UnverifiedKeyProfileBinding,
+            ).unwrap()
+        };
+        assert_eq!(checked.decision.outcome, DecisionOutcome::Indeterminate);
+        assert_ne!(checked.qualification.finding,
+            ProfileQualificationFinding::ReadyForVerifiedEvaluator);
+    }
+    // A forged/mutated public metadata report is not accepted as proof by
+    // evaluate_qualified_profile_with_limits, which accepts ONLY the actual
+    // verified source/key callbacks and re-runs qualification on every call.
+    let mut forged = qualify_embedded_profile(
+        req, &UnverifiedProfileEvidence, &SyntheticKeyOwner
+    ).unwrap();
+    forged.finding = ProfileQualificationFinding::ReadyForVerifiedEvaluator;
+    assert_eq!(forged.finding, ProfileQualificationFinding::ReadyForVerifiedEvaluator);
+    let denied = evaluate_qualified_profile_with_limits(
+        &p, req, &UnverifiedProfileEvidence, &SyntheticKeyOwner,
+    ).unwrap();
+    assert_eq!(denied.decision.outcome, DecisionOutcome::Indeterminate);
+}
+
+#[test]
+fn named_hybrid_remains_unsupported_even_with_verified_canonical_profile() {
+    let (c, scope, binding) = prepare("AES-256-GCM", CryptoOperation::Encrypt);
+    let mut p = fixture_policy();
+    p.rules.iter_mut().find(|r| r.rule_id.as_str() == "r-allow-aes").unwrap()
+        .requirements.push(Requirement::NamedHybrid(ProfileId::parse("AES-256-GCM").unwrap()));
+    let d = verified_policy_evaluation(
+        &p, &c, &scope, &binding, &ProfileParameterWitness::KeyBits(256),
+    );
+    assert_eq!(d.qualification.finding, ProfileQualificationFinding::ReadyForVerifiedEvaluator);
+    assert_eq!(d.decision.outcome, DecisionOutcome::Indeterminate);
+    assert!(d.decision.reasons.iter().any(|r| r.code == ReasonCode::UnsupportedProfile));
+}
+
+#[test]
+fn verified_profile_policy_expiry_and_activation_use_only_explicit_utc() {
+    let (mut c, scope, binding) = prepare("AES-256-GCM", CryptoOperation::Encrypt);
+    let p = fixture_policy();
+    let witness = ProfileParameterWitness::KeyBits(256);
+    for (time, expected) in [(99, DecisionOutcome::Deny), (100, DecisionOutcome::Permit),
+                             (199, DecisionOutcome::Permit), (200, DecisionOutcome::Deny)] {
+        c.evaluation_time = EvaluationTime { unix_millis: time };
+        let d = verified_policy_evaluation(&p, &c, &scope, &binding, &witness);
+        assert_eq!(d.decision.outcome, expected, "boundary {time}");
+        assert_eq!(d.decision.evaluated_at, c.evaluation_time);
+        assert_eq!(d.decision.policy_digest, p.canonical_digest().unwrap());
+    }
+}
+
+#[test]
+fn changed_source_or_exact_profile_identity_reverts_to_conservative_result() {
+    let (mut c, scope, binding) = prepare("AES-256-GCM", CryptoOperation::Encrypt);
+    let p = fixture_policy();
+    let witness = ProfileParameterWitness::KeyBits(256);
+    c.facts[0].profile_id = Some(ProfileId::parse("AES-128-GCM").unwrap());
+    let d = verified_policy_evaluation(&p, &c, &scope, &binding, &witness);
+    assert_eq!(d.qualification.finding, ProfileQualificationFinding::ScopeMismatch);
+    assert_ne!(d.decision.outcome, DecisionOutcome::Permit);
+    c.facts[0].profile_id = Some(ProfileId::parse("AES-256-GCM").unwrap());
+    c.facts[0].evidence_ref = Some(EvidenceId::parse("attest:forged").unwrap());
+    let d = verified_policy_evaluation(&p, &c, &scope, &binding, &witness);
+    assert_eq!(d.qualification.finding, ProfileQualificationFinding::EvidenceIncomplete);
+    assert_ne!(d.decision.outcome, DecisionOutcome::Permit);
+}
