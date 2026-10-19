@@ -24,10 +24,17 @@ It never takes an externally supplied `ProfileQualificationReport` as
 proof. Caller-declared `verified=true`, `source_quality=externally_verified`,
 source IDs, canonical strings and policy issuer fields alone are untrusted.
 A verifier implemented to trust these unverified strings would violate its
-security contract.
+security contract. In particular, the source verifier MUST authenticate the
+integrity of the **entire policy-relevant observed fact**, not merely an
+`evidence_ref` string: classification, claimed security category, provider,
+key protection, exportability, key length, operation, profile and provenance
+must be covered by the original attested source or independently verified
+within that consuming application's trust domain. Otherwise neither a
+positive qualification nor any resulting policy Permit can be trusted for
+enforcement.
 
 If and only if the actual qualification returns
-`ReadyForVerifiedEvaluator`, a crate-private evaluator interprets the
+`ReadyForVerifiedEvaluator`, a crate-private, sealed-proof-gated evaluator interprets the
 canonical named profile and explicit `Requirement::Profile` /
 `RuleSelector.profile_id` equality. For every other qualification result
 the normal conservative evaluator is called; a missing or forged
