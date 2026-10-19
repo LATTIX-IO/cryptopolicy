@@ -264,8 +264,25 @@ fn source_quality_missing_attestation_and_nonobserved_facts_never_qualify() {
     );
     c.facts[0].origin = FactOrigin::Observed;
     c.facts[0].verified = false;
+    // A claimed ExternallyVerified source with a false fact-verification flag
+    // is internally contradictory, and must fail structural validation
+    // with an error rather than reaching a normal evidence finding.
+    let witness = ProfileParameterWitness::KeyBits(256);
+    let direct = ProfileQualificationRequest {
+        context: &c,
+        actual_scope: &scope,
+        binding: &binding,
+        parameter: &witness,
+        time: c.evaluation_time,
+        limits: &Limits::default(),
+    };
     assert_eq!(
-        qualify(&c, &scope, &binding, &ProfileParameterWitness::KeyBits(256)).finding,
+        qualify_embedded_profile(direct, &SyntheticEvidenceSource, &SyntheticKeyOwner),
+        Err(ContractError::InvalidDocument("inconsistent_source_quality"))
+    );
+    c.facts[0].properties.as_mut().unwrap().source_quality = None;
+    assert_eq!(
+        qualify(&c, &scope, &binding, &witness).finding,
         ProfileQualificationFinding::EvidenceIncomplete
     );
     c.facts[0].verified = true;
