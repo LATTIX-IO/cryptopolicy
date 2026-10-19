@@ -909,7 +909,10 @@ fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
     impossible_candidate.disposition = cryptopolicy::WaiverAdmissionDisposition::CandidateEvaluated;
     assert_eq!(
         build_blocked_exception_audit_receipt(
-            &impossible_candidate, &e, &bound, &Limits::default()
+            &impossible_candidate,
+            &e,
+            &bound,
+            &Limits::default()
         ),
         Err(ExceptionAuditError::ReceiptInconsistent)
     );
@@ -917,7 +920,10 @@ fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
     inconsistent_outcome.candidate_outcome = DecisionOutcome::Indeterminate;
     assert_eq!(
         build_blocked_exception_audit_receipt(
-            &inconsistent_outcome, &e, &bound, &Limits::default()
+            &inconsistent_outcome,
+            &e,
+            &bound,
+            &Limits::default()
         ),
         Err(ExceptionAuditError::ReceiptInconsistent)
     );
