@@ -611,22 +611,33 @@ fn unrelated_indeterminate_baseline_remains_indeterminate_after_qualified_waiver
         .iter()
         .find(|component| component.reference.policy_id == baseline.policy_id)
         .unwrap();
-    assert_eq!(original_baseline.decision.outcome, DecisionOutcome::Indeterminate);
-    assert!(original_baseline
-        .decision
-        .reasons
-        .iter()
-        .any(|reason| reason.code == ReasonCode::UnsupportedProfile));
+    assert_eq!(
+        original_baseline.decision.outcome,
+        DecisionOutcome::Indeterminate
+    );
+    assert!(
+        original_baseline
+            .decision
+            .reasons
+            .iter()
+            .any(|reason| reason.code == ReasonCode::UnsupportedProfile)
+    );
 
     let report = fixture.run();
-    assert_eq!(report.disposition, WaiverAdmissionDisposition::CandidateEvaluated);
+    assert_eq!(
+        report.disposition,
+        WaiverAdmissionDisposition::CandidateEvaluated
+    );
     assert_eq!(
         report.candidate_target_layer.as_ref().unwrap().outcome,
         DecisionOutcome::Permit
     );
     assert_eq!(report.candidate_outcome, DecisionOutcome::Indeterminate);
     assert_eq!(report.original, original);
-    assert_eq!(report.original_effective_digest, fixture.graph.digest().clone());
+    assert_eq!(
+        report.original_effective_digest,
+        fixture.graph.digest().clone()
+    );
     let unchanged_baseline = report
         .original
         .components
