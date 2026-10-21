@@ -590,6 +590,53 @@ fn unrelated_mandatory_baseline_deny_still_dominates_qualified_overlay_candidate
 }
 
 #[test]
+fn unrelated_indeterminate_baseline_remains_indeterminate_after_qualified_waiver() {
+    // The original legacy evaluator cannot qualify a profile-bearing fact.
+    // Even when the exact target overlay passes the independently attested
+    // hypothetical waiver, a different layer's Indeterminate must survive.
+    let baseline = source_policy("org:indeterminate-baseline");
+    let mut overlay = source_policy("org:waivable-overlay");
+    overlay.rules.push(deny("r-target-deny"));
+    let fixture = Prepared::from(
+        &[baseline.clone(), overlay.clone()],
+        &overlay,
+        ExceptionDeviation::RuleDeny,
+    );
+    let original = fixture
+        .graph
+        .evaluate(&fixture.context, at(150), &Limits::default())
+        .unwrap();
+    let original_baseline = original
+        .components
+        .iter()
+        .find(|component| component.reference.policy_id == baseline.policy_id)
+        .unwrap();
+    assert_eq!(original_baseline.decision.outcome, DecisionOutcome::Indeterminate);
+    assert!(original_baseline
+        .decision
+        .reasons
+        .iter()
+        .any(|reason| reason.code == ReasonCode::UnsupportedProfile));
+
+    let report = fixture.run();
+    assert_eq!(report.disposition, WaiverAdmissionDisposition::CandidateEvaluated);
+    assert_eq!(
+        report.candidate_target_layer.as_ref().unwrap().outcome,
+        DecisionOutcome::Permit
+    );
+    assert_eq!(report.candidate_outcome, DecisionOutcome::Indeterminate);
+    assert_eq!(report.original, original);
+    assert_eq!(report.original_effective_digest, fixture.graph.digest().clone());
+    let unchanged_baseline = report
+        .original
+        .components
+        .iter()
+        .find(|component| component.reference.policy_id == baseline.policy_id)
+        .unwrap();
+    assert_eq!(unchanged_baseline.decision, original_baseline.decision);
+}
+
+#[test]
 fn policy_expiry_cannot_be_bypassed_by_a_permitted_target_rule_exception() {
     let mut policy = source_policy("owner:baseline");
     policy.expires_at = Some(at(150));
