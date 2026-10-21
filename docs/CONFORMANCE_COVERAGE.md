@@ -139,3 +139,30 @@ bounded, deterministic, **non-authorizing** fingerprinted audit from actual
 raw fact/evidence payloads. This does NOT prove a valid signed waiver, a
 production KMS/PDP trust integration, or positive admission. No expected
 values in the 33-case normative JSON were modified.
+
+### FOSS-494 — CASE-026 and CASE-028 consumer-boundary subset
+
+FOSS-494 adds two directly bound, executable normative cases without modifying the
+normative 33-case specification or its pinned blob hash:
+
+- **CASE-026** checks strict rejection of unknown caller-injected secret/token
+  fields without their *values* appearing in parser diagnostics, and verifies
+  that a denied, real evaluator decision does not reflect sensitive policy
+  issuer subjects or request correlation IDs. This is a **bounded subset**
+  of diagnostic redaction, NOT a general sanitization guarantee. The normal
+  `PolicyDecision` still carries original caller-controlled `RuleId` and
+  `EvidenceId` references; they must not contain secret data and must not be
+  logged indiscriminately. A safe public diagnostics projection that
+  pseudonymizes or drops those references remains separate work.
+- **CASE-028** consumes real evaluator Permit/Deny/Indeterminate outcomes and
+  real parse errors through an explicitly **test-only** closure-gated consumer;
+  Deny, Indeterminate and Error never invoke the protected closure. A
+  synthetically permitted fixture tests only the positive branch and cannot
+  authenticate the policy issuer or become a production PEP.
+
+CASE-008/009/010 remain linked to their existing runtime-negative exception
+tests; FOSS-494 does not double-count them. Full normative golden parity is
+still **not** established: runtime-subset coverage is **24/33**, 9 pending.
+The `check_kind` remains `runtime-outcome-and-required-reasons-subset`.
+All source crates remain nonpublishable. FOSS-495 and the release gates must
+stay open until remaining cases have independent executable evidence.
