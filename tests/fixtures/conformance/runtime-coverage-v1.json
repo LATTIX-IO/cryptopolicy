@@ -133,8 +133,8 @@
     },
     {
       "id": "CASE-026",
-      "status": "pending",
-      "reason": "Requested resource, redaction or hybrid-policy semantics not yet bound exactly"
+      "status": "runtime-subset",
+      "test": "case_026_sensitive_context_is_rejected_or_redacted_from_diagnostics"
     },
     {
       "id": "CASE-027",
@@ -143,8 +143,8 @@
     },
     {
       "id": "CASE-028",
-      "status": "pending",
-      "reason": "Downstream enforcement contract is external and not integrated"
+      "status": "runtime-subset",
+      "test": "case_028_indeterminate_and_error_never_execute_test_only_operation"
     },
     {
       "id": "CASE-029",
