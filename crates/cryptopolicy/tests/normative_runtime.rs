@@ -1024,3 +1024,106 @@ fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
         Err(ExceptionAuditError::ReceiptInconsistent)
     );
 }
+
+/*
+ * FOSS-494: consumer-side controls are TEST ONLY. Neither a serialized
+ * PolicyDecision nor a hypothetical waiver is authenticated authorization.
+ */
+#[test]
+fn case_026_sensitive_context_is_rejected_or_redacted_from_diagnostics() {
+    use cryptopolicy::RequestId;
+
+    // Unrecognized sensitive fields cannot be silently accepted by the
+    // strict context parser, and their values must not be echoed in errors.
+    let mut raw = serde_json::to_value(fixture_context()).unwrap();
+    raw["private_key_material"] = serde_json::json!("REDACT_THIS_PRIVATE_KEY");
+    raw["subject_token"] = serde_json::json!("REDACT_THIS_SUBJECT_TOKEN");
+    let parse_error =
+        CryptoContext::parse_json(&serde_json::to_vec(&raw).unwrap()).unwrap_err();
+    assert!(matches!(parse_error, ContractError::InvalidJson(_)));
+    let error_text = format!("{parse_error:?}");
+    assert!(!error_text.contains("REDACT_THIS_PRIVATE_KEY"));
+    assert!(!error_text.contains("REDACT_THIS_SUBJECT_TOKEN"));
+
+    // A valid, denied operation returns stable codes, not free-form issuer
+    // metadata, request ID or unrecognized credentials. This only demonstrates
+    // the bounded decision path, not a universal sanitization contract for
+    // caller-supplied RuleIds or EvidenceIds.
+    let mut policy = fixture_policy();
+    policy.rules.clear();
+    policy.issuer.subject = "REDACT_THIS_ISSUER_SUBJECT".to_owned();
+    let mut context = fixture_context();
+    context.request_id = RequestId::parse("REDACT_THIS_REQUEST_TOKEN").unwrap();
+    context.operation = CryptoOperation::Sign;
+    let decision = decide(&policy, &context);
+    assert_decision("CASE-026", &decision, DecisionOutcome::Deny);
+    assert_eq!(decision.reasons[0].code, ReasonCode::DefaultDenied);
+    let encoded = serde_json::to_string(&decision).unwrap();
+    let debug = format!("{decision:?}");
+    for secret in [
+        "REDACT_THIS",
+        "REDACT_THIS_PRIVATE_KEY",
+        "REDACT_THIS_SUBJECT_TOKEN",
+        "REDACT_THIS_ISSUER_SUBJECT",
+        "REDACT_THIS_REQUEST_TOKEN",
+    ] {
+        assert!(!encoded.contains(secret), "decision JSON leaked sensitive input");
+        assert!(!debug.contains(secret), "decision debug leaked sensitive input");
+        assert!(!error_text.contains(secret), "parser diagnostic leaked sensitive input");
+    }
+    assert_eq!(decision, decide(&policy, &context));
+}
+
+fn test_only_consume_permit<F: FnOnce()>(
+    decision: Result<PolicyDecision, ContractError>,
+    operation: F,
+) -> bool {
+    // Deliberately no production PEP: only a trusted integration may decide
+    // whether the decision and its input provenance are authentic.
+    if matches!(decision, Ok(PolicyDecision { outcome: DecisionOutcome::Permit, .. })) {
+        operation();
+        true
+    } else {
+        false
+    }
+}
+
+#[test]
+fn case_028_indeterminate_and_error_never_execute_test_only_operation() {
+    use std::cell::Cell;
+
+    let policy = fixture_policy();
+    let mut incomplete = fixture_context();
+    incomplete.facts[0].properties.as_mut().unwrap().key_protection = None;
+    let indeterminate = decide(&policy, &incomplete);
+    assert_decision("CASE-028", &indeterminate, DecisionOutcome::Indeterminate);
+    assert!(indeterminate
+        .reasons
+        .iter()
+        .any(|reason| reason.code == ReasonCode::MissingRequiredAttribute));
+
+    let mut denied_policy = policy.clone();
+    denied_policy.rules.clear();
+    let denied = decide(&denied_policy, &fixture_context());
+    assert_eq!(denied.outcome, DecisionOutcome::Deny);
+
+    let error = PolicyDocument::parse_json(br#"{"schema_version":"unknown"}"#)
+        .and_then(|parsed| evaluate(&parsed, &fixture_context(), at(150)));
+    assert!(error.is_err());
+
+    let calls = Cell::new(0usize);
+    for denied_result in [Ok(indeterminate), Ok(denied), error] {
+        assert!(!test_only_consume_permit(denied_result, || {
+            calls.set(calls.get() + 1);
+        }));
+    }
+    assert_eq!(calls.get(), 0, "non-Permit path executed a protected action");
+
+    // A known permitted fixture tests only the consumer's positive branch.
+    // It is NOT proof of policy issuer or provenance authentication.
+    assert!(test_only_consume_permit(
+        Ok(decide(&policy, &fixture_context())),
+        || calls.set(calls.get() + 1)
+    ));
+    assert_eq!(calls.get(), 1);
+}
