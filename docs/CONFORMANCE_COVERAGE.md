@@ -140,29 +140,30 @@ raw fact/evidence payloads. This does NOT prove a valid signed waiver, a
 production KMS/PDP trust integration, or positive admission. No expected
 values in the 33-case normative JSON were modified.
 
-### FOSS-494 — CASE-026 and CASE-028 consumer-boundary subset
+### FOSS-494 — Privacy and test-consumer regressions (not normative promotion)
 
-FOSS-494 adds two directly bound, executable normative cases without modifying the
-normative 33-case specification or its pinned blob hash:
+PR #37 adds two bounded negative regressions using the real parser/evaluator
+and an explicitly test-only consumer. Both cases remain pending:
 
-- **CASE-026** checks strict rejection of unknown caller-injected secret/token
-  fields without their *values* appearing in parser diagnostics, and verifies
-  that a denied, real evaluator decision does not reflect sensitive policy
-  issuer subjects or request correlation IDs. This is a **bounded subset**
-  of diagnostic redaction, NOT a general sanitization guarantee. The normal
-  `PolicyDecision` still carries original caller-controlled `RuleId` and
-  `EvidenceId` references; they must not contain secret data and must not be
-  logged indiscriminately. A safe public diagnostics projection that
-  pseudonymizes or drops those references remains separate work.
-- **CASE-028** consumes real evaluator Permit/Deny/Indeterminate outcomes and
-  real parse errors through an explicitly **test-only** closure-gated consumer;
-  Deny, Indeterminate and Error never invoke the protected closure. A
-  synthetically permitted fixture tests only the positive branch and cannot
-  authenticate the policy issuer or become a production PEP.
+- CASE-026: An invalid `not-allowed` operation carrying unrecognized
+  `private_key_material` and `subject_token` fields fails with a strict
+  `ContractError::InvalidJson` without echoing the secret values. A
+  **different**, valid deny-by-default request does not reflect its issuer
+  subject or request ID in serialized decision or Debug output. This is
+  not the exact normative scenario's Deny/DefaultDenied result. A reviewed
+  inbound adapter and safe diagnostic projection are required.
+- CASE-028: The synthetic callback consumer uses real evaluator results
+  and parser failures and skips the closure on Deny, Indeterminate or Error.
+  It is not a shipped, source-authenticated downstream PEP or proof that
+  a real application cannot continue after a non-Permit decision.
 
-CASE-008/009/010 remain linked to their existing runtime-negative exception
-tests; FOSS-494 does not double-count them. Full normative golden parity is
-still **not** established: runtime-subset coverage is **24/33**, 9 pending.
-The `check_kind` remains `runtime-outcome-and-required-reasons-subset`.
-All source crates remain nonpublishable. FOSS-495 and the release gates must
-stay open until remaining cases have independent executable evidence.
+The normal `PolicyDecision` includes caller-controlled `RuleId` and
+`EvidenceId` strings and must not be logged as universally sanitized.
+Neither this library nor these tests authenticate an issuer or execute
+a protected cryptographic operation. Hypothetical waivers are not permits.
+
+Original CASE-008/009/010 negative exception coverage remains unchanged.
+The normative 33-case contract and pinned blob identity are unmodified.
+Runtime-subset coverage stays **22/33 with 11 pending**. This PR is
+intermediate regression hardening, not FOSS-494 or FOSS-459 closeout.
+Five source crates remain `publish = false`.
