@@ -460,6 +460,37 @@ fn invalid_input_never_reaches_verifier_and_does_not_reflect_secrets() {
 }
 
 #[test]
+fn canonical_byte_budget_blocks_structurally_valid_policy_before_source_verifier() {
+    let document = policy();
+    let pinned = PolicyReference::from_document(&document).unwrap();
+    let requested_scope = scope();
+    let proof = claim(&document, &requested_scope);
+    let verifier = SyntheticVerifier::new(proof.clone());
+
+    // This intentionally passes structural validation but cannot fit the
+    // canonical serialized policy in the caller's bounded byte budget.
+    let canonical = document.canonical_json().unwrap();
+    let constrained = Limits {
+        max_json_bytes: canonical.len() - 1,
+        ..Limits::default()
+    };
+    assert!(document.validate_with_limits(&constrained).is_ok());
+    assert_eq!(
+        assess(
+            &document,
+            &pinned,
+            &proof,
+            &requested_scope,
+            at(150),
+            &constrained,
+            &verifier,
+        ),
+        Err(PolicyAdmissionError::ResourceLimit)
+    );
+    assert_eq!(verifier.calls.get(), 0);
+}
+
+#[test]
 fn validated_issuer_provenance_cannot_override_an_explicit_policy_deny() {
     let mut document = policy();
     let mut deny = document
