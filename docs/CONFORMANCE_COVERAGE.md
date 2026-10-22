@@ -167,3 +167,29 @@ The normative 33-case contract and pinned blob identity are unmodified.
 Runtime-subset coverage stays **22/33 with 11 pending**. This PR is
 intermediate regression hardening, not FOSS-494 or FOSS-459 closeout.
 Five source crates remain `publish = false`.
+
+### FOSS-514 — Exact typed UnsupportedSchema CASE-030 admission
+
+The new `parse_policy_for_admission_with_limits` checks bounded inputs
+against the existing strict parser **first** and never admits a document
+that the legacy parser rejects. Only after a strict-parser failure does a
+separately bounded root-vocabulary/schema-version inspection classify
+unknown top-level security-critical fields as `PolicyAdmissionError::UnsupportedSchema`.
+
+The runtime test `case_030_unknown_critical_policy_field_is_unsupported_schema`
+adds the original normative `override_deny_silently: true` field to a valid
+policy fixture, observes an exact UnsupportedSchema result from the shipped
+API, verifies the unchanged original parser still rejects the same bytes,
+then directly asserts the pinned original CASE-030 error family.
+
+Malformed/nested policy inputs remain non-authorizing `InvalidPolicy`,
+and resource exhaustion yields `ResourceLimit`. All typed diagnostics omit
+attacker-controlled source strings. This error projection does not attest
+policy issuers, evaluate requests or operate an enforcement point.
+
+Normative fixture contents, original golden expectations, declared
+`complete_normative_conformance=false`, and blob identity remain unchanged.
+**Current runtime-subset coverage: 23 of 33; 10 cases pending.**
+CASE-007/023/031 remain in FOSS-496; CASE-026/028 remain in FOSS-494.
+FOSS-495 full 33-case conformance is still blocked. Source crates stay
+unpublished. See [schema admission](SCHEMA_ADMISSION.md).
