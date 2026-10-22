@@ -452,12 +452,14 @@ fn case_031_issuer_string_without_source_verification_is_invalid_policy() {
         .find(|entry| entry["id"] == "CASE-031")
         .unwrap();
     assert_eq!(scenario["input_semantics"]["issuer"], "trusted-org");
-    assert_eq!(scenario["input_semantics"]["caller_trust_validation"], false);
+    assert_eq!(
+        scenario["input_semantics"]["caller_trust_validation"],
+        false
+    );
 
     let mut document = fixture_policy();
     document.issuer.subject = "trusted-org".to_owned();
-    document.issuer.assurance_ref =
-        Some(EvidenceId::parse("assurance:unverified-claim").unwrap());
+    document.issuer.assurance_ref = Some(EvidenceId::parse("assurance:unverified-claim").unwrap());
     let exact_policy = PolicyReference::from_document(&document).unwrap();
     let scope = IssuerAdmissionScope {
         tenant_id: PolicyId::parse("tenant:case-031").unwrap(),
