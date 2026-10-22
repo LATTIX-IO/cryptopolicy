@@ -158,8 +158,8 @@
     },
     {
       "id": "CASE-031",
-      "status": "pending",
-      "reason": "Runtime error vocabulary or external issuer-authentication mapping not yet proven"
+      "status": "runtime-subset",
+      "test": "case_031_issuer_string_without_source_verification_is_invalid_policy"
     },
     {
       "id": "CASE-032",
