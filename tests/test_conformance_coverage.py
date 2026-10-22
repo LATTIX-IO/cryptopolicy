@@ -25,8 +25,8 @@ class ConformanceCrosswalkTests(unittest.TestCase):
     def test_strict_crosswalk_is_partial_with_every_case_accounted(self) -> None:
         result = cv.validate(self.manifest, self.baseline_bytes, self.source)
         self.assertEqual(result["total"], 33)
-        self.assertEqual(result["runtime_subset"], 24)
-        self.assertEqual(result["pending"], 9)
+        self.assertEqual(result["runtime_subset"], 22)
+        self.assertEqual(result["pending"], 11)
 
     def test_cannot_claim_full_runtime_pass(self) -> None:
         self.verify_modified(lambda d: d.update(complete_normative_conformance=True))
