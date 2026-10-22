@@ -3,8 +3,8 @@
 #![allow(clippy::unwrap_used)]
 
 use cryptopolicy::{
-    ContractError, Limits, PolicyAdmissionError, PolicyDocument,
-    parse_policy_for_admission, parse_policy_for_admission_with_limits,
+    ContractError, Limits, PolicyAdmissionError, PolicyDocument, parse_policy_for_admission,
+    parse_policy_for_admission_with_limits,
 };
 
 const VALID: &[u8] = include_bytes!("fixtures/evaluator-policy-v1.json");
