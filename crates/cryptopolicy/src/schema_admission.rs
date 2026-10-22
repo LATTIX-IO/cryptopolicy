@@ -5,8 +5,8 @@
 //! authority for accepting documents; no compatibility fallback is possible.
 
 use crate::{ContractError, Limits, PolicyDocument};
-use serde_json::Value;
-use std::fmt;
+use serde::de::{Deserializer, IgnoredAny, MapAccess, Visitor};
+use std::{collections::BTreeSet, fmt};
 
 /// Closed, payload-free admission failure families for an untrusted document.
 ///
@@ -50,27 +50,70 @@ fn classify_failure(error: &ContractError) -> PolicyAdmissionError {
 /// accepted policy parser. The source parser retains ownership of all nested
 /// grammar, duplicate-field and semantic validation. Root names not in this
 /// closed vocabulary are security-critical and cannot be ignored.
+const V1_ROOT_KEYS: &[&str] = &[
+    "schema_version",
+    "policy_id",
+    "version",
+    "issuer",
+    "created_at",
+    "effective_at",
+    "expires_at",
+    "default_effect",
+    "rules",
+    "metadata",
+];
+
+#[derive(Default)]
+struct RootObservation {
+    duplicate_key: bool,
+    unsupported_schema: bool,
+}
+
+struct RootVisitor;
+
+impl<'de> Visitor<'de> for RootVisitor {
+    type Value = RootObservation;
+
+    fn expecting(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("top-level policy JSON object")
+    }
+
+    fn visit_map<M: MapAccess<'de>>(self, mut map: M) -> Result<Self::Value, M::Error> {
+        let mut seen = BTreeSet::new();
+        let mut result = RootObservation::default();
+        while let Some(key) = map.next_key::<String>()? {
+            if !seen.insert(key.clone()) {
+                result.duplicate_key = true;
+            }
+            if key == "schema_version" {
+                let version = map.next_value::<serde_json::Value>()?;
+                if version.as_str() != Some("1") {
+                    result.unsupported_schema = true;
+                }
+            } else {
+                if !V1_ROOT_KEYS.contains(&key.as_str()) {
+                    result.unsupported_schema = true;
+                }
+                map.next_value::<IgnoredAny>()?;
+            }
+        }
+        Ok(result)
+    }
+}
+
 fn unsupported_root_schema(bytes: &[u8]) -> bool {
-    const V1_ROOT_KEYS: &[&str] = &[
-        "schema_version",
-        "policy_id",
-        "version",
-        "issuer",
-        "created_at",
-        "effective_at",
-        "expires_at",
-        "default_effect",
-        "rules",
-        "metadata",
-    ];
-    let Ok(Value::Object(root)) = serde_json::from_slice::<Value>(bytes) else {
+    // A normal serde_json::Value map silently overwrites repeated keys.
+    // A streaming visitor checks every root occurrence instead. A duplicate
+    // root field is always InvalidPolicy, regardless of duplicate order or
+    // whether one value would imply an unsupported schema.
+    let mut de = serde_json::Deserializer::from_slice(bytes);
+    let Ok(root) = de.deserialize_map(RootVisitor) else {
         return false;
     };
-    root.get("schema_version")
-        .is_some_and(|version| version.as_str() != Some("1"))
-        || root
-            .keys()
-            .any(|name| !V1_ROOT_KEYS.contains(&name.as_str()))
+    if de.end().is_err() {
+        return false;
+    }
+    !root.duplicate_key && root.unsupported_schema
 }
 
 /// Parse a strict policy while exposing a stable, closed admission error code.
