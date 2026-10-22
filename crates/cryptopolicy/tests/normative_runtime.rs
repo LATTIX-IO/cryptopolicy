@@ -1025,7 +1025,6 @@ fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
     );
 }
 
-
 // FOSS-494: limited regression evidence, NOT CASE-026 or CASE-028 normative
 // conformance. No production PDP/PEP, parser adapter, or signed decision.
 #[test]
