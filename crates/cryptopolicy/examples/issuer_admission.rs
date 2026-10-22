@@ -9,9 +9,8 @@ use cryptopolicy::{
 };
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut policy = PolicyDocument::parse_json(include_bytes!(
-        "../tests/fixtures/evaluator-policy-v1.json"
-    ))?;
+    let mut policy =
+        PolicyDocument::parse_json(include_bytes!("../tests/fixtures/evaluator-policy-v1.json"))?;
     policy.issuer.subject = "trusted-org".into();
     policy.issuer.assurance_ref = Some(EvidenceId::parse("evidence:unverified")?);
     let reference = PolicyReference::from_document(&policy)?;
