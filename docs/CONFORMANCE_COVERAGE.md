@@ -189,7 +189,35 @@ policy issuers, evaluate requests or operate an enforcement point.
 
 Normative fixture contents, original golden expectations, declared
 `complete_normative_conformance=false`, and blob identity remain unchanged.
-**Current runtime-subset coverage: 23 of 33; 10 cases pending.**
-CASE-007/023/031 remain in FOSS-496; CASE-026/028 remain in FOSS-494.
+**FOSS-514 checkpoint: 23 of 33; 10 cases pending.**
+CASE-007/023/031 were still pending at FOSS-514; FOSS-515 addresses CASE-031. CASE-026/028 remain in FOSS-494.
 FOSS-495 full 33-case conformance is still blocked. Source crates stay
 unpublished. See [schema admission](SCHEMA_ADMISSION.md).
+
+### FOSS-515 — Source-verifier rejection of untrusted issuer CASE-031
+
+`case_031_issuer_string_without_source_verification_is_invalid_policy`
+executes the exported `admit_policy_issuer_json` entrypoint using a full
+syntactically valid, SHA-256-pinned policy with issuer
+`trusted-org` and an exact source/key/owner/tenant/operation/challenge claim.
+The test explicitly reads the original normative
+`caller_trust_validation=false` and supplies the default rejecting external
+verifier. The result is precisely
+`PolicyAdmissionError::InvalidPolicy` and a blocked normative outcome.
+
+A matching issuer string, opaque assurance reference, synthetic grant or
+claimed signer key never establishes source authority. The library's real
+provenance admission function independently rechecks structural, digest,
+scope and UTC validity on every call; it delegates signer authentication,
+revocation, delegation and replay to the caller-owned verifier. No non-reject
+production verifier, crypto operation, policy evaluator Permit, or PEP exists
+here. Additional security tests cover missing/mismatched proofs, wrong scope,
+revoked or replayed synthetic sources, malformed JSON and resource limits.
+See [issuer provenance](ISSUER_ADMISSION.md).
+
+This promotion is limited to CASE-031 and remains **runtime-subset**, not
+exact complete ordered golden conformance. **Total 24/33 runtime-linked,
+9 pending**, with CASE-007/023 and CASE-026/028 still unqualified.
+The original normative file, pinned SHA and
+`complete_normative_conformance=false` are unchanged.
+All five source crates remain unpublished.

@@ -434,6 +434,69 @@ fn case_030_unknown_critical_policy_field_is_unsupported_schema() {
     );
 }
 
+#[test]
+fn case_031_issuer_string_without_source_verification_is_invalid_policy() {
+    use cryptopolicy::{
+        EvidenceId, IssuerAdmissionScope, IssuerProvenanceClaim, Limits, PolicyAdmissionError,
+        PolicyId, PolicyReference, SchemaVersion, UnverifiedPolicyIssuerSource,
+        admit_policy_issuer_json,
+    };
+
+    // The caller's trust=false from the immutable normative CASE-031 is a
+    // negative condition, not a boolean that can authenticate a signer.
+    let spec: Value = serde_json::from_slice(CORPUS).unwrap();
+    let scenario = spec["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|entry| entry["id"] == "CASE-031")
+        .unwrap();
+    assert_eq!(scenario["input_semantics"]["issuer"], "trusted-org");
+    assert_eq!(
+        scenario["input_semantics"]["caller_trust_validation"],
+        false
+    );
+
+    let mut document = fixture_policy();
+    document.issuer.subject = "trusted-org".to_owned();
+    document.issuer.assurance_ref = Some(EvidenceId::parse("assurance:unverified-claim").unwrap());
+    let exact_policy = PolicyReference::from_document(&document).unwrap();
+    let scope = IssuerAdmissionScope {
+        tenant_id: PolicyId::parse("tenant:case-031").unwrap(),
+        operation: CryptoOperation::Encrypt,
+        challenge: EvidenceId::parse("nonce:case-031").unwrap(),
+    };
+    let proof = IssuerProvenanceClaim {
+        schema_version: SchemaVersion::V1,
+        policy: exact_policy.clone(),
+        issuer_subject: "trusted-org".to_owned(),
+        assurance_ref: document.issuer.assurance_ref.clone().unwrap(),
+        owner_ref: EvidenceId::parse("owner:unverified").unwrap(),
+        signer_key_ref: EvidenceId::parse("key:unverified").unwrap(),
+        delegation_ref: None,
+        grant_ref: EvidenceId::parse("grant:unverified").unwrap(),
+        scope: scope.clone(),
+        issued_at: at(0),
+        valid_from: at(100),
+        expires_at: at(200),
+    };
+
+    // This exact validated JSON and an apparently matching issuer/proof
+    // are rejected by the exported source-admission API when the independent
+    // verifier rejects them. No evaluator Permit or PEP is involved.
+    let actual = admit_policy_issuer_json(
+        &serde_json::to_vec(&document).unwrap(),
+        &exact_policy,
+        &proof,
+        &scope,
+        at(150),
+        &Limits::default(),
+        &UnverifiedPolicyIssuerSource,
+    );
+    assert_eq!(actual, Err(PolicyAdmissionError::InvalidPolicy));
+    assert_spec_error("CASE-031", "InvalidPolicy");
+}
+
 // FOSS-493/A: real library assessments and typed, non-authorizing reason
 // projections for the exact missing-evidence vocabulary. These projections
 // are not policy authorization tokens, signatures or proof of source trust.
