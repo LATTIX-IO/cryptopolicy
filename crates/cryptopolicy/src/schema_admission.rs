@@ -99,8 +99,6 @@ pub fn parse_policy_for_admission_with_limits(
 }
 
 /// Parse with the default resource budget and the same fail-closed semantics.
-pub fn parse_policy_for_admission(
-    input: &[u8],
-) -> Result<PolicyDocument, PolicyAdmissionError> {
+pub fn parse_policy_for_admission(input: &[u8]) -> Result<PolicyDocument, PolicyAdmissionError> {
     parse_policy_for_admission_with_limits(input, &Limits::default())
 }
