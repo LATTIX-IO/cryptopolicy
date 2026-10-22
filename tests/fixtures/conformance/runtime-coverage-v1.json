@@ -133,8 +133,8 @@
     },
     {
       "id": "CASE-026",
-      "status": "runtime-subset",
-      "test": "case_026_sensitive_context_is_rejected_or_redacted_from_diagnostics"
+      "status": "pending",
+      "reason": "Exact invalid operation and sensitive context have no safe Deny diagnostic adapter yet; parser fails closed"
     },
     {
       "id": "CASE-027",
@@ -143,8 +143,8 @@
     },
     {
       "id": "CASE-028",
-      "status": "runtime-subset",
-      "test": "case_028_indeterminate_and_error_never_execute_test_only_operation"
+      "status": "pending",
+      "reason": "No trusted shipped downstream enforcement boundary; test-only consumer is not normative runtime evidence"
     },
     {
       "id": "CASE-029",
