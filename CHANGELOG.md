@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-515: opt-in, caller-owned issuer provenance admission with exact   policy digest, claimed source/key/delegation, scoped tenant/operation/   challenge and UTC validity. Default verifier denies; independent source   authentication, revocation and replay remain caller responsibilities.   CASE-031 directly checks the exact InvalidPolicy/blocked source contract,   provisionally 24/33 runtime-subset (9 pending). No evaluator Permit,   production PEP, signing primitive or package publication. 
+
 - FOSS-514: strict, opt-in `parse_policy_for_admission_with_limits` with payload-free typed UnsupportedSchema/InvalidPolicy/ResourceLimit errors. Preserves legacy parser and accepted policy/digest semantics; binds normative CASE-030 directly against unknown critical `override_deny_silently` input for 23/33 partial runtime coverage (10 pending). No issuer proof, enforced authorization or publication.
 
 - FOSS-508: opt-in, non-authorizing exact-scope hypothetical Deny/failed-Require waiver candidate after reexecuting all E0/E1 and owner-registry proofs and the FOSS-507 pinned-catalog source/key profile evaluator. Every compensating Require must be independently matched/satisfied; unmodified other layers retain Deny precedence, original policy digest unchanged. No enforcement tokens, crypto operation, complete normative case claim or crate publication.
