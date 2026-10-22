@@ -134,7 +134,7 @@
     {
       "id": "CASE-026",
       "status": "pending",
-      "reason": "Requested resource, redaction or hybrid-policy semantics not yet bound exactly"
+      "reason": "Exact invalid operation and sensitive context have no safe Deny diagnostic adapter yet; parser fails closed"
     },
     {
       "id": "CASE-027",
@@ -144,7 +144,7 @@
     {
       "id": "CASE-028",
       "status": "pending",
-      "reason": "Downstream enforcement contract is external and not integrated"
+      "reason": "No trusted shipped downstream enforcement boundary; test-only consumer is not normative runtime evidence"
     },
     {
       "id": "CASE-029",

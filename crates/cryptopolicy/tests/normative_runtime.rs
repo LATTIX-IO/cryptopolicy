@@ -1024,3 +1024,129 @@ fn blocked_exception_receipt_redacts_sources_and_rejects_positive_forgery() {
         Err(ExceptionAuditError::ReceiptInconsistent)
     );
 }
+
+// FOSS-494: limited regression evidence, NOT CASE-026 or CASE-028 normative
+// conformance. No production PDP/PEP, parser adapter, or signed decision.
+#[test]
+fn regression_sensitive_unknown_context_fails_closed_without_value_reflection() {
+    use cryptopolicy::RequestId;
+
+    // The exact normative invalid operation and source-attached secret fields
+    // are not a valid CryptoContext. This is an error regression, not the
+    // scenario's required Deny/DefaultDenied decision.
+    let mut raw = serde_json::to_value(fixture_context()).unwrap();
+    raw["operation"] = serde_json::json!("not-allowed");
+    raw["private_key_material"] = serde_json::json!("REDACT_THIS_PRIVATE_KEY");
+    raw["subject_token"] = serde_json::json!("REDACT_THIS_SUBJECT_TOKEN");
+    let parse_error = CryptoContext::parse_json(&serde_json::to_vec(&raw).unwrap()).unwrap_err();
+    assert!(matches!(parse_error, ContractError::InvalidJson(_)));
+    let error_text = format!("{parse_error:?}");
+    assert!(!error_text.contains("REDACT_THIS_PRIVATE_KEY"));
+    assert!(!error_text.contains("REDACT_THIS_SUBJECT_TOKEN"));
+
+    // Independently, a valid deny-by-default request cannot reflect an issuer
+    // subject or request ID into the resulting decision. It does NOT prove
+    // that arbitrary RuleId/EvidenceId strings are safe to log.
+    let mut policy = fixture_policy();
+    policy.rules.clear();
+    policy.issuer.subject = "REDACT_THIS_ISSUER_SUBJECT".to_owned();
+    let mut context = fixture_context();
+    context.request_id = RequestId::parse("REDACT_THIS_REQUEST_TOKEN").unwrap();
+    context.operation = CryptoOperation::Sign;
+    let decision = decide(&policy, &context);
+    assert_eq!(decision.outcome, DecisionOutcome::Deny);
+    assert_eq!(decision.reasons[0].code, ReasonCode::DefaultDenied);
+    let encoded = serde_json::to_string(&decision).unwrap();
+    let debug = format!("{decision:?}");
+    for secret in [
+        "REDACT_THIS",
+        "REDACT_THIS_PRIVATE_KEY",
+        "REDACT_THIS_SUBJECT_TOKEN",
+        "REDACT_THIS_ISSUER_SUBJECT",
+        "REDACT_THIS_REQUEST_TOKEN",
+    ] {
+        assert!(
+            !encoded.contains(secret),
+            "decision JSON leaked sensitive input"
+        );
+        assert!(
+            !debug.contains(secret),
+            "decision debug leaked sensitive input"
+        );
+        assert!(
+            !error_text.contains(secret),
+            "parser diagnostic leaked sensitive input"
+        );
+    }
+    assert_eq!(decision, decide(&policy, &context));
+}
+
+fn test_only_consume_permit<F: FnOnce()>(
+    decision: Result<PolicyDecision, ContractError>,
+    operation: F,
+) -> bool {
+    // Standalone synthetic consumer illustrating a correct check. It does not
+    // authenticate policies, validate receipts or confer enforcement rights.
+    if matches!(
+        decision,
+        Ok(PolicyDecision {
+            outcome: DecisionOutcome::Permit,
+            ..
+        })
+    ) {
+        operation();
+        true
+    } else {
+        false
+    }
+}
+
+#[test]
+fn regression_test_only_consumer_blocks_non_permit_and_error() {
+    use std::cell::Cell;
+
+    let policy = fixture_policy();
+    let mut incomplete = fixture_context();
+    incomplete.facts[0]
+        .properties
+        .as_mut()
+        .unwrap()
+        .key_protection = None;
+    let indeterminate = decide(&policy, &incomplete);
+    assert_eq!(indeterminate.outcome, DecisionOutcome::Indeterminate);
+    assert!(
+        indeterminate
+            .reasons
+            .iter()
+            .any(|reason| reason.code == ReasonCode::MissingRequiredAttribute)
+    );
+
+    let mut denied_policy = policy.clone();
+    denied_policy.rules.clear();
+    let denied = decide(&denied_policy, &fixture_context());
+    assert_eq!(denied.outcome, DecisionOutcome::Deny);
+
+    let error = PolicyDocument::parse_json(br#"{"schema_version":"unknown"}"#)
+        .and_then(|parsed| evaluate(&parsed, &fixture_context(), at(150)));
+    assert!(error.is_err());
+
+    let calls = Cell::new(0usize);
+    for denied_result in [Ok(indeterminate), Ok(denied), error] {
+        assert!(!test_only_consume_permit(denied_result, || {
+            calls.set(calls.get() + 1);
+        }));
+    }
+    assert_eq!(
+        calls.get(),
+        0,
+        "non-Permit path executed a protected action"
+    );
+
+    // A synthetic success case tests only this local consumer branch, not
+    // independently authenticated trust or a shipped enforcement component.
+    assert!(test_only_consume_permit(
+        Ok(decide(&policy, &fixture_context())),
+        || calls.set(calls.get() + 1)
+    ));
+    assert_eq!(calls.get(), 1);
+}

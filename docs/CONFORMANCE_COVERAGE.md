@@ -139,3 +139,31 @@ bounded, deterministic, **non-authorizing** fingerprinted audit from actual
 raw fact/evidence payloads. This does NOT prove a valid signed waiver, a
 production KMS/PDP trust integration, or positive admission. No expected
 values in the 33-case normative JSON were modified.
+
+### FOSS-494 — Privacy and test-consumer regressions (not normative promotion)
+
+PR #37 adds two bounded negative regressions using the real parser/evaluator
+and an explicitly test-only consumer. Both cases remain pending:
+
+- CASE-026: An invalid `not-allowed` operation carrying unrecognized
+  `private_key_material` and `subject_token` fields fails with a strict
+  `ContractError::InvalidJson` without echoing the secret values. A
+  **different**, valid deny-by-default request does not reflect its issuer
+  subject or request ID in serialized decision or Debug output. This is
+  not the exact normative scenario's Deny/DefaultDenied result. A reviewed
+  inbound adapter and safe diagnostic projection are required.
+- CASE-028: The synthetic callback consumer uses real evaluator results
+  and parser failures and skips the closure on Deny, Indeterminate or Error.
+  It is not a shipped, source-authenticated downstream PEP or proof that
+  a real application cannot continue after a non-Permit decision.
+
+The normal `PolicyDecision` includes caller-controlled `RuleId` and
+`EvidenceId` strings and must not be logged as universally sanitized.
+Neither this library nor these tests authenticate an issuer or execute
+a protected cryptographic operation. Hypothetical waivers are not permits.
+
+Original CASE-008/009/010 negative exception coverage remains unchanged.
+The normative 33-case contract and pinned blob identity are unmodified.
+Runtime-subset coverage stays **22/33 with 11 pending**. This PR is
+intermediate regression hardening, not FOSS-494 or FOSS-459 closeout.
+Five source crates remain `publish = false`.
