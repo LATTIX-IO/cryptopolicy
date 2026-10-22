@@ -25,7 +25,7 @@ or secrets are exposed through the typed error.
 ```rust
 use cryptopolicy::{parse_policy_for_admission, PolicyAdmissionError};
 
-let request = br#"{\"schema_version\":\"1\",\"override_deny_silently\":true}"#;
+let request = br#"{"schema_version":"1","override_deny_silently":true}"#;
 assert_eq!(
     parse_policy_for_admission(request),
     Err(PolicyAdmissionError::UnsupportedSchema)
