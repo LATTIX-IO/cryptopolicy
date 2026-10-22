@@ -55,6 +55,18 @@ Crosswalk coverage is **23 of 33 runtime-subset cases** (10 pending), not full
 conformance. This API does not authenticate issuers or authorize operations.
 See [schema admission](docs/SCHEMA_ADMISSION.md) and run
 `cargo test -p cryptopolicy --test schema_admission --locked`.
+## Issuer provenance admission (FOSS-515)
+
+A policy issuer string or an assurance-reference identifier is not signer
+authentication. The optional, offline `admit_policy_issuer` and
+`admit_policy_issuer_json` APIs reject unverified issuer assertions by
+default, require an exact pinned policy digest/tenant/operation/challenge
+and invoke a caller-owned source/key/delegation/revocation/replay verifier.
+Returns a non-authorizing assessment, not a Permit, waiver, signature or
+production enforcement token. The original evaluator remains unchanged.
+Run `cargo run -p cryptopolicy --example issuer_admission --locked`.
+See [issuer provenance contract](docs/ISSUER_ADMISSION.md).
+CASE-031 is provisionally linked for 24/33 partial runtime coverage.
 ## Central resource limits (FOSS-433)
 
 The Limits API bounds JSON bytes, nesting, rule counts, per-rule requirements,
