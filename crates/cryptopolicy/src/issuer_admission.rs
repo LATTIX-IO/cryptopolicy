@@ -6,7 +6,7 @@
 //! cryptographic operation, waives a policy or issues an enforcement token.
 
 use crate::{
-    CryptoOperation, EvaluationTime, EvidenceId, Limits, PolicyAdmissionError, PolicyDocument,
+    ContractError, CryptoOperation, EvaluationTime, EvidenceId, Limits, PolicyAdmissionError, PolicyDocument,
     PolicyId, PolicyReference, SchemaVersion, parse_policy_for_admission_with_limits,
 };
 use serde::{Deserialize, Serialize};
@@ -138,6 +138,15 @@ impl IssuerProvenanceAssessment {
     }
 }
 
+fn classify_validation_failure(error: ContractError) -> PolicyAdmissionError {
+    match error {
+        ContractError::PayloadTooLarge
+        | ContractError::InvalidLimit(_)
+        | ContractError::ResourceLimitExceeded(_) => PolicyAdmissionError::ResourceLimit,
+        _ => PolicyAdmissionError::InvalidPolicy,
+    }
+}
+
 /// Validate a policy and independently recheck its issuer binding.
 ///
 /// All malformed, unverified, expired, revoked, delegated-to-the-wrong-owner,
@@ -156,7 +165,7 @@ pub fn admit_policy_issuer<V: PolicyIssuerSourceVerifier + ?Sized>(
     request
         .document
         .validate_with_limits(limits)
-        .map_err(|_| PolicyAdmissionError::InvalidPolicy)?;
+        .map_err(classify_validation_failure)?;
     let reference = PolicyReference::from_document(request.document)
         .map_err(|_| PolicyAdmissionError::InvalidPolicy)?;
     let proof = request.claim;
