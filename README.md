@@ -43,6 +43,18 @@ Canonical encoding is versioned internally as cryptopolicy-canon-v1: ordered
 typed fields; sorted rules, conjunctive requirements and metadata. It is NOT
 RFC 8785 and must not be treated as interoperable signing serialization.
 
+## Typed strict schema admission (FOSS-514)
+
+The optional `parse_policy_for_admission_with_limits` API preserves the
+existing strict `PolicyDocument` acceptance semantics and adds a closed,
+payload-free `PolicyAdmissionError` for unsupported **top-level** schema
+fields/versions, invalid policy and resource limits. Unknown critical fields
+cannot become accepted inputs, and no error includes raw source data.
+Normative CASE-030 has a directly executable UnsupportedSchema binding.
+Crosswalk coverage is **23 of 33 runtime-subset cases** (10 pending), not full
+conformance. This API does not authenticate issuers or authorize operations.
+See [schema admission](docs/SCHEMA_ADMISSION.md) and run
+`cargo test -p cryptopolicy --test schema_admission --locked`.
 ## Central resource limits (FOSS-433)
 
 The Limits API bounds JSON bytes, nesting, rule counts, per-rule requirements,
