@@ -8,6 +8,8 @@ The project follows Semantic Versioning once its public API reaches a stable con
 
 ### Added
 
+- FOSS-514: strict, opt-in `parse_policy_for_admission_with_limits` with payload-free typed UnsupportedSchema/InvalidPolicy/ResourceLimit errors. Preserves legacy parser and accepted policy/digest semantics; binds normative CASE-030 directly against unknown critical `override_deny_silently` input for 23/33 partial runtime coverage (10 pending). No issuer proof, enforced authorization or publication.
+
 - FOSS-508: opt-in, non-authorizing exact-scope hypothetical Deny/failed-Require waiver candidate after reexecuting all E0/E1 and owner-registry proofs and the FOSS-507 pinned-catalog source/key profile evaluator. Every compensating Require must be independently matched/satisfied; unmodified other layers retain Deny precedence, original policy digest unchanged. No enforcement tokens, crypto operation, complete normative case claim or crate publication.
 
 - FOSS-507/B: explicit, in-process source/key-qualified named-profile policy evaluation against immutable `pqc-kit` v1. Preserves legacy unverified evaluator and policy digest, stable Deny/Require precedence, default deny, UTC time boundaries and fail-closed named-hybrid behavior; never issues cryptographic enforcement authority or approvals. New deterministic security regressions and documentation.
