@@ -88,6 +88,22 @@ fn nested_structure_and_missing_required_fields_remain_invalid_policy() {
 }
 
 #[test]
+fn duplicate_root_keys_are_invalid_policy_regardless_of_order() {
+    let duplicates: [&[u8]; 3] = [
+        br#"{"schema_version":"1","schema_version":"2","override_deny_silently":true}"#,
+        br#"{"schema_version":"2","schema_version":"1","override_deny_silently":true}"#,
+        br#"{"schema_version":"1","override_deny_silently":true,"override_deny_silently":false}"#,
+    ];
+    for raw in duplicates {
+        assert_eq!(
+            parse_policy_for_admission(raw),
+            Err(PolicyAdmissionError::InvalidPolicy)
+        );
+        assert!(PolicyDocument::parse_json(raw).is_err());
+    }
+}
+
+#[test]
 fn input_budget_and_nesting_limits_are_enforced_before_admission() {
     let bytes = mutate(|doc| {
         doc["override_deny_silently"] = serde_json::json!(true);
