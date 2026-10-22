@@ -6,8 +6,9 @@
 //! cryptographic operation, waives a policy or issues an enforcement token.
 
 use crate::{
-    ContractError, CryptoOperation, EvaluationTime, EvidenceId, Limits, PolicyAdmissionError, PolicyDocument,
-    PolicyId, PolicyReference, SchemaVersion, parse_policy_for_admission_with_limits,
+    ContractError, CryptoOperation, EvaluationTime, EvidenceId, Limits, PolicyAdmissionError,
+    PolicyDocument, PolicyId, PolicyReference, SchemaVersion,
+    parse_policy_for_admission_with_limits,
 };
 use serde::{Deserialize, Serialize};
 
