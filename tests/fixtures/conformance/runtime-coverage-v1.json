@@ -153,8 +153,8 @@
     },
     {
       "id": "CASE-030",
-      "status": "pending",
-      "reason": "Runtime error vocabulary or external issuer-authentication mapping not yet proven"
+      "status": "runtime-subset",
+      "test": "case_030_unknown_critical_policy_field_is_unsupported_schema"
     },
     {
       "id": "CASE-031",

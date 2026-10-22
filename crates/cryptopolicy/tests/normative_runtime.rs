@@ -412,15 +412,26 @@ fn case_025_overdeep_import_graph_fails_before_effective_policy() {
 }
 
 #[test]
-fn unknown_critical_policy_field_fails_closed_but_error_vocabulary_is_not_yet_exact() {
-    // CASE-030 expects UnsupportedSchema. The runtime currently returns
-    // InvalidJson for unknown fields, so CASE-030 remains deliberately pending.
+fn case_030_unknown_critical_policy_field_is_unsupported_schema() {
+    use cryptopolicy::{PolicyAdmissionError, parse_policy_for_admission};
+
     let mut source = serde_json::to_value(fixture_policy()).unwrap();
     source["override_deny_silently"] = serde_json::json!(true);
+    let raw = serde_json::to_vec(&source).unwrap();
+
+    // The original v1 parser is preserved; the opt-in admission boundary
+    // projects a closed schema family from the *same actual rejected input*.
     assert!(matches!(
-        PolicyDocument::parse_json(&serde_json::to_vec(&source).unwrap()),
+        PolicyDocument::parse_json(&raw),
         Err(ContractError::InvalidJson(_))
     ));
+    let admission = parse_policy_for_admission(&raw);
+    assert_eq!(admission, Err(PolicyAdmissionError::UnsupportedSchema));
+    assert_spec_error("CASE-030", "UnsupportedSchema");
+    assert_eq!(
+        parse_policy_for_admission(&raw),
+        Err(PolicyAdmissionError::UnsupportedSchema)
+    );
 }
 
 // FOSS-493/A: real library assessments and typed, non-authorizing reason
