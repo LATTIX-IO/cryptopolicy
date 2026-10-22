@@ -68,7 +68,9 @@ fn unsupported_root_schema(bytes: &[u8]) -> bool {
     };
     root.get("schema_version")
         .is_some_and(|version| version.as_str() != Some("1"))
-        || root.keys().any(|name| !V1_ROOT_KEYS.contains(&name.as_str()))
+        || root
+            .keys()
+            .any(|name| !V1_ROOT_KEYS.contains(&name.as_str()))
 }
 
 /// Parse a strict policy while exposing a stable, closed admission error code.
@@ -85,7 +87,9 @@ pub fn parse_policy_for_admission_with_limits(
     input: &[u8],
     limits: &Limits,
 ) -> Result<PolicyDocument, PolicyAdmissionError> {
-    limits.check_json(input).map_err(|error| classify_failure(&error))?;
+    limits
+        .check_json(input)
+        .map_err(|error| classify_failure(&error))?;
     match PolicyDocument::parse_json_with_limits(input, limits) {
         Ok(document) => Ok(document),
         Err(error) => {
