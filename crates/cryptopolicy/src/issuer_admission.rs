@@ -7,10 +7,11 @@
 
 use crate::{
     ContractError, CryptoOperation, EvaluationTime, EvidenceId, Limits, PolicyAdmissionError,
-    PolicyDocument, PolicyId, PolicyReference, SchemaVersion,
+    PolicyDigest, PolicyDocument, PolicyId, PolicyReference, SchemaVersion,
     parse_policy_for_admission_with_limits,
 };
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 
 /// Caller-requested identity, operation and one-use freshness challenge.
 ///
@@ -163,12 +164,25 @@ pub fn admit_policy_issuer<V: PolicyIssuerSourceVerifier + ?Sized>(
     limits
         .validate()
         .map_err(|_| PolicyAdmissionError::ResourceLimit)?;
-    request
+    // Canonical size checks MUST run under request.limits, rather than the
+    // default budget in PolicyReference::from_document. Otherwise a caller's
+    // stricter byte cap can be bypassed by a structurally valid document.
+    let canonical = request
         .document
-        .validate_with_limits(limits)
+        .canonical_json_with_limits(limits)
         .map_err(classify_validation_failure)?;
-    let reference = PolicyReference::from_document(request.document)
-        .map_err(|_| PolicyAdmissionError::InvalidPolicy)?;
+    let hash = Sha256::digest(&canonical);
+    let digest = PolicyDigest::try_from(
+        hash.iter()
+            .map(|byte| format!("{byte:02x}"))
+            .collect::<String>(),
+    )
+    .map_err(|_| PolicyAdmissionError::InvalidPolicy)?;
+    let reference = PolicyReference {
+        policy_id: request.document.policy_id.clone(),
+        version: request.document.version.clone(),
+        digest,
+    };
     let proof = request.claim;
     let policy = request.document;
     let now = request.time;
