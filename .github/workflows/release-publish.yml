@@ -35,7 +35,7 @@ jobs:
         with:
           toolchain: stable
       - name: Publish eligible releases
-        uses: release-plz/action@d529f731ae3e89610ada96eda34e5c6ba3b12214 # v0.5
+        uses: release-plz/action@b2baf303c463c223526d52a8a91b0777f052cf3f # v0.5
         with:
           command: release
         env:
